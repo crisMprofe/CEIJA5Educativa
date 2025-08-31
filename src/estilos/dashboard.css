@@ -1,0 +1,80 @@
+/* Estilos generales para el contenedor del dashboard */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background-color: #999; /* Fondo gris claro */
+  min-height: 60vh; /* Ocupa toda la altura de la pantalla */
+  max-width: 75vw;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra elegante */
+  margin: 5% auto; /* Centra el contenedor horizontalmente */
+}
+
+/* Encabezado del dashboard */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 20px;
+  max-width: 100%;
+
+}
+
+.dashboard-header h1 {
+  color: #2d4177; /* Azul oscuro */
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.dashboard-header p {
+  color: #2d4177;
+  font-size: 1.2rem;
+}
+
+/* Contenedor de botones */
+.dashboard-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px; /* Espaciado entre botones */
+}
+
+/* Estilos para los botones y enlaces */
+.dashboard-buttons button,
+.dashboard-buttons .dashboard-link {
+  background-color: #2d4177; /* Azul oscuro */
+  color: #ffffff; /* Blanco */
+  border: none;
+  padding: 15px 20px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  text-align: center;
+  width: 250px; /* Tamaño uniforme */
+  height: 60px; /* Altura uniforme */
+  box-shadow: 0 2px 4px #87CEEB;; /* Sombra para los botones */
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Centra el texto dentro del botón */
+}
+
+/* Hover para los botones y enlaces */
+.dashboard-buttons button:hover,
+.dashboard-buttons .dashboard-link:hover {
+  background-color: #696969; /* Gris oscuro al pasar el mouse */
+  transform: scale(1.05); /* Efecto de zoom */
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+  .dashboard-container {
+    max-width: 90vw; /* Ajusta el ancho en pantallas pequeñas */
+  }
+
+  .dashboard-buttons button,
+  .dashboard-buttons .dashboard-link {
+    width: 100%; /* Ancho completo en pantallas pequeñas */
+  }
+}

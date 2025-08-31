@@ -1,0 +1,289 @@
+/* Estilo general de la página */
+
+body {
+  font-family: "Roboto Slab", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+.home {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 90vh;
+    padding: 20px;
+    background-color: #f5f5f5;
+    background-attachment: fixed;
+  }
+  
+  /* Estilo para el contenedor de la barra de navegación y el botón de inicio de sesión */
+  .barNav {
+    display: flex;
+    justify-content: flex-end; /* Alinea los elementos a la derecha */
+    align-items: center;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 10px;
+  }
+  /* Menú Hamburguesa */
+  .navbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    padding-left: 20px;
+  }
+  
+  .hamburger {
+    font-size: 30px; /* Tamaño más pequeño para un estilo más delicado */
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #87CEEB;
+    text-shadow: 1px 1px 3px #ccc2c2; 
+  }
+  .menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    background-color: #313030;
+    padding: 15px; /* Menor padding para que sea más compacto */
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px #ccc2c2; 
+    z-index: 10;
+    width: 180px; /* Más estrecho */
+  }
+  
+  .menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .menu .opcMenu{
+    font-family: inherit; /* Hereda la fuente del elemento padre */
+    font-size: inherit; /* Hereda el tamaño de fuente del elemento padre */
+    background: none; /* Elimina el fondo predeterminado del botón */
+    border: none; /* Elimina el borde predeterminado del botón */
+    cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
+    text-decoration: none; /* Elimina la subrayado del texto */
+    padding: 0; /* Elim /* Tamaño más pequeño para delicadeza */
+   
+    font-weight: bold;
+    text-align: left
+  }
+  .menu ul li a {
+    text-decoration: none;
+    color: #87CEEB; 
+  }
+  
+  .menu button {
+    background: none;
+    border: none;
+    color: #87CEEB;
+    font-size: 18px;
+    align-self: flex-end;
+    cursor: pointer;
+  }
+  li> button{
+  font-family: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  color: #87CEEB;
+  font-size: inherit; /* Hereda el tamaño de fuente del elemento padre */
+   
+  }
+  
+  /* Botón de inicio de sesión */
+  .barNav>.login-button {
+    width: 10%; /* Ancho más pequeño */
+    background-color: #313030;
+    color: #87CEEB;
+    border: none;
+    padding: 8px; /* Tamaño más pequeño */
+    border-radius: 8px;
+    font-size: 14px; /* Tamaño más pequeño para un look más delicado */
+    cursor: pointer;
+    text-shadow: 1px 1px 3px #d35400; /* Sombra amarilla */
+    margin-left: 20px; /* Espacio entre el botón y el menú */
+  }
+  /* Información de la escuela */
+  .school-info {
+    margin-top: 3%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 2px solid #87CEEB;
+    padding: 0,5%;
+    border-radius: 10px;
+    width:85vw;
+    text-align: center;
+    box-shadow: 0px 4px 10px #8f49491a;
+    min-height: 80vh; /* Ajusta la altura mínima para que la imagen se vea mejor */
+    background-color: #ffffff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25'%3E%3Cdefs%3E%3ClinearGradient id='a' gradientUnits='userSpaceOnUse' x1='0' x2='0' y1='0' y2='100%25' gradientTransform='rotate(205,647,328)'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%231753FF'/%3E%3C/linearGradient%3E%3Cpattern patternUnits='userSpaceOnUse' id='b' width='556' height='463.3' x='0' y='0' viewBox='0 0 1080 900'%3E%3Cg fill-opacity='0.23'%3E%3Cpolygon fill='%23444' points='90 150 0 300 180 300'/%3E%3Cpolygon points='90 150 180 0 0 0'/%3E%3Cpolygon fill='%23AAA' points='270 150 360 0 180 0'/%3E%3Cpolygon fill='%23DDD' points='450 150 360 300 540 300'/%3E%3Cpolygon fill='%23999' points='450 150 540 0 360 0'/%3E%3Cpolygon points='630 150 540 300 720 300'/%3E%3Cpolygon fill='%23DDD' points='630 150 720 0 540 0'/%3E%3Cpolygon fill='%23444' points='810 150 720 300 900 300'/%3E%3Cpolygon fill='%23FFF' points='810 150 900 0 720 0'/%3E%3Cpolygon fill='%23DDD' points='990 150 900 300 1080 300'/%3E%3Cpolygon fill='%23444' points='990 150 1080 0 900 0'/%3E%3Cpolygon fill='%23DDD' points='90 450 0 600 180 600'/%3E%3Cpolygon points='90 450 180 300 0 300'/%3E%3Cpolygon fill='%23666' points='270 450 180 600 360 600'/%3E%3Cpolygon fill='%23AAA' points='270 450 360 300 180 300'/%3E%3Cpolygon fill='%23DDD' points='450 450 360 600 540 600'/%3E%3Cpolygon fill='%23999' points='450 450 540 300 360 300'/%3E%3Cpolygon fill='%23999' points='630 450 540 600 720 600'/%3E%3Cpolygon fill='%23FFF' points='630 450 720 300 540 300'/%3E%3Cpolygon points='810 450 720 600 900 600'/%3E%3Cpolygon fill='%23DDD' points='810 450 900 300 720 300'/%3E%3Cpolygon fill='%23AAA' points='990 450 900 600 1080 600'/%3E%3Cpolygon fill='%23444' points='990 450 1080 300 900 300'/%3E%3Cpolygon fill='%23222' points='90 750 0 900 180 900'/%3E%3Cpolygon points='270 750 180 900 360 900'/%3E%3Cpolygon fill='%23DDD' points='270 750 360 600 180 600'/%3E%3Cpolygon points='450 750 540 600 360 600'/%3E%3Cpolygon points='630 750 540 900 720 900'/%3E%3Cpolygon fill='%23444' points='630 750 720 600 540 600'/%3E%3Cpolygon fill='%23AAA' points='810 750 720 900 900 900'/%3E%3Cpolygon fill='%23666' points='810 750 900 600 720 600'/%3E%3Cpolygon fill='%23999' points='990 750 900 900 1080 900'/%3E%3Cpolygon fill='%23999' points='180 0 90 150 270 150'/%3E%3Cpolygon fill='%23444' points='360 0 270 150 450 150'/%3E%3Cpolygon fill='%23FFF' points='540 0 450 150 630 150'/%3E%3Cpolygon points='900 0 810 150 990 150'/%3E%3Cpolygon fill='%23222' points='0 300 -90 450 90 450'/%3E%3Cpolygon fill='%23FFF' points='0 300 90 150 -90 150'/%3E%3Cpolygon fill='%23FFF' points='180 300 90 450 270 450'/%3E%3Cpolygon fill='%23666' points='180 300 270 150 90 150'/%3E%3Cpolygon fill='%23222' points='360 300 270 450 450 450'/%3E%3Cpolygon fill='%23FFF' points='360 300 450 150 270 150'/%3E%3Cpolygon fill='%23444' points='540 300 450 450 630 450'/%3E%3Cpolygon fill='%23222' points='540 300 630 150 450 150'/%3E%3Cpolygon fill='%23AAA' points='720 300 630 450 810 450'/%3E%3Cpolygon fill='%23666' points='720 300 810 150 630 150'/%3E%3Cpolygon fill='%23FFF' points='900 300 810 450 990 450'/%3E%3Cpolygon fill='%23999' points='900 300 990 150 810 150'/%3E%3Cpolygon points='0 600 -90 750 90 750'/%3E%3Cpolygon fill='%23666' points='0 600 90 450 -90 450'/%3E%3Cpolygon fill='%23AAA' points='180 600 90 750 270 750'/%3E%3Cpolygon fill='%23444' points='180 600 270 450 90 450'/%3E%3Cpolygon fill='%23444' points='360 600 270 750 450 750'/%3E%3Cpolygon fill='%23999' points='360 600 450 450 270 450'/%3E%3Cpolygon fill='%23666' points='540 600 630 450 450 450'/%3E%3Cpolygon fill='%23222' points='720 600 630 750 810 750'/%3E%3Cpolygon fill='%23FFF' points='900 600 810 750 990 750'/%3E%3Cpolygon fill='%23222' points='900 600 990 450 810 450'/%3E%3Cpolygon fill='%23DDD' points='0 900 90 750 -90 750'/%3E%3Cpolygon fill='%23444' points='180 900 270 750 90 750'/%3E%3Cpolygon fill='%23FFF' points='360 900 450 750 270 750'/%3E%3Cpolygon fill='%23AAA' points='540 900 630 750 450 750'/%3E%3Cpolygon fill='%23FFF' points='720 900 810 750 630 750'/%3E%3Cpolygon fill='%23222' points='900 900 990 750 810 750'/%3E%3Cpolygon fill='%23222' points='1080 300 990 450 1170 450'/%3E%3Cpolygon fill='%23FFF' points='1080 300 1170 150 990 150'/%3E%3Cpolygon points='1080 600 990 750 1170 750'/%3E%3Cpolygon fill='%23666' points='1080 600 1170 450 990 450'/%3E%3Cpolygon fill='%23DDD' points='1080 900 1170 750 990 750'/%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Crect x='0' y='0' fill='url(%23a)' width='100%25' height='100%25'/%3E%3Crect x='0' y='0' fill='url(%23b)' width='100%25' height='100%25'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+    background-size: cover;;
+    position: relative;
+  }
+ 
+  /* Estilo para el contenedor del carrusel */
+  .school-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 750%;
+    max-width: 80%;
+    height: 75vh;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  /* Contenedor general del carrusel */
+  .carousel-container {
+    max-width: 800px; /* Ajusta el ancho máximo según prefieras */
+    margin: 20px auto;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Imágenes del carrusel */
+  .carousel-image {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+  }
+  
+  /* Personalizar flechas de navegación */
+  .carousel .control-arrow {
+    color: #87CEEB;
+    font-size: 4em;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+  }
+  
+  .carousel .control-arrow:hover {
+    opacity: 1;
+    color: #42569e;
+  }
+  
+  /* Ocultar los indicadores en la parte inferior */
+  .carousel .carousel-status,
+  .carousel .thumbs-wrapper,
+  .carousel .thumbs {
+    display: none;
+  }
+  
+  /* Indicadores personalizados */
+  .carousel .control-dots .dot {
+    background-color: #87CEEB;
+    width: 16px; /* Tamaño aumentado */
+    height: 16px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+  
+  .carousel .control-dots .dot.selected {
+    background-color: #0d2363;
+    width: 16px; 
+    height: 16px;
+  }
+.text-overlay {
+    margin-top: -80px; /* Ajusta este valor para acercar el texto al carrusel */
+    text-align: center;
+}
+
+.text-overlay p {
+    color: #252423;
+    margin: 2px 0; /* Reduce el margen vertical */
+}
+
+.text-overlay > .textE {
+    color: #075878;
+    text-shadow: 1px 1px #313030;
+    font-style: italic;
+    font-size: 1.5em;
+    margin-top: 10px; /* Ajusta la separación entre este texto y el carrusel */
+    margin-bottom: 10px; 
+}
+  /* Estilos para el logo en el extremo inferior derecho */
+  .logo {
+    position: fixed;
+    bottom: 5px;
+    right:10px;
+    max-width: 80px;max-height: 55px; }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .menu {
+      width: 150px;
+      padding: 15px;
+    }
+  
+    .menu ul li a {
+      font-size: 16px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .menu {
+      width: 120px;
+      padding: 10px;
+    }
+  
+    .menu ul li a {
+      font-size: 14px;
+    }
+    .login-button {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+    .text-overlay h1 {
+      font-size: 2.5vw; /* Ajuste para pantalla más pequeña */
+    }
+    .text-overlay p {
+      font-size: 1em; /* Ajuste para pantalla más pequeña */
+    }
+  }
+  /* App.css */
+
+.navbar {
+    position: relative;
+}
+
+.hamburger {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #87CEEB; /* Color de la hamburguesa */
+}
+
+
+
+.menu ul {
+    list-style: none;
+    padding: 0;
+}
+
+.menu li {
+    margin: 10px 0;
+}
+
+.menu a {
+    text-decoration: none;
+    color: #ffff; /* Color blanco para el enlace */
+    font-size: 18px;
+}

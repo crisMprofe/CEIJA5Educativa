@@ -1,0 +1,59 @@
+.boton-cargando-container {
+  position: relative;
+}
+
+.button:disabled {
+  background-color: transparent; /* Fondo transparente cuando el botón está deshabilitado */
+}
+
+.spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5); /* Fondo semitransparente */
+  z-index: 9999; /* Asegura que esté sobre otros elementos */
+}
+
+.spinner {
+  width: 30px; /* Ajusta el ancho del spinner */
+  height: 30px; /* Ajusta la altura del spinner */
+  border: 6px solid #f3f3f3; /* Haz el borde más grueso */
+  border-top: 6px solid #2d4177; /* Haz el borde superior más grueso */
+  border-radius: 50%; /* Hace que el spinner sea circular */
+  animation: spin 1s linear infinite; /* Animación de giro */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Botón alineado a la derecha */
+.boton-cargando {
+  margin-left: auto; /* Alinea el botón a la derecha */
+  padding: 8px 16px; /* Tamaño delicado */
+  font-size: 0.9rem; /* Fuente más pequeña */
+  border-radius: 8px;
+  text-align: center;
+  
+}
+
+/* Hover y colores de buttonF */
+.boton-cargando:hover {
+  background-color: #87ceeb; /* Azul claro */
+  color: #000; /* Texto negro */
+}
+
+.boton-cargando.disabled {
+  background-color: #ccc; /* Color para el estado deshabilitado */
+  cursor: not-allowed;
+}

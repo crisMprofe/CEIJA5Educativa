@@ -1,0 +1,178 @@
+/* Estilos generales para el modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Fondo oscuro translúcido */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Estilos para el contenido del modal */
+.modal-content {
+  background-color: #313030;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 16px #ccc2c2;
+  max-width: 400px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: slideDown 0.3s ease; /* Animación de aparición */
+}
+
+/* Nueva clase para el contenedor del modal */
+.modal-container {
+  background-color: #ffffff; /* Fondo blanco */
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 900px;
+  padding: 20px;
+}
+
+/* Estilos para la cabecera del modal */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #666; /* Línea gris */
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+/* Estilos para el botón de cerrar del modal */
+.modal-close-btn {
+  background-color: #ffffff; /* Fondo blanco */
+  color: #2d4177; /* Azul oscuro */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.modal-close-btn:hover {
+  background-color: #2d4177; /* Azul oscuro */
+  color: #ffffff; /* Texto blanco */
+}
+
+/* Estilos para la caja de registro */
+.login-box,
+.register-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Estilos específicos para los elementos del modal */
+.login-box label,
+.register-box label {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  display: flex;
+  color: #ffff;
+  font-size: 1.1rem;
+}
+
+.button .clip-loader {
+  position: absolute;
+}
+.button {
+  color: #000;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  width: auto;
+  margin-top: 10px;
+  margin-left: 260px;
+  padding: 10px;
+  transition: background-color 0.3s ease;
+  background-color: #ccc2c2;
+}
+
+.button:hover {
+  color: #2d4177;
+  background-color: #87ceeb;
+}
+.login-box input > span {
+  position: "relative";
+  top: "10px";
+  left: "350px";
+}
+
+.back-button {
+  position: relative;
+  top: 10px;
+  right: -180px;
+  background: none;
+  border: none;
+  color: #ccc2c2;
+  font-size: 24px; /* Tamaño pequeño */
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+.back-button:hover {
+  color: #2d4177;
+  background: none;
+  border: none;
+}
+
+/* Estilo para el enlace de registro */
+.register-text {
+  margin: 25px 5px;
+  font-size: 1rem;
+  color: #ccc2c2;
+  font-style: oblique;
+}
+
+.register-link {
+  color: #7db6cc;
+  text-decoration: none;
+  padding-left: 20px;
+  font-size: 1.3rem;
+  font-style: initial;
+}
+
+.register-link:hover {
+  color: #ffffff;
+  text-shadow: 1px 1px 10px #ccc2c2;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Ajustes responsivos */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 15px;
+  }
+
+  .login-box input {
+    font-size: 0.9rem;
+  }
+  .login-button,
+  .register-button,
+  .back-button {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+  .register-text {
+    font-size: 0.8rem;
+  }
+}

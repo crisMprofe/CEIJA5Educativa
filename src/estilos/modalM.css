@@ -1,0 +1,64 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Fondo oscuro translúcido */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background-color: #ffffff; /* Fondo blanco */
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 128, 0.2); /* Sombreado azul translúcido */
+  width: 400px;
+  max-width: 90%;
+  padding: 20px;
+  text-align: center;
+}
+
+
+
+.modal-title {
+  font-size: 1.5rem;
+  color: #2d4177; /* Azul oscuro */
+  margin-bottom: 20px;
+}
+
+/* Botón de cerrar con estilos de modalidad-button */
+.modal-close {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-close:hover,
+.modal-close:focus {
+  background: #e0e0e0;
+  color: #222;
+}
+  
+.modalidad-button:last-child {
+  margin-right: 0;
+}
+.modalidad-button:hover,
+.modalidad-button:focus {
+  background: #e0e0e0;
+  color: #222;
+}

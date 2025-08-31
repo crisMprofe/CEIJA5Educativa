@@ -1,0 +1,18 @@
+
+
+/* Estilo simple para modales de opciones */
+.cerrar-button.simple {
+  background: transparent;
+  color: #666;
+  border-radius: 50%; /* Mantener redondo */
+  font-size: 1.2rem;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+}
+
+.cerrar-button.simple:hover {
+  background-color: #f0f0f0;
+  color: #333;
+  transform: none;
+}

@@ -1,0 +1,62 @@
+/* Estilos generales para el contenedor del nav */
+.nav-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #2d4177;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  
+  width: 100vw;
+  margin: 0;
+  max-width: none;
+  left: 0;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Estilos para los enlaces de navegación */
+.nav-links {
+  display: flex;
+  gap: 15px; /* Espaciado entre los enlaces */
+}
+
+.nav-link {
+  color: #ffffff; /* Texto blanco */
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #b3e5fc; /* Azul claro */
+}
+
+/* Estilos para el contenedor del usuario */
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Espaciado entre el nombre y el botón */
+}
+
+/* Estilos para el nombre del usuario */
+.user-name {
+  color: #ffffff; /* Texto blanco */
+  font-weight: bold;
+}
+
+/* Estilos para el botón de logout */
+.logout-button {
+  background-color: #ffffff; /* Fondo blanco */
+  color: #2d4177; /* Azul oscuro */
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #2d4177; /* Azul oscuro */
+  color: #ffffff; /* Texto blanco */
+}
