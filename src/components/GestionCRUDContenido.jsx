@@ -113,7 +113,7 @@ const GestionCRUDContenido = ({
                         )
                     }
                     onClose={onClose}
-                    onVolver={vistaInicial === 'busquedaDNI' && !modoModificacion ? null : handleVolverAOpciones}
+                    onVolver={vistaInicial === 'busquedaDNI' && !modoModificacion ? null : () => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante, setAlert)}
                     esConsultaDirecta={vistaInicial === 'busquedaDNI' && !modoModificacion}
                     modoModificacion={modoModificacion}
                 />

@@ -53,7 +53,7 @@ const AreaEstudioSelector = ({ idModulo, modalidadId }) => {
     
     return (
         <div className="form-group">
-            <label htmlFor="areaEstudio">Seleccionar Área de Estudio:</label>
+            <label htmlFor="areaEstudio"><strong>🎯 Área de Estudio:</strong></label>
             
             {loading ? (
                 <BotonCargando loading={loading} /> // Muestra un spinner o mensaje de carga
@@ -75,9 +75,13 @@ const AreaEstudioSelector = ({ idModulo, modalidadId }) => {
             )}
 
     {idAreaEstudio ? (
-        <MateriasSelector idAreaEstudio={idAreaEstudio} handleChange={handleAreaEstudioChange} />
+        <div style={{ marginTop: '15px' }}>
+            <MateriasSelector idAreaEstudio={idAreaEstudio} handleChange={handleAreaEstudioChange} />
+        </div>
     ) : (
-        <p>No hay materias cargadas.</p>
+        <p style={{ marginTop: '10px', fontStyle: 'italic', color: '#666', textAlign: 'center' }}>
+            Selecciona un área para ver las materias disponibles
+        </p>
     )}
 </div>
     )

@@ -1,72 +1,156 @@
 // src/components/ModalidadModal.jsx
 import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import CloseButton from './CloseButton';
+import VolverButton from './VolverButton';
 import '../estilos/modalM.css';
+import '../estilos/botones.css';
 
 
-const ModalidadModal = ({ modalidad, onClose }) => {
+const ModalidadModal = ({ modalidad, onClose, onBackToSelector }) => {
+    const navigate = useNavigate();
+
+    const goHome = () => {
+        // Cerrar todo y navegar a Home
+        onClose();
+        navigate('/');
+    };
+
+    const handleBack = () => {
+        // Si hay callback para volver al selector, lo usa, sino cierra todo
+        if (onBackToSelector) {
+            onBackToSelector();
+        } else {
+            onClose();
+        }
+    };
+
     const renderContent = () => {
         if (modalidad === 'Presencial') {
             return (
                 <>
-                    <h2 className="subH2"> Modalidad Presencial</h2>
-                    <p>&quot;Inscripciones desde el 20 de febrero del ciclo lectivo.</p>
-                    <p> Horario para inscripciones: 19 a 22 hs.</p>
-                   
-                    <div className="modal-doc">
-                        <fieldset>
-                            <legend>Documentación completa a presentar:</legend>
-                             <ul>
-                            <li>Fotocopia DNI</li>
-                            <li>Fotocopia Partida Nacimiento</li>
-                            <li>Foto 4x4 (dos) / Ficha Médica CUS</li>
-                            <li>1er Año: Título nivel primario / Pase escuela Secundaria hasta 3er año incompleto.</li>
-                            <li>2do Año: Pase escuela Secundaria CBU completo / 4to año incompleto.</li>
-                            <li>3er Año: Pase escuela Secundaria 4to año completo.</li>
-                            </ul>
-                        </fieldset>
-                   
+                    <div className="modalidad-header">
+                        <div className="modalidad-icon">📚</div>
+                        <h2 className="modalidad-title">Modalidad Presencial</h2>
+                        <p className="modalidad-subtitle">Educación tradicional con clases diarias</p>
                     </div>
                     
+                    <div className="modalidad-info">
+                        <div className="info-card">
+                            <h4>📅 Período de Inscripciones</h4>
+                            <p>Desde el 20 de febrero del ciclo lectivo</p>
+                        </div>
+                        
+                        <div className="info-card">
+                            <h4>🕐 Horarios de Atención</h4>
+                            <p>Lunes a Viernes: 19:00 a 22:00 hs</p>
+                        </div>
+                    </div>
+                   
+                    <div className="documentacion-section">
+                        <h4 className="doc-title">📋 Documentación Requerida</h4>
+                        <div className="doc-list">
+                            <div className="doc-item">📄 Fotocopia de DNI</div>
+                            <div className="doc-item">📜 Fotocopia Partida de Nacimiento</div>
+                            <div className="doc-item">📷 Foto 4x4 (dos unidades)</div>
+                            <div className="doc-item">🏥 Ficha Médica CUS</div>
+                        </div>
+                        
+                        <div className="plan-requirements">
+                            <div className="plan-item">
+                                <strong>1er Año:</strong> Título nivel primario / Pase escuela Secundaria hasta 3er año incompleto
+                            </div>
+                            <div className="plan-item">
+                                <strong>2do Año:</strong> Pase escuela Secundaria CBU completo / 4to año incompleto
+                            </div>
+                            <div className="plan-item">
+                                <strong>3er Año:</strong> Pase escuela Secundaria 4to año completo
+                            </div>
+                        </div>
+                    </div>
                 </>
             );
         } else if (modalidad === 'Semipresencial') {
             return (
                 <>
-                    <h2>Modalidad Semipresencial</h2>
-                    <p>Inscripciones desde el 20 de febrero del ciclo lectivo.</p>
-                    <p>Horario para inscripciones: 19 a 22 hs.</p>
+                    <div className="modalidad-header">
+                        <div className="modalidad-icon">💻</div>
+                        <h2 className="modalidad-title">Modalidad Semipresencial</h2>
+                        <p className="modalidad-subtitle">Flexibilidad y autonomía en tu aprendizaje</p>
+                    </div>
+                    
+                    <div className="modalidad-info">
+                        <div className="info-card">
+                            <h4>📅 Período de Inscripciones</h4>
+                            <p>Desde el 20 de febrero del ciclo lectivo</p>
+                        </div>
+                        
+                        <div className="info-card">
+                            <h4>🕐 Horarios de Atención</h4>
+                            <p>Lunes a Viernes: 19:00 a 22:00 hs</p>
+                        </div>
+                    </div>
                    
-                    <div className="modal-doc">
-                    <fieldset>
-                    <legend>Documentación completa a presentar:</legend>
-                    <ul>
-                        <li>Fotocopia DNI</li>
-                        <li>Fotocopia Partida Nacimiento</li>
-                        <li>Foto 4x4 (dos) / Ficha Médica CUS</li>
-                        <li>Plan A: Título nivel primario / Pase escuela Secundaria hasta 3er año incompleto.</li>
-                        <li>Plan B: Pase escuela Secundaria CBU completo / 4to año incompleto.</li>
-                        <li>Plan C: Pase escuela Secundaria 4to año completo.</li>
-                    </ul>
-                    </fieldset>
+                    <div className="documentacion-section">
+                        <h4 className="doc-title">📋 Documentación Requerida</h4>
+                        <div className="doc-list">
+                            <div className="doc-item">📄 Fotocopia de DNI</div>
+                            <div className="doc-item">📜 Fotocopia Partida de Nacimiento</div>
+                            <div className="doc-item">📷 Foto 4x4 (dos unidades)</div>
+                            <div className="doc-item">🏥 Ficha Médica CUS</div>
+                        </div>
+                        
+                        <div className="plan-requirements">
+                            <div className="plan-item">
+                                <strong>Plan A:</strong> Título nivel primario / Pase escuela Secundaria hasta 3er año incompleto
+                            </div>
+                            <div className="plan-item">
+                                <strong>Plan B:</strong> Pase escuela Secundaria CBU completo / 4to año incompleto
+                            </div>
+                            <div className="plan-item">
+                                <strong>Plan C:</strong> Pase escuela Secundaria 4to año completo
+                            </div>
+                        </div>
                     </div>
                 </>
             );
         }
         return null;
     };
-
-
     return (
         <div className="modal-overlay">
-            <div className="modal-container">
-                <button className="modal-close" onClick={onClose}>✖</button>
-                {renderContent()}
-                <Link to={`/preinscripcion-estd?modalidad=${modalidad}`}>
-                    <button type="button" className="modal-button">
-                        Ir al Formulario de Preinscripción
-                    </button>
-                </Link>
+            <div className="modal-container modal-modalidad-info">
+                {/* Header con navegación limpia */}
+                <div className="modalidad-modal-header">
+                    <div className="modalidad-nav-left">
+                        <VolverButton onClick={handleBack} />
+                    </div>
+                    <div className="modalidad-nav-center">
+                        <span className="modal-logo-text">CEIJA 5</span>
+                        <button 
+                            onClick={goHome}
+                            className="inicio-button-center"
+                            title="Ir al inicio"
+                        >
+                            🏠 Inicio
+                        </button>
+                    </div>
+                    <div className="modalidad-nav-right">
+                        <CloseButton onClose={onClose} variant="modal" />
+                    </div>
+                </div>
+
+                {/* Contenido del modal */}
+                <div className="modal-content-body">
+                    {renderContent()}
+                    <div className="modal-actions">
+                        <Link to={`/preinscripcion-estd?modalidad=${modalidad}&web=true`}>
+                            <button type="button" className="boton-principal modal-cta-button">
+                                ✨ Iniciar Preinscripción
+                            </button>
+                        </Link>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -74,6 +158,7 @@ const ModalidadModal = ({ modalidad, onClose }) => {
 ModalidadModal.propTypes = {
     modalidad: PropTypes.string.isRequired,
     onClose: PropTypes.func.isRequired,
+    onBackToSelector: PropTypes.func, // Función opcional para volver al selector
 };
 
 export default ModalidadModal;

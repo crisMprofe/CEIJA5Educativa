@@ -1,18 +1,38 @@
-
-
-/* Estilo simple para modales de opciones */
-.cerrar-button.simple {
-  background: transparent;
-  color: #666;
-  border-radius: 50%; /* Mantener redondo */
+/* Botón cerrar para todos los modales (estilo uniforme con modalM) */
+.cerrar-button,
+.cerrar-button.modal-close {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  cursor: pointer;
   font-size: 1.2rem;
-  width: 25px;
-  height: 25px;
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
+  z-index: 10;
+}
+.cerrar-button:hover,
+.cerrar-button:focus {
+  background: #e0e0e0;
+  color: #222;
 }
 
-.cerrar-button.simple:hover {
-  background-color: #f0f0f0;
-  color: #333;
-  transform: none;
+@media (max-width: 480px) {
+  .cerrar-button,
+  .cerrar-button.modal-close {
+    top: 8px;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    font-size: 1rem;
+  }
 }

@@ -1,0 +1,359 @@
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import registrosWebService from '../services/serviceRegistrosWeb';
+import AlertaMens from './AlertaMens';
+import BotonCargando from './BotonCargando';
+import CloseButton from './CloseButton';
+import FormatError from '../utils/MensajeError';
+import '../estilos/RegistrosPendientes.css';
+
+const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
+    const [registros, setRegistros] = useState([]);
+    const [stats, setStats] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [procesando, setProcesando] = useState('');
+    const [alerta, setAlerta] = useState({ text: '', variant: '' });
+    const [filtro, setFiltro] = useState('TODOS'); // TODOS, PENDIENTE, PROCESADO, ANULADO
+    const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+    const [registroAEliminar, setRegistroAEliminar] = useState(null);
+    const [eliminando, setEliminando] = useState(false);
+
+    // Cargar registros web al montar el componente
+    useEffect(() => {
+        cargarRegistrosWeb();
+        cargarEstadisticas();
+    }, []);
+
+    const cargarRegistrosWeb = async () => {
+        try {
+            setLoading(true);
+            const data = await registrosWebService.obtenerRegistrosWeb();
+            setRegistros(data);
+        } catch (error) {
+            console.error('Error al cargar registros web:', error);
+            setAlerta({
+                text: 'Error al cargar los registros web: ' + error.message,
+                variant: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const cargarEstadisticas = async () => {
+        try {
+            const estadisticas = await registrosWebService.obtenerEstadisticas();
+            setStats(estadisticas);
+        } catch (error) {
+            console.error('Error al cargar estadísticas:', error);
+        }
+    };
+
+    const manejarProcesarRegistro = async (registro) => {
+        setProcesando(registro.id);
+        try {
+            // Llamar la función del componente padre para completar registro
+            if (onRegistroSeleccionado) {
+                // Pasar los datos del registro y el ID al componente padre
+                onRegistroSeleccionado(registro.datos, registro.id);
+            }
+            
+            // Actualizar el estado del registro a "PROCESADO"
+            await registrosWebService.actualizarRegistroWeb(registro.id, {
+                estado: 'PROCESADO',
+                observaciones: `Registro enviado para completar inscripción el ${new Date().toLocaleDateString('es-AR')}`
+            });
+            
+            // Recargar los datos para mostrar el cambio de estado
+            await cargarRegistrosWeb();
+            await cargarEstadisticas();
+            
+            setAlerta({
+                text: 'Registro cargado para completar inscripción',
+                variant: 'success'
+            });
+            
+        } catch (error) {
+            console.error('Error al procesar registro:', error);
+            setAlerta({
+                text: 'Error al procesar el registro: ' + error.message,
+                variant: 'error'
+            });
+        } finally {
+            setProcesando('');
+        }
+    };
+
+    // Función para iniciar el proceso de eliminación
+    const iniciarEliminar = (registro) => {
+        setRegistroAEliminar(registro);
+        setMostrarConfirmacion(true);
+    };
+
+    // Función para confirmar y ejecutar la eliminación
+    const confirmarEliminacion = async () => {
+        if (!registroAEliminar) return;
+
+        setEliminando(true);
+        setMostrarConfirmacion(false);
+
+        try {
+            await registrosWebService.eliminarRegistroWeb(registroAEliminar.id);
+            setAlerta({
+                text: `Registro de ${registroAEliminar.datos.apellido}, ${registroAEliminar.datos.nombre} eliminado exitosamente`,
+                variant: 'success'
+            });
+            cargarRegistrosWeb();
+            cargarEstadisticas();
+        } catch (error) {
+            console.error('Error al eliminar registro:', error);
+            setAlerta({
+                text: FormatError(error),
+                variant: 'error'
+            });
+        } finally {
+            setEliminando(false);
+            setRegistroAEliminar(null);
+        }
+    };
+
+    // Función para cancelar la eliminación
+    const cancelarEliminacion = () => {
+        setMostrarConfirmacion(false);
+        setRegistroAEliminar(null);
+    };
+
+    const filtrarRegistros = () => {
+        if (filtro === 'TODOS') return registros;
+        return registros.filter(registro => registro.estado === filtro);
+    };
+
+    const formatearFecha = (timestamp) => {
+        const fecha = new Date(timestamp);
+        return fecha.toLocaleDateString('es-AR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const registrosFiltrados = filtrarRegistros();
+
+    if (loading) {
+        return (
+            <div className="gestor-registros-web">
+                <div className="gestor-modal-container">
+                    <div className="gestor-header">
+                        <h2>🌐 Gestión de Registros Web</h2>
+                        <CloseButton onClose={onClose} variant="modal" />
+                    </div>
+                    <div className="gestor-content">
+                        <div className="loading-container">
+                            <BotonCargando loading={true}>Cargando registros web...</BotonCargando>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="gestor-registros-web">
+            <div className="gestor-modal-container">
+                <div className="gestor-header">
+                    <h2>🌐 Gestión de Registros Web</h2>
+                    <CloseButton onClose={onClose} variant="modal" />
+                </div>
+
+                <div className="gestor-content">
+                    {/* Primera fila: Estadísticas en horizontal */}
+                    <div className="stats-container-horizontal">
+                        <div className="stat-card">
+                            <div className="stat-number">{stats.total || 0}</div>
+                            <div className="stat-label">Total</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-number">{stats.pendientes || 0}</div>
+                            <div className="stat-label">Pendientes</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-number">{stats.procesados || 0}</div>
+                            <div className="stat-label">Procesados</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-number">{stats.anulados || 0}</div>
+                            <div className="stat-label">Anulados</div>
+                        </div>
+                    </div>
+
+                    {/* Segunda fila: Controles y filtros */}
+                    <div className="controles-container">
+                        <div className="filtros-container">
+                            <label htmlFor="filtro-estado">Filtrar por estado:</label>
+                            <select 
+                                id="filtro-estado"
+                                value={filtro} 
+                                onChange={(e) => setFiltro(e.target.value)}
+                            >
+                                <option value="TODOS">Todos los registros</option>
+                                <option value="PENDIENTE">Solo pendientes</option>
+                                <option value="PROCESADO">Solo procesados</option>
+                                <option value="ANULADO">Solo anulados</option>
+                            </select>
+                        </div>
+
+                        <button 
+                            className="refresh-button"
+                            onClick={() => {
+                                cargarRegistrosWeb();
+                                cargarEstadisticas();
+                            }}
+                        >
+                            🔄 Actualizar
+                        </button>
+                    </div>
+
+                    {/* Tercera fila: Lista de registros */}
+                    <div className="registros-container">
+                        {registrosFiltrados.length === 0 ? (
+                            <div className="sin-registros">
+                                <h3>📭 No hay registros web {filtro === 'TODOS' ? '' : filtro.toLowerCase()}</h3>
+                                <p>Los registros aparecerán aquí cuando los usuarios completen el formulario web.</p>
+                            </div>
+                        ) : (
+                            <div className="registros-lista">
+                                {registrosFiltrados.map((registro) => {
+                                    // Debug: verificar datos del registro
+                                    console.log('Registro datos:', registro.datos.nombre, registro.datos.apellido, registro.datos.dni);
+                                    return (
+                                        <div key={registro.id} className="registro-item">
+                                        <div className="registro-header">
+                                            <div className="registro-datos">
+                                                <h3 className="registro-nombre">
+                                                    {registro.datos.apellido}, {registro.datos.nombre}
+                                                </h3>
+                                                <div className="registro-info-principal">
+                                                    <strong>DNI: {registro.datos.dni}</strong>
+                                                </div>
+                                                <div className="registro-info">Email: {registro.datos.email}</div>
+                                                <div className="registro-info">Teléfono: {registro.datos.telefono}</div>
+                                                <div className="registro-info">Modalidad: {registro.datos.modalidad}</div>
+                                                <div className="registro-info">
+                                                    Domicilio: {registro.datos.calle} {registro.datos.numero}, {registro.datos.localidad}
+                                                </div>
+                                                <div className="registro-info">
+                                                    <small>Fecha: {formatearFecha(registro.timestamp)}</small>
+                                                </div>
+                                                {registro.observaciones && (
+                                                    <div className="registro-info">
+                                                        <strong>Observaciones:</strong> {registro.observaciones}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="registro-acciones">
+                                                <span 
+                                                    className={`estado-badge estado-${registro.estado.toLowerCase()}`}
+                                                >
+                                                    {registro.estado}
+                                                </span>
+
+                                                {registro.estado === 'PENDIENTE' && (
+                                                    <button
+                                                        className="btn-procesar"
+                                                        onClick={() => manejarProcesarRegistro(registro)}
+                                                        disabled={procesando === registro.id}
+                                                    >
+                                                        {procesando === registro.id ? (
+                                                            <BotonCargando loading={true} size="small">
+                                                                Procesando...
+                                                            </BotonCargando>
+                                                        ) : (
+                                                            '✅ Completar Inscripción'
+                                                        )}
+                                                    </button>
+                                                )}
+                                                
+                                                <button
+                                                    className="btn-eliminar"
+                                                    onClick={() => iniciarEliminar(registro)}
+                                                    title="Eliminar registro"
+                                                    disabled={eliminando}
+                                                >
+                                                    {eliminando && registroAEliminar?.id === registro.id ? (
+                                                        <BotonCargando loading={true} size="small">
+                                                            Eliminando...
+                                                        </BotonCargando>
+                                                    ) : (
+                                                        '🗑️ Eliminar'
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Alertas */}
+                    {alerta.text && (
+                        <AlertaMens 
+                            text={alerta.text} 
+                            variant={alerta.variant}
+                            onClose={() => setAlerta({ text: '', variant: '' })}
+                        />
+                    )}
+
+                    {/* Modal de confirmación para eliminar */}
+                    {mostrarConfirmacion && registroAEliminar && (
+                        <div className="modal-confirmacion-overlay">
+                            <div className="modal-confirmacion">
+                                <h3>Confirmar Eliminación</h3>
+                                <p>
+                                    ¿Está seguro de que desea eliminar el registro de{' '}
+                                    <strong>
+                                        {registroAEliminar.datos.apellido}, {registroAEliminar.datos.nombre}
+                                    </strong>?
+                                </p>
+                                <p className="dni-info">DNI: {registroAEliminar.datos.dni}</p>
+                                <div className="modal-botones">
+                                    <button 
+                                        className="btn-confirmar-eliminar"
+                                        onClick={confirmarEliminacion}
+                                        disabled={eliminando}
+                                    >
+                                        {eliminando ? (
+                                            <BotonCargando loading={true} size="small">
+                                                Eliminando...
+                                            </BotonCargando>
+                                        ) : (
+                                            'Aceptar'
+                                        )}
+                                    </button>
+                                    <button 
+                                        className="btn-cancelar-eliminar"
+                                        onClick={cancelarEliminacion}
+                                        disabled={eliminando}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+GestorRegistrosWeb.propTypes = {
+    onClose: PropTypes.func.isRequired,
+    onRegistroSeleccionado: PropTypes.func, // Función para manejar cuando se selecciona un registro
+};
+
+export default GestorRegistrosWeb;

@@ -1,3 +1,14 @@
+/* Padding especial para el botón de cerrar solo en el modal de documentación */
+/* El botón de cerrar debe estar contenido dentro del modal-container */
+.modal-container .form-documentacion-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 200;
+  padding: 6px;
+}
+
+
 .form-documentacion {
   width: 90%; /* Ajusta el ancho del modal */
   max-width: 800px; /* Limita el ancho máximo */
@@ -239,6 +250,10 @@ input[type="file"].small-select::file-selector-button {
 @media (max-width: 900px) {
   .doc-table-header span {
     display: none; /* Oculta los títulos de la tabla */
+  }
+  .modal-container .form-documentacion-close {
+    right: 8px;
+    top: 8px;
   }
 }
 

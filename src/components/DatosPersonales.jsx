@@ -146,9 +146,25 @@ export const DatosPersonales = memo(() => {
                         Email para notificaciones y envío de comprobantes
                     </small>
                 </div>
+                
+                <div className="form-group">
+                    <label>Teléfono/Celular:</label>
+                    <Field 
+                        type="tel" 
+                        name="telefono" 
+                        placeholder="Ej: 11-1234-5678 o 0351-4567890" 
+                        className="form-control"
+                        maxLength="15"
+                    />
+                    <ErrorMessage name="telefono" component="div" className="error" />
+                    <small className="form-text text-muted">
+                        Incluir código de área sin el 15. Ej: 11-1234-5678
+                    </small>
+                </div>
+                
                 <div className="form-group">
                     <label>Fecha Nacimiento:</label>
-                    <Field type="date" name="fechaNacimiento" className="form-control" />
+                    <Field type="date" name="fechaNacimiento" className="form-control"placeholder="Fecha de Nacimiento"/>
                     <ErrorMessage name="fechaNacimiento" component="div" className="error" />
                     {/*<small>Debug: <Field name="fechaNacimiento">{({ field }) => field.value}</Field></small>*/}
                 </div>

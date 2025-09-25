@@ -47,20 +47,20 @@ const MateriasSelector = ({ idAreaEstudio }) => {
 
     return (
         <div className="form-group">
-            <label htmlFor="materias">Materias:</label>
-            <div>
+            <label htmlFor="materias"><strong>📖 Materias:</strong></label>
+            <div className="materias-container">
                 {loading ? (
                     <BotonCargando loading={loading} />
                 ) : error ? (
-                    <p>{error}</p>
+                    <p style={{ color: '#e74c3c', fontStyle: 'italic', textAlign: 'center' }}>{error}</p>
                 ) : materias.length > 0 ? (
-                    <ul>
+                    <ul className="materias-list">
                         {materias.map((materia) => (
-                            <li key={materia.id}>{materia.materia}</li>
+                            <li key={materia.id} className="materia-item">{materia.materia}</li>
                         ))}
                     </ul>
                 ) : (
-                    <p>No hay materias disponibles.</p>
+                    <p style={{ fontStyle: 'italic', color: '#666', textAlign: 'center' }}>No hay materias disponibles.</p>
                 )}
             </div>
         </div>

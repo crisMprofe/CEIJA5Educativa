@@ -71,6 +71,14 @@ const TarjetaPersonales = ({
                     )}
                 </div>
                 <div className="dato-item">
+                    <label>Teléfono:</label>
+                    {editMode.personales ? (
+                        <input value={formData.telefono || ''} type="tel" onChange={e => handleInputChange('telefono', e.target.value)} />
+                    ) : (
+                        <span>{estudiante.telefono || 'No registrado'}</span>
+                    )}
+                </div>
+                <div className="dato-item">
                     <label>Fecha de Nacimiento:</label>
                     {editMode.personales ? (
                         <input 

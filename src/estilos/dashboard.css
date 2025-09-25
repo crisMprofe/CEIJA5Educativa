@@ -1,15 +1,24 @@
+/* Variables de color para uniformidad */
+:root {
+  --color-bg-main: #fff;
+  --color-btn-main: #2d4177;
+  --color-btn-shadow: #87ceeb;
+  --color-btn-hover: #696969;
+  --color-title: #2d4177;
+}
+
 /* Estilos generales para el contenedor del dashboard */
 .dashboard-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  background-color: #999; /* Fondo gris claro */
-  min-height: 60vh; /* Ocupa toda la altura de la pantalla */
+  background-color: #ffffff !important; /* Fondo blanco forzado */
+  min-height: 60vh;
   max-width: 75vw;
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra elegante */
-  margin: 5% auto; /* Centra el contenedor horizontalmente */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  margin: 5% auto;
 }
 
 /* Encabezado del dashboard */
@@ -17,18 +26,17 @@
   text-align: center;
   margin-bottom: 20px;
   max-width: 100%;
-
 }
 
 .dashboard-header h1 {
-  color: #2d4177; /* Azul oscuro */
+  color: var(--color-title);
   font-size: 1.5rem;
   margin-bottom: 10px;
   font-weight: bold;
 }
 
 .dashboard-header p {
-  color: #2d4177;
+  color: var(--color-title);
   font-size: 1.2rem;
 }
 
@@ -43,28 +51,28 @@
 /* Estilos para los botones y enlaces */
 .dashboard-buttons button,
 .dashboard-buttons .dashboard-link {
-  background-color: #2d4177; /* Azul oscuro */
-  color: #ffffff; /* Blanco */
+  background-color: var(--color-btn-main);
+  color: #fff;
   border: none;
   padding: 15px 20px;
   border-radius: 8px;
   font-size: 1.2rem;
   cursor: pointer;
   text-align: center;
-  width: 250px; /* Tamaño uniforme */
-  height: 60px; /* Altura uniforme */
-  box-shadow: 0 2px 4px #87CEEB;; /* Sombra para los botones */
+  width: 250px;
+  height: 60px;
+  box-shadow: 0 2px 4px var(--color-btn-shadow);
   transition: background-color 0.3s ease, transform 0.2s ease;
   display: flex;
   justify-content: center;
-  align-items: center; /* Centra el texto dentro del botón */
+  align-items: center;
 }
 
 /* Hover para los botones y enlaces */
 .dashboard-buttons button:hover,
 .dashboard-buttons .dashboard-link:hover {
-  background-color: #696969; /* Gris oscuro al pasar el mouse */
-  transform: scale(1.05); /* Efecto de zoom */
+  background-color: var(--color-btn-hover);
+  transform: scale(1.05);
 }
 
 /* Ajustes responsivos */

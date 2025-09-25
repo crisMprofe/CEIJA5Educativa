@@ -2,12 +2,16 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ModalidadModal from './ModalidadModal';
+import CloseButton from './CloseButton';
 import '../estilos/modalM.css';
+import '../estilos/botones.css';
 
 const Modalidad = ({ isOpen, onClose, onSelectModalidad }) => {
     const navigate = useNavigate(); // Hook para redirección
     const location = useLocation(); // Hook para obtener la ruta actual
     const [modalidad, setModalidad] = useState('');
+    const [showModalidadModal, setShowModalidadModal] = useState(false); // Controlar el ModalidadModal
+    
     // Obtener el usuario y su rol
     let user = null;
     try {
@@ -24,21 +28,29 @@ const Modalidad = ({ isOpen, onClose, onSelectModalidad }) => {
         let modalidadId = null;
         if (modalidadStr === 'Presencial') modalidadId = 1;
         else if (modalidadStr === 'Semipresencial') modalidadId = 2;
+        
         // Llamar callback si existe
         if (typeof onSelectModalidad === 'function') {
             onSelectModalidad(modalidadStr, modalidadId);
         }
+        
         if (location.pathname === '/dashboard') {
             // Redirige a la página de inscripción con la modalidad como parámetro
             navigate(`/dashboard/formulario-inscripcion-adm?modalidad=${modalidadStr}`);
         } else {
-            // Mostrar ModalidadModal si no está en el dashboard
-            setModalidad(modalidadStr);
+            // Mostrar ModalidadModal para usuarios web
+            setShowModalidadModal(true);
         }
     };
 
     const handleModalClose = () => {
         onClose();
+    };
+
+    const handleBackToSelector = () => {
+        // Volver del ModalidadModal al selector de modalidades
+        setShowModalidadModal(false);
+        setModalidad('');
     };
 
     if (!isOpen) return null;
@@ -51,25 +63,37 @@ const Modalidad = ({ isOpen, onClose, onSelectModalidad }) => {
       opciones = ['Presencial'];
     } else if (rol === 'coordinador') {
       opciones = ['Semipresencial'];
+    } else {
+      // Para usuarios web (sin login) mostrar todas las opciones disponibles
+      opciones = ['Presencial', 'Semipresencial'];
     }
     return (
       <div className="modal-overlay">
-        <div className="modal-container">
-          <button className="modal-close" onClick={handleModalClose}>✖</button>
-          <h2>Elija una Modalidad</h2>
-          {opciones.map((opcion) => (
-            <button
-              key={opcion}
-              onClick={() => handleModalOpen(opcion)}
-              className="modalidad-button"
-            >
-              {opcion}
-            </button>
-          ))}
-          {location.pathname !== '/preinscripcion-estd' && modalidad && (
-            <ModalidadModal modalidad={modalidad} onClose={handleModalClose} />
-          )}
-        </div>
+        {showModalidadModal ? (
+          // Mostrar ModalidadModal con información detallada
+          <ModalidadModal 
+            modalidad={modalidad} 
+            onClose={handleModalClose}
+            onBackToSelector={handleBackToSelector}
+          />
+        ) : (
+          // Mostrar selector de modalidades
+          <div className="modal-container" style={{ position: 'relative' }}>
+            <CloseButton onClose={handleModalClose} variant="modal" className="modal-close" />
+            <h2 className="modal-title">Elija una Modalidad</h2>
+            <div className="modal-buttons">
+              {opciones.map((opcion) => (
+                <button
+                  key={opcion}
+                  onClick={() => handleModalOpen(opcion)}
+                  className="boton-principal"
+                >
+                  {opcion}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
 };

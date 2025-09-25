@@ -93,12 +93,8 @@ const BusquedaDNI = ({
             {/* Contenedor de botones superior */}
             {!esConsultaDirecta && (
                 <div className="modal-header-buttons">
-                    {onVolver && (
-                        <VolverButton onClick={onVolver} />
-                    )}
-                    {onClose && (
-                        <CloseButton onClose={onClose} variant="modal" />
-                    )}
+                    {onVolver && <VolverButton onClick={onVolver} />}
+                    {onClose && <CloseButton onClose={onClose} variant="modal" />}
                 </div>
             )}
                   
@@ -131,8 +127,8 @@ const BusquedaDNI = ({
                         </div>
                     )}
                 </div>
-                <div className="button-container" style={{ justifyContent: 'flex-end' }}>
-                    <BotonCargando loading={loading}>
+                <div className="button-container">
+                    <BotonCargando loading={loading} className="modalidad-button">
                         {modoEliminacion ? "Buscar para Eliminar" : modoModificacion ? "Buscar para Modificar" : "Buscar"}
                     </BotonCargando>
                 </div>

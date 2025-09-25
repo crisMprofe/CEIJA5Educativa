@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import '../estilos/estilosInscripcion.css';
 import '../estilos/preinscripcionHeader.css';
 
@@ -14,14 +14,35 @@ import ListaEstudiantes from './ListaEstudiantes';
 
 const Preinscripcion = ({ isAdmin }) => {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const estudianteParam = searchParams.get('estudiante'); //No trae nada
     const modalidadFromUrl = searchParams.get('modalidad'); // Capturar modalidad desde URL
+    const completarParam = searchParams.get('completar'); // Nuevo: DNI para completar registro pendiente
+    const completarWebParam = searchParams.get('completarWeb'); // Nuevo: ID del registro web a completar
+    const webParam = searchParams.get('web'); // Detectar si viene desde web
     const [accion, setAccion] = useState(null);
     const [modalidadSeleccionada, setModalidadSeleccionada] = useState(modalidadFromUrl || 'Presencial'); // Valor por defecto
 
     // DEBUG: Verifica que modalidadSeleccionada tenga valor
     // Puedes quitar este log luego de depurar
     console.log('-------modalidadSeleccionada----:', modalidadSeleccionada, estudianteParam, '-----');
+    console.log('🔍 Parámetro completar:', completarParam);
+    console.log('🌐 Parámetro completarWeb:', completarWebParam);
+    console.log('🌐 Parámetro web:', webParam);
+
+    // Efecto para manejar registro pendiente a completar o acceso web directo
+    useEffect(() => {
+        if (completarParam) {
+            console.log('🚀 Iniciando modo completar registro para DNI:', completarParam);
+            setAccion('Registrar'); // Establecer acción automáticamente
+        } else if (completarWebParam) {
+            console.log('🚀 Iniciando modo completar registro web para ID:', completarWebParam);
+            setAccion('Registrar'); // Establecer acción automáticamente
+        } else if (webParam === 'true') {
+            console.log('🌐 Acceso desde web, iniciando registro directo');
+            setAccion('Registrar'); // Ir directo al formulario de registro
+        }
+    }, [completarParam, completarWebParam, webParam]);
 
     // Si modalidadSeleccionada es null o undefined, muestra un mensaje y no renderiza nada más
     if (!modalidadSeleccionada) {
@@ -38,35 +59,70 @@ const Preinscripcion = ({ isAdmin }) => {
         setAccion(null); // Reinicia la acción para refrescar la vista principal
     };
 
-    const renderHeader = () => (
-        <div className="header-inscripcion mejorado">
-            <div className="header-inscripcion-row">
-                <div className="header-logo">
-                    <Logo className="logo-inscripcion" />
+    const renderHeader = () => {
+        // Si es usuario web, mostrar un header más compacto y limpio
+        if (webParam === 'true') {
+            return (
+                <div className="header-inscripcion web-professional">
+                    {/* Header compacto sin duplicaciones */}
+                    <div className="web-header-simple">
+                        <div className="web-logo-left">
+                            <Logo className="logo-web-small" />
+                        </div>
+                        <div className="web-title-center">
+                            <h1 className="web-titulo-compacto">Formulario de Preinscripción</h1>
+                            <span className="web-modalidad-simple">
+                                {modalidadSeleccionada === 'Presencial' ? '📚' : '💻'} {modalidadSeleccionada}
+                            </span>
+                        </div>
+                        <div className="web-simple-nav">
+                            <button 
+                                onClick={() => {
+                                    // Cerrar debe ir al menú hamburguesa (Home)
+                                    navigate('/');
+                                }}
+                                className="web-inicio-button"
+                                title="Ir al menú principal"
+                            >
+                                🏠 Menú
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div className="header-titulos">
-                    <h1 className="titulo-principal">SISTEMA DE GESTIÓN DE ESTUDIANTES</h1>
-                    <p className="subtitulo">Inscripción de Estudiantes - CEIJA 5</p>
+            );
+        }
+
+        // Header normal para administradores
+        return (
+            <div className="header-inscripcion mejorado">
+                <div className="header-inscripcion-row">
+                    <div className="header-logo">
+                        <Logo className="logo-inscripcion" />
+                    </div>
+                    <div className="header-titulos">
+                        <h1 className="titulo-principal">SISTEMA DE GESTIÓN DE ESTUDIANTES</h1>
+                        <p className="subtitulo">Inscripción de Estudiantes - CEIJA 5</p>
+                    </div>
                 </div>
+                {/* Botones de modalidad tipo pill */}
+                <div className="header-modalidad-selector">
+                    <button
+                        className={`boton-principal-pill${modalidadSeleccionada === 'Presencial' ? ' selected' : ''}`}
+                        onClick={() => handleModalidadChange('Presencial')}
+                    >
+                        Presencial
+                    </button>
+                    <button
+                        className={`boton-principal-pill${modalidadSeleccionada === 'Semipresencial' ? ' selected' : ''}`}
+                        onClick={() => handleModalidadChange('Semipresencial')}
+                    >
+                        Semipresencial
+                    </button>
+                </div>
+                {/* Modalidad info y cambiar eliminados por pedido del usuario */}
             </div>
-            {/* Botones de modalidad tipo pill */}
-            <div className="header-modalidad-selector">
-                <button
-                    className={`pill-btn ${modalidadSeleccionada === 'Presencial' ? 'selected' : ''}`}
-                    onClick={() => handleModalidadChange('Presencial')}
-                >
-                    Presencial
-                </button>
-                <button
-                    className={`pill-btn ${modalidadSeleccionada === 'Semipresencial' ? 'selected' : ''}`}
-                    onClick={() => handleModalidadChange('Semipresencial')}
-                >
-                    Semipresencial
-                </button>
-            </div>
-            {/* Modalidad info y cambiar eliminados por pedido del usuario */}
-        </div>
-    );
+        );
+    };
 
     const renderContent = () => {
         if (estudianteParam) {
@@ -182,10 +238,28 @@ const Preinscripcion = ({ isAdmin }) => {
                         modalidad={modalidadSeleccionada}
                         accion="Registrar"
                         isAdmin={isAdmin}
+                        isWebUser={webParam === 'true'} // Nuevo: indicar si es usuario web
+                        completarRegistro={completarParam} // Nuevo: pasar DNI para completar
                         onClose={() => {
-                            setAccion(null);
-                            if (!modalidadFromUrl) {
-                                setModalidadSeleccionada('Presencial');
+                            // Si es usuario web, volver a Home (menú hamburguesa)
+                            if (webParam === 'true') {
+                                navigate('/');
+                            } else {
+                                // Si es admin, volver al menú de modalidad
+                                setAccion(null);
+                                if (!modalidadFromUrl) {
+                                    setModalidadSeleccionada('Presencial');
+                                }
+                            }
+                        }}
+                        onBack={() => {
+                            // Botón "Volver" debe regresar al selector de modalidad
+                            if (webParam === 'true') {
+                                // Para usuarios web, ir al componente Modalidad
+                                navigate('/?modalidad=selector');
+                            } else {
+                                // Para admin, volver al menú de modalidad
+                                setAccion(null);
                             }
                         }}
                     />

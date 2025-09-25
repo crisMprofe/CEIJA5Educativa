@@ -33,6 +33,15 @@ export const formularioInscripcionSchema = yup.object().shape({
         .string()
         .email('Debe ser un email válido')
         .required('Email es requerido'), // Email ahora es obligatorio
+    telefono: yup
+        .string()
+        .required('Teléfono es requerido')
+        .matches(
+            /^(\+54\s?)?(\d{2,4}[-\s]?\d{4}[-\s]?\d{4}|\d{3}[-\s]?\d{3}[-\s]?\d{4}|\d{10,11})$/,
+            'Formato de teléfono inválido. Ej: 11-1234-5678, 0351-4567890 o +54 11 1234 5678'
+        )
+        .min(8, 'El teléfono debe tener al menos 8 dígitos')
+        .max(18, 'El teléfono no puede tener más de 18 caracteres'),
    fechaNacimiento: yup
         .date()
         .required('Fecha de nacimiento es requerida')

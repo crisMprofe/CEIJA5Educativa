@@ -5,6 +5,7 @@
   align-items: center;
   gap: 20px; /* Espaciado entre botones */
   margin-top: 20px; /* Separación del componente AccionesFormulario */
+  margin-top: 48px; /* Agregar margen superior al modal de eliminar */
   padding: 10px;
   background-color: #f5f5f5; /* Fondo claro */
   border-radius: 10px;

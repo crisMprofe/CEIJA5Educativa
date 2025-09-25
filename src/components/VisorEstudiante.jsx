@@ -32,6 +32,7 @@ const VisorEstudiante = ({ estudiante, onClose, onModificar, onVolver, isConsult
             fechaInscripcion: estudiante.fechaInscripcion || estudiante.fecha || '',
             documentacion: Array.isArray(estudiante.documentacion) ? estudiante.documentacion : [],
             email: estudiante.email || '',
+            telefono: estudiante.telefono || '',
         };
     });
 
@@ -150,15 +151,15 @@ useEffect(() => {
   
 
     return (
-                    <div className={`visor-estudiante-container ${isConsulta ? 'modo-consulta' : 'modo-gestion'}`}>
-                    <div className="modal-header-buttons" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                        {onVolver && (
-                            <VolverButton onClick={onVolver} />
-                        )}
-                        {onClose && (
-                            <CloseButton onClose={onClose} variant="simple" />
-                        )}
-                    </div>
+        <div className={`visor-estudiante-container ${isConsulta ? 'modo-consulta' : 'modo-gestion'}`}> 
+                    <div className="modal-header-buttons">
+                {onVolver && (
+                    <VolverButton onClick={onVolver} />
+                )}
+                {onClose && (
+                    <CloseButton onClose={onClose} variant="modal" />
+                )}
+            </div>
                     <div className="visor-header" style={{ textAlign: 'center', marginBottom: '1rem' }}>
                         <h2>
                             {isEliminacion ? 'Eliminar Estudiante' :

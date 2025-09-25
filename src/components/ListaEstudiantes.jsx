@@ -172,12 +172,8 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
             <div className="lista-estudiantes-container">
                 {/* Contenedor de botones superior */}
                 <div className="modal-header-buttons">
-                    {onVolver && (
-                        <VolverButton onClick={onVolver} />
-                    )}
-                    {onClose && (
-                        <CloseButton onClose={onClose} variant="modal" />
-                    )}
+                    {onVolver && <VolverButton onClick={onVolver} />}
+                    {onClose && <CloseButton onClose={onClose} variant="modal" />}
                 </div>
                 
                 {/* Título delicado más arriba */}

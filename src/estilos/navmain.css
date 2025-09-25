@@ -6,7 +6,7 @@
   padding: 10px 20px;
   background-color: #2d4177;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  
+
   width: 100vw;
   margin: 0;
   max-width: none;
@@ -22,7 +22,7 @@
 }
 
 .nav-link {
-  color: #ffffff; /* Texto blanco */
+  color: #ffffff !important; /* Texto blanco forzado */
   text-decoration: none;
   font-weight: bold;
   transition: color 0.3s ease;
@@ -41,7 +41,7 @@
 
 /* Estilos para el nombre del usuario */
 .user-name {
-  color: #ffffff; /* Texto blanco */
+  color: #ffffff !important; /* Texto blanco forzado */
   font-weight: bold;
 }
 

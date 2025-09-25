@@ -5,11 +5,21 @@ import FormatError from '../utils/MensajeError';
 // Registrar nueva inscripción Web
 const createWebInscription = async (formDataToSend) => {
     try {
-        const response = await axiosInstance.post('/inscriptions/web', formDataToSend); // Nueva ruta
+        console.log('🌐 [createWebInscription] Enviando datos al endpoint de registros web...');
+        const response = await axiosInstance.post('/registros-web', formDataToSend); // Endpoint para registros web JSON
+        console.log('🌐 [createWebInscription] Respuesta recibida:', response);
+        if (import.meta.env.DEV) {
+            console.log('🌐 [createWebInscription] response.data:', response.data);
+        }
         return response.data;
     } catch (error) {
-        console.error('Error en createWebInscription:', error);
-        return FormatError(error); // Manejo uniforme de errores
+        console.error('🌐 [createWebInscription] Error capturado:', error);
+        const msg = FormatError(error);
+        if (import.meta.env.DEV) {
+            console.error('🌐 [createWebInscription] Error formateado:', msg);
+            console.error('🌐 [createWebInscription] error.response?.data:', error.response?.data);
+        }
+        throw new Error(msg); // Lanzar error para manejo consistente
     }
 };
 

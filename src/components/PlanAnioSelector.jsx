@@ -110,7 +110,7 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
             )}
             {modalidadId === 2 && value && (
                 <div className="form-group">
-                    <label htmlFor="modulo">Seleccionar Módulo:</label>
+                    <label htmlFor="modulo"><strong>📚 Módulo:</strong></label>
                     {loading ? (
                         <p>Cargando módulos...</p> // Muestra un mensaje mientras carga
                     ) : error ? (

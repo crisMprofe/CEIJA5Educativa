@@ -10,6 +10,7 @@ const DatosPersonalesEditor = ({ formData, handleInputChange, loading, handleGua
       <CampoEditable label="DNI" campo="dni" formData={formData} onInputChange={handleInputChange} tipo="number" />
       <CampoEditable label="CUIL" campo="cuil" formData={formData} onInputChange={handleInputChange} />
       <CampoEditable label="Email" campo="email" formData={formData} onInputChange={handleInputChange} tipo="email" />
+      <CampoEditable label="Teléfono" campo="telefono" formData={formData} onInputChange={handleInputChange} tipo="tel" />
       <CampoEditable label="Fecha de Nacimiento" campo="fechaNacimiento" formData={formData} onInputChange={handleInputChange} tipo="date" />
       <CampoEditable label="Tipo de Documento" campo="tipoDocumento" formData={formData} onInputChange={handleInputChange} />
       <CampoEditable label="País de Emisión" campo="paisEmision" formData={formData} onInputChange={handleInputChange} />

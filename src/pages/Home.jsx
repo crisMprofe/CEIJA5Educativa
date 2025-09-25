@@ -34,7 +34,17 @@ const Home = () => {
                 <LoginButton onClose={closeModal} onRegisterClick={() => openModal('register')} />
             )}
             {activeModal === 'register' && <RegisterButton onClose={closeModal} />}
-            {activeModal === 'modalidad' && <Modalidad isOpen={true} onClose={closeModal} />}
+            {activeModal === 'modalidad' && (
+                <Modalidad 
+                    isOpen={true} 
+                    onClose={closeModal}
+                    onSelectModalidad={(modalidadStr, modalidadId) => {
+                        console.log(`📚 Modalidad seleccionada: ${modalidadStr} (ID: ${modalidadId})`);
+                        // El componente Modalidad maneja internamente la navegación
+                        // No necesitamos hacer nada aquí, solo log para debug
+                    }}
+                />
+            )}
 
             <HomeInfo />
         </div>

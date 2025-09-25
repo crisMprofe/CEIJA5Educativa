@@ -10,8 +10,8 @@ const LayoutPrivate = () => {
     }
 
     return (<div>
-            <NavMain />
-             <Outlet />
+                <NavMain />
+                <Outlet />
             </div> )// ✅ Si hay usuario, carga el contenido del dashboard
 };
 

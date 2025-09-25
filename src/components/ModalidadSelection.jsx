@@ -34,7 +34,11 @@ const ModalidadSelection = memo(({ modalidad, modalidadId, handleChange, setFiel
 
     return (
         <div className="form-eleccion">
-            <h3>Modalidad: <span className="modalidad-elegida">{modalidad}</span></h3>
+            <h3>Información Académica</h3>
+            
+            <div className="modalidad-info">
+                <strong>Modalidad:</strong> <span className="modalidad-elegida">{modalidad}</span>
+            </div>
             
             <div className="form-group">
                 <PlanAnioSelector
