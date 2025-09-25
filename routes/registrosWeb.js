@@ -1,0 +1,255 @@
+const express = require('express');
+const router = express.Router();
+const fs = require('fs').promises;
+const path = require('path');
+const multer = require('multer');
+
+// Configurar multer para manejar archivos de registros web
+const storage = multer.diskStorage({
+    // Carpeta donde se guardan los archivos de registros web
+    destination: (_req, _file, cb) => {
+        cb(null, path.join(__dirname, '../archivosDocWeb'));
+    },
+    // Nombre del archivo: <nombre>_<apellido>_<dni>_<campo>.<ext>
+    filename: (req, file, cb) => {
+        const nombre = (req.body.nombre || 'sin_nombre').trim().replace(/\s+/g, '_');
+        const apellido = (req.body.apellido || 'sin_apellido').trim().replace(/\s+/g, '_');
+        const dni = (req.body.dni || 'sin_dni');
+        const campo = file.fieldname; // archivo_dni, archivo_cuil, foto, etc.
+        const ext = path.extname(file.originalname);
+        
+        const filename = `${nombre}_${apellido}_${dni}_${campo}${ext}`;
+        console.log(`📎 [archivos-web] Guardando archivo: ${filename}`);
+        cb(null, filename);
+    }
+});
+
+const upload = multer({ storage });
+
+// Ruta del archivo JSON donde se guardarán los registros web
+const REGISTROS_WEB_PATH = path.join(__dirname, '..', 'data', 'Registro_Web.json');
+
+// Función para asegurar que existe el directorio y el archivo
+const ensureFileExists = async () => {
+    const dir = path.dirname(REGISTROS_WEB_PATH);
+    
+    try {
+        await fs.access(dir);
+    } catch {
+        await fs.mkdir(dir, { recursive: true });
+    }
+    
+    try {
+        await fs.access(REGISTROS_WEB_PATH);
+    } catch {
+        await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify([], null, 2));
+    }
+};
+
+// GET: Obtener todos los registros web
+router.get('/', async (req, res) => {
+    try {
+        await ensureFileExists();
+        const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
+        const registros = JSON.parse(data);
+        
+        console.log(`📋 Obteniendo ${registros.length} registros web`);
+        res.json(registros);
+    } catch (error) {
+        console.error('Error al obtener registros web:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener los registros web',
+            message: error.message 
+        });
+    }
+});
+
+// POST: Crear un nuevo registro web
+router.post('/', upload.any(), async (req, res) => {
+    try {
+        await ensureFileExists();
+        
+        console.log('📋 [registros-web] Datos recibidos:', req.body);
+        console.log('📎 [registros-web] Archivos recibidos:', req.files);
+
+        // Mapear archivos recibidos
+        const archivosMap = {};
+        if (req.files) {
+            req.files.forEach(file => {
+                // Guardar la ruta relativa para acceso web
+                archivosMap[file.fieldname] = `/archivosDocWeb/${file.filename}`;
+                console.log(`📎 [archivos-web] Mapeado: ${file.fieldname} → ${file.filename}`);
+            });
+        }
+        
+        const nuevoRegistro = {
+            id: Date.now().toString(),
+            timestamp: new Date().toISOString(),
+            fechaRegistro: new Date().toLocaleDateString('es-AR'),
+            horaRegistro: new Date().toLocaleTimeString('es-AR'),
+            tipo: 'WEB_REGISTRATION',
+            estado: 'PENDIENTE',
+            datos: {
+                // Datos personales
+                nombre: req.body.nombre || '',
+                apellido: req.body.apellido || '',
+                dni: req.body.dni || '',
+                cuil: req.body.cuil || '',
+                email: req.body.email || '',
+                telefono: req.body.telefono || '',
+                fechaNacimiento: req.body.fechaNacimiento || '',
+                tipoDocumento: req.body.tipoDocumento || 'DNI',
+                paisEmision: req.body.paisEmision || 'Argentina',
+                
+                // Domicilio
+                calle: req.body.calle || '',
+                numero: req.body.numero || '',
+                barrio: req.body.barrio || '',
+                localidad: req.body.localidad || '',
+                provincia: req.body.provincia || '',
+                
+                // Información académica
+                modalidad: req.body.modalidad || '',
+                modalidadId: req.body.modalidadId || null,
+                planAnio: req.body.planAnio || '',
+                modulos: req.body.modulos || '',
+                idModulo: req.body.idModulo || null,
+                
+                // Información del usuario web
+                usuario: req.body.usuario || req.user?.usuario || 'usuario_web',
+                ipAddress: req.ip || req.connection.remoteAddress,
+                userAgent: req.get('User-Agent')
+            },
+            archivos: archivosMap, // Agregar información de archivos subidos
+            observaciones: `Registro web realizado el ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR')}`
+        };
+
+        // Leer registros existentes
+        const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
+        const registros = JSON.parse(data);
+        
+        // Agregar nuevo registro
+        registros.push(nuevoRegistro);
+        
+        // Guardar archivo actualizado
+        await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify(registros, null, 2));
+        
+        console.log(`✅ Nuevo registro web creado - DNI: ${nuevoRegistro.datos.dni}, Usuario: ${nuevoRegistro.datos.usuario}`);
+        console.log(`📎 Archivos guardados:`, Object.keys(archivosMap).length, 'archivos');
+        
+        res.status(201).json({
+            message: 'Registro web guardado exitosamente',
+            registro: nuevoRegistro,
+            archivosProcesados: Object.keys(archivosMap).length
+        });
+        
+    } catch (error) {
+        console.error('Error al crear registro web:', error);
+        res.status(500).json({ 
+            error: 'Error al guardar el registro web',
+            message: error.message 
+        });
+    }
+});
+
+// PUT: Actualizar estado de un registro web
+router.put('/:id', async (req, res) => {
+    try {
+        await ensureFileExists();
+        const { id } = req.params;
+        const { estado, observaciones } = req.body;
+        
+        const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
+        const registros = JSON.parse(data);
+        
+        const indiceRegistro = registros.findIndex(r => r.id === id);
+        
+        if (indiceRegistro === -1) {
+            return res.status(404).json({ error: 'Registro no encontrado' });
+        }
+        
+        // Actualizar registro
+        registros[indiceRegistro].estado = estado || registros[indiceRegistro].estado;
+        registros[indiceRegistro].observaciones = observaciones || registros[indiceRegistro].observaciones;
+        registros[indiceRegistro].fechaActualizacion = new Date().toISOString();
+        
+        await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify(registros, null, 2));
+        
+        console.log(`🔄 Registro web actualizado - ID: ${id}, Estado: ${estado}`);
+        
+        res.json({
+            message: 'Registro actualizado exitosamente',
+            registro: registros[indiceRegistro]
+        });
+        
+    } catch (error) {
+        console.error('Error al actualizar registro web:', error);
+        res.status(500).json({ 
+            error: 'Error al actualizar el registro web',
+            message: error.message 
+        });
+    }
+});
+
+// DELETE: Eliminar un registro web
+router.delete('/:id', async (req, res) => {
+    try {
+        await ensureFileExists();
+        const { id } = req.params;
+        
+        const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
+        let registros = JSON.parse(data);
+        
+        const registroAEliminar = registros.find(r => r.id === id);
+        
+        if (!registroAEliminar) {
+            return res.status(404).json({ error: 'Registro no encontrado' });
+        }
+        
+        // Filtrar registros (eliminar el seleccionado)
+        registros = registros.filter(r => r.id !== id);
+        
+        await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify(registros, null, 2));
+        
+        console.log(`🗑️ Registro web eliminado - DNI: ${registroAEliminar.datos.dni}`);
+        
+        res.json({
+            message: 'Registro eliminado exitosamente',
+            registroEliminado: registroAEliminar
+        });
+        
+    } catch (error) {
+        console.error('Error al eliminar registro web:', error);
+        res.status(500).json({ 
+            error: 'Error al eliminar el registro web',
+            message: error.message 
+        });
+    }
+});
+
+// GET: Obtener estadísticas de registros web
+router.get('/stats', async (req, res) => {
+    try {
+        await ensureFileExists();
+        const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
+        const registros = JSON.parse(data);
+        
+        const stats = {
+            total: registros.length,
+            pendientes: registros.filter(r => r.estado === 'PENDIENTE').length,
+            procesados: registros.filter(r => r.estado === 'PROCESADO').length,
+            anulados: registros.filter(r => r.estado === 'ANULADO').length,
+            ultimoRegistro: registros.length > 0 ? registros[registros.length - 1].timestamp : null
+        };
+        
+        res.json(stats);
+    } catch (error) {
+        console.error('Error al obtener estadísticas:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener estadísticas',
+            message: error.message 
+        });
+    }
+});
+
+module.exports = router;

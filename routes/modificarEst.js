@@ -100,6 +100,7 @@ if (req.body.calle || req.body.numero || req.body.barrio || req.body.localidad |
       dni: req.body.dni,
       cuil: req.body.cuil,
       email: req.body.email,
+      telefono: req.body.telefono,
       fechaNacimiento: req.body.fechaNacimiento,
       tipoDocumento: req.body.tipoDocumento,
       paisEmision: req.body.paisEmision
@@ -107,9 +108,9 @@ if (req.body.calle || req.body.numero || req.body.barrio || req.body.localidad |
     
     const resultEstudiante = await conn.query(
       `UPDATE estudiantes
-         SET nombre=?, apellido=?, dni=?, cuil=?, email=?, fechaNacimiento=?, tipoDocumento=?, paisEmision=?
+         SET nombre=?, apellido=?, dni=?, cuil=?, email=?, telefono=?, fechaNacimiento=?, tipoDocumento=?, paisEmision=?
        WHERE id=?`,
-      [req.body.nombre, req.body.apellido, req.body.dni, req.body.cuil, req.body.email, req.body.fechaNacimiento, req.body.tipoDocumento, req.body.paisEmision, idEst]
+      [req.body.nombre, req.body.apellido, req.body.dni, req.body.cuil, req.body.email, req.body.telefono, req.body.fechaNacimiento, req.body.tipoDocumento, req.body.paisEmision, idEst]
     );
     if (resultEstudiante.affectedRows === 0) {
       console.error('No se pudo actualizar el estudiante. Verifica los datos enviados.');

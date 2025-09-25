@@ -45,6 +45,12 @@ app.use(
   express.static(path.join(__dirname, 'archivosDocumento')) // carpeta real
 );
 
+// Servir archivos de registros web
+app.use(
+  '/archivosDocWeb',                              // URL pública
+  express.static(path.join(__dirname, 'archivosDocWeb')) // carpeta real
+);
+
 
 // Rutas
 app.use('/api/users', userRoutes);
@@ -66,6 +72,7 @@ app.use('/api/eliminar-estudiante', eliminarEstRoutes); // Registra la ruta bajo
 app.use('/api/documentacion', documentacionRoutes);
 app.use('/api/documentos-faltantes', documentosFaltantesRoutes);
 app.use('/api/estado-documental', estadoDocumentalRoutes);
+app.use('/api/registros-web', require('./routes/registrosWeb')); // Nueva ruta para registros web
 // Middleware para manejo de errores globales
 app.use((err, req, res, next) => {
     console.error(err.stack);

@@ -19,7 +19,7 @@ router.get('/buscar/:dni', async (req, res) => {
             return res.status(400).json({ success: false, message: 'DNI inválido.' });
         }
 
-        const [estudiante] = await db.query('SELECT *, email FROM estudiantes WHERE dni = ? AND activo = 1', [dni]);
+        const [estudiante] = await db.query('SELECT *, email, telefono FROM estudiantes WHERE dni = ? AND activo = 1', [dni]);
         if (estudiante.length === 0) {
             return res.status(404).json({ success: false, message: 'Estudiante no encontrado o inactivo.' });
         }
@@ -105,7 +105,7 @@ router.get('/', async (req, res) => {
         // Consulta para obtener estudiantes con modalidad y curso/plan
         const [result] = await db.query(`
             SELECT 
-                e.id, e.nombre, e.apellido, e.dni, e.cuil, e.fechaNacimiento, e.activo, e.email,
+                e.id, e.nombre, e.apellido, e.dni, e.cuil, e.fechaNacimiento, e.activo, e.email, e.telefono,
                 d.calle, d.numero, b.nombre AS barrio, l.nombre AS localidad, p.nombre AS provincia,
                 i.fechaInscripcion, 
                 m.modalidad, 
