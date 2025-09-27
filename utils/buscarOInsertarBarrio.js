@@ -1,4 +1,10 @@
 module.exports = async function buscarOInsertarBarrio(db, nombreBarrio, idLocalidad) {
+    // Si viene un ID numérico, devolverlo directamente
+    if (!isNaN(nombreBarrio) && Number.isInteger(Number(nombreBarrio))) {
+        return Number(nombreBarrio);
+    }
+    
+    // Buscar por nombre y localidad (para compatibilidad con registros existentes)
     const [barrioResult] = await db.query(
         'SELECT id FROM barrios WHERE nombre = ? AND idLocalidad = ?',
         [nombreBarrio, idLocalidad]
