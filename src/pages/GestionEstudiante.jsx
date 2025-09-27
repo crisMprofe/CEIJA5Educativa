@@ -239,6 +239,11 @@ const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWe
                     // Caso normal: con documentación completa
                     let mensajeExito = response.message;
                     
+                    // Si es usuario web, personalizar mensaje de éxito
+                    if (isWebUser) {
+                        mensajeExito = 'Registro realizado con éxito, recuerda finalizar la inscripción de manera presencial para iniciar tus estudios';
+                    }
+                    
                     // Si se completó un registro pendiente, eliminar de localStorage
                     if (esRegistroPendienteCompletado) {
                         eliminarRegistroPendiente(values.dni);

@@ -142,7 +142,7 @@ const RegistroEstd = ({
 
             <div className="formd">
                     <DatosPersonales />
-                    <Domicilio />
+                    <Domicilio esAdmin={isAdmin} />
                     <div className="form-eleccion">
                         <ModalidadSelection
                             modalidad={values.modalidad}

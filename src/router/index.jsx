@@ -4,6 +4,7 @@ import LayoutPrivate from "../layouts/LayoutPrivate";
 import Home from "../pages/Home";
 import Dashboard from "../pages/Dashboard";
 import Preinscripcion from "../pages/Preinscripcion";
+import PruebaUbicaciones from "../components/PruebaUbicaciones";
 
 export const router = createBrowserRouter([
     {
@@ -33,6 +34,10 @@ export const router = createBrowserRouter([
             {
                 path: 'preinscripcion-estd',
                 element: <Preinscripcion isAdmin={false} />
+            },
+            {
+                path: 'prueba-ubicaciones',
+                element: <PruebaUbicaciones />
             }
         ]
     }   

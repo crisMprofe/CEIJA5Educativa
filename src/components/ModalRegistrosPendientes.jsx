@@ -1,11 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import CloseButton from './CloseButton';
+import { descargarRegistrosCSV } from '../utils/registroSinDocumentacion';
+import { notificacionesService } from '../services/notificacionesService';
 import '../estilos/modalM.css';
 import '../estilos/botones.css';
 
-const ModalRegistrosPendientes = ({ registros, onClose, onDescargar, onCompletarRegistro }) => {
+const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescargar, onCompletarRegistro }) => {
     const [descargando, setDescargando] = useState(false);
+    const [enviandoEmail, setEnviandoEmail] = useState(false);
+    const [mensajeEmail, setMensajeEmail] = useState('');
+    const [registros, setRegistros] = useState([]);
+    const [cargandoRegistros, setCargandoRegistros] = useState(true);
+
+    // Cargar registros desde el backend al montar el componente
+    useEffect(() => {
+        const cargarRegistrosPendientes = async () => {
+            try {
+                setCargandoRegistros(true);
+                console.log('🔄 Cargando registros pendientes desde backend...');
+                
+                const registrosDesdeBackend = await notificacionesService.obtenerRegistrosPendientes();
+                console.log('📋 Registros obtenidos:', registrosDesdeBackend);
+                
+                setRegistros(registrosDesdeBackend);
+                setMensajeEmail('✅ Registros cargados exitosamente');
+                setTimeout(() => setMensajeEmail(''), 2000);
+                
+            } catch (error) {
+                console.error('❌ Error al cargar registros:', error);
+                setMensajeEmail(`❌ Error al cargar registros: ${error.message}`);
+                
+                // Si falla, usar los registros que se pasaron como prop (fallback)
+                if (registrosProp && registrosProp.length > 0) {
+                    console.log('📋 Usando registros de prop como fallback:', registrosProp);
+                    setRegistros(registrosProp);
+                    setMensajeEmail('⚠️ Cargando desde cache local');
+                    setTimeout(() => setMensajeEmail(''), 3000);
+                } else {
+                    setRegistros([]);
+                }
+            } finally {
+                setCargandoRegistros(false);
+            }
+        };
+
+        cargarRegistrosPendientes();
+    }, [registrosProp]);
 
     const obtenerInfoVencimiento = (registro) => {
         const ahora = new Date();
@@ -41,6 +82,60 @@ const ModalRegistrosPendientes = ({ registros, onClose, onDescargar, onCompletar
             color,
             fechaVencimiento: vencimiento.toLocaleString()
         };
+    };
+
+    // Función para enviar email a un estudiante individual
+    const enviarEmailIndividual = async (registro) => {
+        try {
+            setMensajeEmail('Enviando notificación...');
+            const result = await notificacionesService.enviarEmailIndividual(registro.id);
+            
+            setMensajeEmail(`✅ Email enviado exitosamente a ${registro.nombre} ${registro.apellido}`);
+            setTimeout(() => setMensajeEmail(''), 3000);
+            
+        } catch (error) {
+            console.error('Error al enviar email:', error);
+            setMensajeEmail(`❌ Error al enviar email: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        }
+    };
+
+    // Función para enviar emails masivos
+    const enviarEmailsMasivos = async () => {
+        setEnviandoEmail(true);
+        try {
+            setMensajeEmail('Enviando notificaciones masivas...');
+            const result = await notificacionesService.enviarEmailsMasivos();
+            
+            setMensajeEmail(`✅ Emails enviados exitosamente a ${result.enviados} estudiantes`);
+            setTimeout(() => setMensajeEmail(''), 3000);
+            
+        } catch (error) {
+            console.error('Error al enviar emails masivos:', error);
+            setMensajeEmail(`❌ Error al enviar emails: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        } finally {
+            setEnviandoEmail(false);
+        }
+    };
+
+    // Función para enviar emails urgentes (solo a registros próximos a vencer)
+    const enviarEmailsUrgentes = async () => {
+        setEnviandoEmail(true);
+        try {
+            setMensajeEmail('Enviando notificaciones urgentes...');
+            const result = await notificacionesService.enviarEmailsUrgentes(3);
+            
+            setMensajeEmail(`⚡ Emails urgentes enviados a ${result.enviados} estudiantes`);
+            setTimeout(() => setMensajeEmail(''), 3000);
+            
+        } catch (error) {
+            console.error('Error al enviar emails urgentes:', error);
+            setMensajeEmail(`❌ Error al enviar emails urgentes: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        } finally {
+            setEnviandoEmail(false);
+        }
     };
 
     const handleDescargar = async () => {
@@ -137,71 +232,19 @@ NOTA IMPORTANTE:
         }
     };
 
-    // Función para generar archivo CSV para Excel
+    // Función para generar archivo CSV para Excel - MEJORADA
     const generarReporteCSV = () => {
         try {
-            const headers = [
-                'Apellido',
-                'Nombre', 
-                'DNI',
-                'Email',
-                'Modalidad',
-                'Tipo de Registro',
-                'Estado',
-                'Días Restantes',
-                'Fecha Límite',
-                'Documentos Subidos',
-                'Total Documentos',
-                'Documentos Faltantes',
-                'Lista de Documentos Subidos',
-                'Lista de Documentos Faltantes'
-            ];
-
-            let contenidoCSV = headers.join(',') + '\n';
-
-            registros.forEach(registro => {
-                const info = obtenerInfoVencimiento(registro);
-                const estadoDoc = obtenerEstadoDocumentacion(registro);
-                
-                const docsSubidos = estadoDoc.subidos.map(doc => mapeoDocumentos[doc] || doc).join('; ');
-                const docsFaltantes = estadoDoc.faltantes.map(doc => mapeoDocumentos[doc] || doc).join('; ');
-                
-                const fila = [
-                    `"${registro.apellido || ''}"`,
-                    `"${registro.nombre || ''}"`,
-                    `"${registro.dni || ''}"`,
-                    `"${registro.email || ''}"`,
-                    `"${registro.modalidad || ''}"`,
-                    `"${formatearTipo(registro.tipoRegistro)}"`,
-                    `"${info.vencido ? 'VENCIDO' : 'VIGENTE'}"`,
-                    `"${info.vencido ? '0' : info.diasRestantes}"`,
-                    `"${info.vencido ? 'VENCIDO' : info.fechaVencimiento}"`,
-                    `"${estadoDoc.totalSubidos}"`,
-                    `"${estadoDoc.totalRequeridos}"`,
-                    `"${estadoDoc.faltantes.length}"`,
-                    `"${docsSubidos}"`,
-                    `"${docsFaltantes}"`
-                ];
-                
-                contenidoCSV += fila.join(',') + '\n';
-            });
-
-            // Crear y descargar el archivo CSV
-            const blob = new Blob([contenidoCSV], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
+            // Usar la función mejorada de registroSinDocumentacion.js
+            const exito = descargarRegistrosCSV();
             
-            link.href = url;
-            link.download = `Registros-Pendientes-${new Date().toISOString().split('T')[0]}.csv`;
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            URL.revokeObjectURL(url);
-            
-            console.log('📊 Archivo CSV descargado exitosamente');
-            return true;
+            if (exito) {
+                console.log('📊 Archivo CSV descargado exitosamente con formato mejorado');
+                return true;
+            } else {
+                console.error('❌ Error al generar archivo CSV');
+                return false;
+            }
         } catch (error) {
             console.error('❌ Error al generar archivo CSV:', error);
             return false;
@@ -245,17 +288,42 @@ NOTA IMPORTANTE:
 
     // Función para obtener el estado de documentación de un registro
     const obtenerEstadoDocumentacion = (registro) => {
-        const documentosSubidos = registro.documentosSubidos || [];
+        console.log('🔍 Analizando documentación para registro:', registro.id, registro);
+        
+        // Manejar diferentes estructuras de datos
+        let documentosSubidos = [];
+        
+        if (Array.isArray(registro.documentosSubidos)) {
+            // Si ya es un array (desde backend)
+            documentosSubidos = registro.documentosSubidos;
+            console.log('📋 Documentos subidos (array):', documentosSubidos);
+        } else if (registro.documentosSubidos && typeof registro.documentosSubidos === 'object') {
+            // Si es un objeto, obtener las claves
+            documentosSubidos = Object.keys(registro.documentosSubidos);
+            console.log('📋 Documentos subidos (objeto keys):', documentosSubidos);
+        } else if (registro.archivos && typeof registro.archivos === 'object') {
+            // Si hay archivos en el registro
+            documentosSubidos = Object.keys(registro.archivos);
+            console.log('📋 Documentos subidos (archivos):', documentosSubidos);
+        } else {
+            // Fallback: array vacío
+            documentosSubidos = [];
+            console.log('⚠️ No se encontraron documentos, usando array vacío');
+        }
+        
         const documentosFaltantes = documentosRequeridos.filter(doc => 
             !documentosSubidos.includes(doc)
         );
         
-        return {
+        const resultado = {
             subidos: documentosSubidos,
             faltantes: documentosFaltantes,
             totalSubidos: documentosSubidos.length,
             totalRequeridos: documentosRequeridos.length
         };
+        
+        console.log('📊 Estado de documentación:', resultado);
+        return resultado;
     };
 
     return (
@@ -289,7 +357,26 @@ NOTA IMPORTANTE:
                     overflowY: 'auto',
                     marginBottom: '20px'
                 }}>
-                    {registros.map((registro, index) => {
+                    {cargandoRegistros ? (
+                        <div style={{
+                            textAlign: 'center',
+                            padding: '40px',
+                            color: '#6c757d'
+                        }}>
+                            <div style={{ fontSize: '1.2rem', marginBottom: '10px' }}>⏳</div>
+                            <div>Cargando registros pendientes...</div>
+                        </div>
+                    ) : registros.length === 0 ? (
+                        <div style={{
+                            textAlign: 'center',
+                            padding: '40px',
+                            color: '#6c757d'
+                        }}>
+                            <div style={{ fontSize: '1.2rem', marginBottom: '10px' }}>📋</div>
+                            <div>No hay registros pendientes</div>
+                        </div>
+                    ) : (
+                        registros.map((registro, index) => {
                         const info = obtenerInfoVencimiento(registro);
                         const estadoDoc = obtenerEstadoDocumentacion(registro);
                         
@@ -323,6 +410,13 @@ NOTA IMPORTANTE:
                                             fontSize: '0.9rem'
                                         }}>
                                             <strong>📄 DNI:</strong> {registro.dni}
+                                        </p>
+                                        <p style={{
+                                            margin: '4px 0',
+                                            color: '#495057',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            <strong>📧 Email:</strong> {registro.email || <span style={{color: '#dc3545', fontStyle: 'italic'}}>Sin email</span>}
                                         </p>
                                         <p style={{
                                             margin: '4px 0',
@@ -408,78 +502,185 @@ NOTA IMPORTANTE:
                                                 📚 {registro.modalidad}
                                             </div>
                                         )}
-                                        {/* Botón para completar registro */}
-                                        {!info.vencido && onCompletarRegistro && (
-                                            <button
-                                                onClick={() => onCompletarRegistro(registro)}
-                                                className="boton-principal"
-                                                style={{
-                                                    backgroundColor: '#007bff',
-                                                    borderColor: '#007bff',
-                                                    fontSize: '0.8rem',
-                                                    padding: '4px 8px',
-                                                    marginTop: '8px',
-                                                    minWidth: '120px'
-                                                }}
-                                                title="Completar este registro con documentación"
-                                            >
-                                                ✅ Completar
-                                            </button>
-                                        )}
+                                        {/* Botones de acción */}
+                                        <div style={{ 
+                                            marginTop: '8px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '4px'
+                                        }}>
+                                            {/* Botón para completar registro */}
+                                            {!info.vencido && onCompletarRegistro && (
+                                                <button
+                                                    onClick={() => onCompletarRegistro(registro)}
+                                                    className="boton-principal"
+                                                    style={{
+                                                        backgroundColor: '#007bff',
+                                                        borderColor: '#007bff',
+                                                        fontSize: '0.8rem',
+                                                        padding: '4px 8px',
+                                                        minWidth: '120px'
+                                                    }}
+                                                    title="Completar este registro con documentación"
+                                                >
+                                                    ✅ Completar
+                                                </button>
+                                            )}
+                                            
+                                            {/* Botón para enviar email individual */}
+                                            {registro.email && !info.vencido && (
+                                                <button
+                                                    onClick={() => enviarEmailIndividual(registro)}
+                                                    className="boton-principal"
+                                                    disabled={enviandoEmail}
+                                                    style={{
+                                                        backgroundColor: enviandoEmail ? '#ccc' : '#28a745',
+                                                        borderColor: enviandoEmail ? '#ccc' : '#28a745',
+                                                        fontSize: '0.8rem',
+                                                        padding: '4px 8px',
+                                                        minWidth: '120px',
+                                                        cursor: enviandoEmail ? 'not-allowed' : 'pointer'
+                                                    }}
+                                                    title={`Enviar notificación por email a ${registro.email}`}
+                                                >
+                                                    {enviandoEmail ? '📧 Enviando...' : '📧 Notificar'}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
-
-                {/* Footer con botones */}
+                            );
+                        })
+                    )}
+                </div>                {/* Footer con botones */}
                 <div style={{
                     borderTop: '1px solid #e1e8ed',
-                    paddingTop: '15px',
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: '10px',
-                    flexWrap: 'wrap'
+                    paddingTop: '15px'
                 }}>
-                    <button 
-                        onClick={generarReporteAdministrativo}
-                        className="boton-principal"
-                        style={{
-                            backgroundColor: '#007bff',
-                            borderColor: '#007bff',
-                            fontSize: '0.9rem'
-                        }}
-                        title="Generar reporte legible para administración escolar"
-                    >
-                        📋 Reporte TXT
-                    </button>
-                    <button 
-                        onClick={generarReporteCSV}
-                        className="boton-principal"
-                        style={{
-                            backgroundColor: '#17a2b8',
-                            borderColor: '#17a2b8',
-                            fontSize: '0.9rem'
-                        }}
-                        title="Generar archivo Excel (CSV) para análisis de datos"
-                    >
-                        📊 Excel (CSV)
-                    </button>
-                    <button 
-                        onClick={handleDescargar}
-                        className="boton-principal"
-                        disabled={descargando}
-                        style={{
-                            backgroundColor: descargando ? '#ccc' : '#28a745',
-                            borderColor: descargando ? '#ccc' : '#28a745',
-                            cursor: descargando ? 'not-allowed' : 'pointer',
-                            fontSize: '0.9rem'
-                        }}
-                        title="Descargar archivo JSON técnico (para programadores)"
-                    >
-                        {descargando ? '⏳ Descargando...' : '💾 JSON Técnico'}
-                    </button>
+                    {/* Mensaje de estado de emails */}
+                    {mensajeEmail && (
+                        <div style={{
+                            padding: '10px',
+                            marginBottom: '15px',
+                            borderRadius: '4px',
+                            backgroundColor: mensajeEmail.includes('❌') ? '#f8d7da' : '#d4edda',
+                            color: mensajeEmail.includes('❌') ? '#721c24' : '#155724',
+                            border: `1px solid ${mensajeEmail.includes('❌') ? '#f5c6cb' : '#c3e6cb'}`,
+                            fontSize: '0.9rem',
+                            textAlign: 'center'
+                        }}>
+                            {mensajeEmail}
+                        </div>
+                    )}
+                    
+                    {/* Sección de botones de email */}
+                    <div style={{
+                        marginBottom: '15px',
+                        padding: '15px',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '6px',
+                        border: '1px solid #e9ecef'
+                    }}>
+                        <h4 style={{
+                            margin: '0 0 10px 0',
+                            color: '#2d4177',
+                            fontSize: '1rem'
+                        }}>
+                            📧 Notificaciones por Email
+                        </h4>
+                        <div style={{
+                            display: 'flex',
+                            gap: '10px',
+                            flexWrap: 'wrap',
+                            justifyContent: 'center'
+                        }}>
+                            <button 
+                                onClick={enviarEmailsUrgentes}
+                                className="boton-principal"
+                                disabled={enviandoEmail}
+                                style={{
+                                    backgroundColor: enviandoEmail ? '#ccc' : '#dc3545',
+                                    borderColor: enviandoEmail ? '#ccc' : '#dc3545',
+                                    fontSize: '0.9rem',
+                                    cursor: enviandoEmail ? 'not-allowed' : 'pointer'
+                                }}
+                                title="Enviar emails solo a registros urgentes (próximos a vencer)"
+                            >
+                                {enviandoEmail ? '⚡ Enviando...' : '⚡ Urgentes'}
+                            </button>
+                            <button 
+                                onClick={enviarEmailsMasivos}
+                                className="boton-principal"
+                                disabled={enviandoEmail}
+                                style={{
+                                    backgroundColor: enviandoEmail ? '#ccc' : '#28a745',
+                                    borderColor: enviandoEmail ? '#ccc' : '#28a745',
+                                    fontSize: '0.9rem',
+                                    cursor: enviandoEmail ? 'not-allowed' : 'pointer'
+                                }}
+                                title="Enviar email a todos los estudiantes con registros pendientes"
+                            >
+                                {enviandoEmail ? '📧 Enviando...' : '📧 Todos'}
+                            </button>
+                        </div>
+                        <p style={{
+                            margin: '8px 0 0 0',
+                            fontSize: '0.8rem',
+                            color: '#6c757d',
+                            textAlign: 'center',
+                            fontStyle: 'italic'
+                        }}>
+                            Los emails incluyen información personalizada sobre documentación faltante y plazos
+                        </p>
+                    </div>
+                    
+                    {/* Botones de descarga */}
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        gap: '10px',
+                        flexWrap: 'wrap'
+                    }}>
+                        <button 
+                            onClick={generarReporteAdministrativo}
+                            className="boton-principal"
+                            style={{
+                                backgroundColor: '#007bff',
+                                borderColor: '#007bff',
+                                fontSize: '0.9rem'
+                            }}
+                            title="Generar reporte legible para administración escolar"
+                        >
+                            📋 Reporte TXT
+                        </button>
+                        <button 
+                            onClick={generarReporteCSV}
+                            className="boton-principal"
+                            style={{
+                                backgroundColor: '#17a2b8',
+                                borderColor: '#17a2b8',
+                                fontSize: '0.9rem'
+                            }}
+                            title="Generar archivo Excel (CSV) para análisis de datos"
+                        >
+                            📊 Excel (CSV)
+                        </button>
+                        <button 
+                            onClick={handleDescargar}
+                            className="boton-principal"
+                            disabled={descargando}
+                            style={{
+                                backgroundColor: descargando ? '#ccc' : '#28a745',
+                                borderColor: descargando ? '#ccc' : '#28a745',
+                                cursor: descargando ? 'not-allowed' : 'pointer',
+                                fontSize: '0.9rem'
+                            }}
+                            title="Descargar archivo JSON técnico (para programadores)"
+                        >
+                            {descargando ? '⏳ Descargando...' : '💾 JSON Técnico'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -487,7 +688,7 @@ NOTA IMPORTANTE:
 };
 
 ModalRegistrosPendientes.propTypes = {
-    registros: PropTypes.arrayOf(PropTypes.object).isRequired,
+    registros: PropTypes.arrayOf(PropTypes.object), // Opcional, se cargan desde backend
     onClose: PropTypes.func.isRequired,
     onDescargar: PropTypes.func.isRequired,
     onCompletarRegistro: PropTypes.func,

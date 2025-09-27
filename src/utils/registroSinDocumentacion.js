@@ -279,6 +279,115 @@ export const descargarRegistrosJSON = () => {
     }
 };
 
+// Función para descargar registros en formato CSV legible
+export const descargarRegistrosCSV = () => {
+    try {
+        const registros = obtenerRegistrosSinDocumentacion();
+        
+        if (registros.length === 0) {
+            alert('No hay registros sin documentación para descargar.');
+            return;
+        }
+
+        // Crear headers del CSV
+        const headers = [
+            'Apellido',
+            'Nombre', 
+            'DNI',
+            'Email',
+            'Modalidad',
+            'Tipo de Registro',
+            'Estado',
+            'Días Restantes',
+            'Fecha Límite',
+            'Documentos Subidos',
+            'Total Documentos',
+            'Documentos Faltantes',
+            'Lista de Documentos Subidos',
+            'Lista de Documentos Faltantes'
+        ];
+
+        // Función para escapar comillas y caracteres especiales en CSV
+        const escaparCSV = (valor) => {
+            if (valor === null || valor === undefined) return '';
+            const textoStr = String(valor);
+            // Si contiene comillas, comas, saltos de línea, envolver en comillas y duplicar comillas internas
+            if (textoStr.includes('"') || textoStr.includes(',') || textoStr.includes('\n') || textoStr.includes('\r')) {
+                return `"${textoStr.replace(/"/g, '""')}"`;
+            }
+            return textoStr;
+        };
+
+        // Mapeo de tipos de documentos con iconos legibles
+        const tiposDocumentosMap = {
+            'foto': '📷 Foto 4x4',
+            'archivo_dni': '📄 DNI',
+            'archivo_cuil': '📄 CUIL', 
+            'archivo_fichaMedica': '🏥 Ficha Médica',
+            'archivo_partidaNacimiento': '📜 Partida de Nacimiento',
+            'archivo_solicitudPase': '📝 Solicitud de Pase',
+            'archivo_analiticoParcial': '📊 Analítico Parcial',
+            'archivo_certificadoNivelPrimario': '🎓 Certificado Nivel Primario'
+        };
+
+        const todosDocumentos = Object.keys(tiposDocumentosMap);
+
+        // Construir filas de datos
+        const filas = registros.map(registro => {
+            const infoVencimiento = obtenerInfoVencimiento(registro);
+            const docsSubidos = registro.documentosSubidos || [];
+            const docsFaltantes = todosDocumentos.filter(doc => !docsSubidos.includes(doc));
+            
+            // Listas legibles de documentos
+            const listaSubidos = docsSubidos.map(doc => tiposDocumentosMap[doc] || doc).join('; ');
+            const listaFaltantes = docsFaltantes.map(doc => tiposDocumentosMap[doc] || doc).join('; ');
+
+            return [
+                escaparCSV(registro.apellido || ''),
+                escaparCSV(registro.nombre || ''),
+                escaparCSV(registro.dni || ''),
+                escaparCSV(registro.email || ''),
+                escaparCSV(registro.modalidad || ''),
+                escaparCSV(registro.tipoRegistro === 'SIN_DOCUMENTACION' ? 'Sin Documentación' : 'Documentación Incompleta'),
+                escaparCSV(infoVencimiento.vencido ? 'VENCIDO' : 'VIGENTE'),
+                escaparCSV(infoVencimiento.diasRestantes || 0),
+                escaparCSV(registro.fechaVencimiento ? new Date(registro.fechaVencimiento).toLocaleDateString('es-AR') + ', ' + new Date(registro.fechaVencimiento).toLocaleTimeString('es-AR') : ''),
+                escaparCSV(registro.cantidadDocumentosSubidos || 0),
+                escaparCSV(todosDocumentos.length),
+                escaparCSV(docsFaltantes.length),
+                escaparCSV(listaSubidos),
+                escaparCSV(listaFaltantes)
+            ];
+        });
+
+        // Construir contenido CSV
+        const contenidoCSV = [
+            headers.join(','), // Headers
+            ...filas.map(fila => fila.join(',')) // Filas de datos
+        ].join('\n');
+
+        // Crear blob y descargar
+        const blob = new Blob([contenidoCSV], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Registros-Pendientes-${new Date().toISOString().split('T')[0]}.csv`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(url);
+        
+        console.log(`📊 Descargado CSV con ${registros.length} registros en formato Excel-compatible`);
+        return true;
+    } catch (error) {
+        console.error('❌ Error al descargar archivo CSV:', error);
+        return false;
+    }
+};
+
 // Función para obtener todos los registros sin documentación (con limpieza automática)
 export const obtenerRegistrosSinDocumentacion = () => {
     try {
