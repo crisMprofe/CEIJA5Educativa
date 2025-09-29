@@ -37,8 +37,30 @@ const documentosRequeridos = [
 // Función para obtener información de vencimiento
 const obtenerInfoVencimiento = (registro) => {
     const ahora = new Date();
-    const vencimiento = new Date(registro.fechaVencimiento);
-    const msRestantes = vencimiento.getTime() - ahora.getTime();
+    
+    // Debug: Mostrar información de fechas
+    console.log('📅 DEBUG - Calculando vencimiento:');
+    console.log('  - Fecha actual:', ahora.toISOString());
+    console.log('  - Timestamp registro:', registro.timestamp);
+    console.log('  - FechaVencimiento registro:', registro.fechaVencimiento);
+    
+    // Determinar fecha de vencimiento
+    let fechaVencimiento;
+    if (registro.fechaVencimiento) {
+        fechaVencimiento = new Date(registro.fechaVencimiento);
+    } else if (registro.timestamp) {
+        // Calcular 7 días desde el timestamp
+        const fechaCreacion = new Date(registro.timestamp);
+        fechaVencimiento = new Date(fechaCreacion.getTime() + (7 * 24 * 60 * 60 * 1000));
+        console.log('  - FechaVencimiento calculada:', fechaVencimiento.toISOString());
+    } else {
+        console.error('❌ No se puede determinar fecha de vencimiento');
+        return { vencido: true, diasRestantes: 0, mensaje: 'ERROR: Sin fecha' };
+    }
+    
+    const msRestantes = fechaVencimiento.getTime() - ahora.getTime();
+    
+    console.log('  - Ms restantes:', msRestantes);
     
     if (msRestantes <= 0) {
         return { vencido: true, diasRestantes: 0, mensaje: 'VENCIDO' };
@@ -46,6 +68,9 @@ const obtenerInfoVencimiento = (registro) => {
     
     const diasRestantes = Math.ceil(msRestantes / (1000 * 60 * 60 * 24));
     const horasRestantes = Math.ceil(msRestantes / (1000 * 60 * 60));
+    
+    console.log('  - Días restantes:', diasRestantes);
+    console.log('  - Horas restantes:', horasRestantes);
     
     let mensaje;
     if (diasRestantes > 1) {
@@ -56,12 +81,14 @@ const obtenerInfoVencimiento = (registro) => {
         mensaje = `${horasRestantes} horas restantes`;
     }
     
+    console.log('  - Mensaje final:', mensaje);
+    
     return { 
         vencido: false, 
         diasRestantes, 
         horasRestantes,
         mensaje,
-        fechaVencimiento: vencimiento.toLocaleDateString('es-AR') + ' a las ' + vencimiento.toLocaleTimeString('es-AR')
+        fechaVencimiento: fechaVencimiento.toLocaleDateString('es-AR') + ' a las ' + fechaVencimiento.toLocaleTimeString('es-AR')
     };
 };
 
@@ -84,7 +111,18 @@ const obtenerEstadoDocumentacion = (registro) => {
 const generarHTMLEmail = (registro) => {
     const info = obtenerInfoVencimiento(registro);
     const estadoDoc = obtenerEstadoDocumentacion(registro);
+    
+    // Obtener datos personales desde la estructura correcta
+    const datos = registro.datos || registro;
+    const nombre = datos.nombre || registro.nombre;
+    const apellido = datos.apellido || registro.apellido;
+    const email = datos.email || registro.email;
+    const modalidad = datos.modalidad || registro.modalidad;
+    const dni = datos.dni || registro.dni;
+    
     const tipoRegistro = registro.tipoRegistro === 'SIN_DOCUMENTACION' ? 'Sin Documentación' : 'Documentación Incompleta';
+    
+    console.log(`📧 Generando email para ${nombre} ${apellido} - ${info.mensaje}`);
     
     // Crear listas HTML de documentos
     const listaSubidos = estadoDoc.subidos.length > 0 
@@ -140,10 +178,10 @@ const generarHTMLEmail = (registro) => {
             <!-- Información del estudiante -->
             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2d4177;">
                 <h3 style="color: #2d4177; margin: 0 0 15px 0; font-size: 20px;">
-                    👤 ${registro.nombre} ${registro.apellido}
+                    👤 ${nombre} ${apellido}
                 </h3>
-                <p style="margin: 8px 0; font-size: 16px;"><strong>📄 DNI:</strong> ${registro.dni}</p>
-                <p style="margin: 8px 0; font-size: 16px;"><strong>📚 Modalidad:</strong> ${registro.modalidad}</p>
+                <p style="margin: 8px 0; font-size: 16px;"><strong>📄 DNI:</strong> ${dni}</p>
+                <p style="margin: 8px 0; font-size: 16px;"><strong>📚 Modalidad:</strong> ${modalidad}</p>
                 <p style="margin: 8px 0; font-size: 16px;"><strong>📝 Tipo:</strong> ${tipoRegistro}</p>
                 <p style="margin: 8px 0; font-size: 16px;"><strong>📎 Documentos:</strong> ${estadoDoc.totalSubidos}/${estadoDoc.totalRequeridos}</p>
             </div>
@@ -230,7 +268,7 @@ const enviarEmailEstudiante = async (registro) => {
         const transporter = createTransporter();
         const info = obtenerInfoVencimiento(registro);
         
-        // Determinar asunto según urgencia
+        // Determinar asunto según urgencia (usar la información correcta de vencimiento)
         let asunto;
         if (info.vencido) {
             asunto = `🚨 URGENTE - Inscripción VENCIDA - CEIJA 5`;
@@ -239,12 +277,21 @@ const enviarEmailEstudiante = async (registro) => {
         } else if (info.diasRestantes <= 3) {
             asunto = `⚠️ IMPORTANTE - ${info.diasRestantes} días para completar inscripción - CEIJA 5`;
         } else {
-            asunto = `📧 Recordatorio: Complete su inscripción - CEIJA 5`;
+            asunto = `📧 Recordatorio: ${info.diasRestantes} días para completar inscripción - CEIJA 5`;
         }
+        
+        console.log(`📧 Asunto del email: "${asunto}" (${info.diasRestantes} días restantes)`);
+
+        // Obtener datos personales desde la estructura correcta
+        const datos = registro.datos || registro;
+        const email = datos.email || registro.email;
+        const nombre = datos.nombre || registro.nombre;
+        const apellido = datos.apellido || registro.apellido;
+        const dni = datos.dni || registro.dni;
 
         const mailOptions = {
             from: `"CEIJA 5 - Inscripciones" <${process.env.EMAIL_USER || 'ceija5.inscripciones@gmail.com'}>`,
-            to: registro.email,
+            to: email,
             subject: asunto,
             html: generarHTMLEmail(registro),
             priority: info.diasRestantes <= 3 ? 'high' : 'normal'
@@ -252,26 +299,27 @@ const enviarEmailEstudiante = async (registro) => {
 
         const result = await transporter.sendMail(mailOptions);
         
-        console.log(`✅ Email enviado exitosamente a ${registro.email} (${registro.nombre} ${registro.apellido})`);
+        console.log(`✅ Email enviado exitosamente a ${email} (${nombre} ${apellido})`);
         console.log(`📨 Message ID: ${result.messageId}`);
         
         return {
             success: true,
             messageId: result.messageId,
-            email: registro.email,
-            nombre: `${registro.nombre} ${registro.apellido}`,
-            dni: registro.dni
+            email: email,
+            nombre: `${nombre} ${apellido}`,
+            dni: dni
         };
         
     } catch (error) {
-        console.error(`❌ Error enviando email a ${registro.email}:`, error.message);
+        // Usar las variables ya calculadas
+        console.error(`❌ Error enviando email a ${email}:`, error.message);
         
         return {
             success: false,
             error: error.message,
-            email: registro.email,
-            nombre: `${registro.nombre} ${registro.apellido}`,
-            dni: registro.dni
+            email: email,
+            nombre: `${nombre} ${apellido}`,
+            dni: dni
         };
     }
 };

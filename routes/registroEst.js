@@ -28,7 +28,10 @@ const storage = multer.diskStorage({
   const campo    = file.fieldname;                           // dni, cuil, partidaNacimiento…
   const ext      = path.extname(file.originalname);
 
-  cb(null, `${nombre}_${apellido}_${dni}_${campo}${ext}`);
+  const nombreArchivo = `${nombre}_${apellido}_${dni}_${campo}${ext}`;
+  console.log(`📁 [MULTER] Generando archivo: ${nombreArchivo} | Campo: ${campo} | Original: ${file.originalname}`);
+  
+  cb(null, nombreArchivo);
   // Ej: Juan_Perez_12345678_dni.pdf
   }
 });
@@ -106,10 +109,67 @@ router.post('/registrar', upload.any(), async (req, res) => {
     // justo después de subirlos
         const archivosMap = {};
         if (Array.isArray(req.files)) {
+            console.log(`📄 [ARCHIVOS] Procesando ${req.files.length} archivos:`)
             req.files.forEach(f => {
-                archivosMap[f.fieldname] = '/archivosDocumento/' + f.filename;
+                const url = '/archivosDocumento/' + f.filename;
+                archivosMap[f.fieldname] = url;
+                console.log(`  - ${f.fieldname} -> ${url}`);
             });
         }
+        console.log('📋 [ARCHIVOS MAP]:', archivosMap);
+
+    // ─── 3.1) Manejo especial de archivos web existentes ──────
+    let archivosWebExistentes = [];
+    let totalArchivos = Object.keys(archivosMap).length;
+    let tieneDocumentoEspecial = false;
+    
+    if (req.body.archivosWebExistentes) {
+        try {
+            archivosWebExistentes = JSON.parse(req.body.archivosWebExistentes);
+            console.log('🌐 [ARCHIVOS WEB] Archivos existentes del registro web:', archivosWebExistentes);
+            
+            // Contar archivos totales (web + nuevos)
+            totalArchivos += archivosWebExistentes.length;
+            
+            // Verificar si tiene documento especial (web o nuevo)
+            tieneDocumentoEspecial = archivosWebExistentes.some(archivo => 
+                archivo.tipo === 'archivo_certificadoNivelPrimario' || 
+                archivo.tipo === 'archivo_analiticoParcial'
+            ) || archivosMap.archivo_certificadoNivelPrimario || archivosMap.archivo_analiticoParcial;
+            
+            console.log(`🌐 [EVALUACIÓN] Total archivos: ${totalArchivos}`);
+            console.log(`🌐 [EVALUACIÓN] Tiene documento especial: ${tieneDocumentoEspecial}`);
+            
+            // Copiar archivos web a la carpeta de documentos finales si cumplen criterios
+            if (req.body.forzarBaseDatos === 'true' && totalArchivos >= 4 && tieneDocumentoEspecial) {
+                const fs = require('fs').promises;
+                const pathWeb = path.join(__dirname, '../archivosDocWeb');
+                const pathFinal = path.join(__dirname, '../archivosDocumento');
+                
+                console.log('🌐 [COPIA ARCHIVOS] Copiando archivos web a carpeta final...');
+                
+                for (const archivo of archivosWebExistentes) {
+                    const archivoWeb = archivo.archivo || archivo.ruta.split('/').pop();
+                    const rutaOrigen = path.join(pathWeb, archivoWeb);
+                    const nombreNuevo = `${nombre}_${apellido}_${dni}_${archivo.tipo}${path.extname(archivoWeb)}`;
+                    const rutaDestino = path.join(pathFinal, nombreNuevo);
+                    
+                    try {
+                        await fs.copyFile(rutaOrigen, rutaDestino);
+                        archivosMap[archivo.tipo] = '/archivosDocumento/' + nombreNuevo;
+                        console.log(`  ✅ Copiado: ${archivoWeb} -> ${nombreNuevo}`);
+                    } catch (copyError) {
+                        console.error(`  ❌ Error copiando ${archivoWeb}:`, copyError.message);
+                    }
+                }
+                
+                console.log('🌐 [ARCHIVOS FINALES] Map actualizado:', archivosMap);
+            }
+            
+        } catch (parseError) {
+            console.error('Error al parsear archivos web existentes:', parseError);
+        }
+    }
 
     const fotoUrl = obtenerRutaFoto(archivosMap);
 
@@ -166,6 +226,7 @@ router.post('/registrar', upload.any(), async (req, res) => {
 
     for (const det of detalleDocumentacion) {
         const url = archivosMap[det.nombreArchivo] || null; // Busca la URL del archivo en archivosMap
+        console.log(`📋 [DETALLE] Procesando: ${det.nombreArchivo} -> URL: ${url} -> ID: ${det.idDocumentaciones}`);
 
         const idDetalle = await buscarOInsertarDetalleDocumentacion(
             db,
@@ -176,7 +237,7 @@ router.post('/registrar', upload.any(), async (req, res) => {
             url
         );
 
-        console.log(`Detalle insertado o encontrado with ID: ${idDetalle}`);
+        console.log(`✅ [DETALLE] Insertado con ID: ${idDetalle}`);
     }
 
 
@@ -191,6 +252,88 @@ router.post('/registrar', upload.any(), async (req, res) => {
   } catch (err) {
     console.error('Error en /registrar:', err);
     res.status(500).json({ message: 'Error interno: ' + err.message });
+  }
+});
+
+// ────────────────────────────────────────────────────────────
+//  POST /registrar-web-pendiente
+//  Maneja registros web que no cumplen criterios para BD
+// ────────────────────────────────────────────────────────────
+router.post('/registrar-web-pendiente', upload.any(), async (req, res) => {
+  try {
+    console.log('⏰ [REGISTRO WEB PENDIENTE] Procesando registro que va a pendientes...');
+    
+    // Procesar datos básicos sin insertar en BD
+    const getFirst = v => Array.isArray(v) ? v[0] : v;
+    
+    const nombre = getFirst(req.body.nombre);
+    const apellido = getFirst(req.body.apellido);
+    const dni = getFirst(req.body.dni);
+    const email = getFirst(req.body.email);
+    const modalidad = getFirst(req.body.modalidad);
+    
+    // Procesar archivos nuevos subidos
+    const archivosNuevos = {};
+    if (Array.isArray(req.files)) {
+      console.log(`📄 [ARCHIVOS NUEVOS] Procesando ${req.files.length} archivos:`)
+      req.files.forEach(f => {
+        const url = '/archivosDocumento/' + f.filename;
+        archivosNuevos[f.fieldname] = url;
+        console.log(`  - ${f.fieldname} -> ${url}`);
+      });
+    }
+    
+    // Obtener archivos web existentes
+    let archivosWebExistentes = [];
+    if (req.body.archivosWebExistentes) {
+      try {
+        archivosWebExistentes = JSON.parse(req.body.archivosWebExistentes);
+      } catch (e) {
+        console.error('Error al parsear archivos web:', e);
+      }
+    }
+    
+    const totalArchivos = Object.keys(archivosNuevos).length + archivosWebExistentes.length;
+    
+    console.log(`⏰ [PENDIENTE] ${nombre} ${apellido} - DNI: ${dni}`);
+    console.log(`⏰ [PENDIENTE] Total archivos: ${totalArchivos}`);
+    console.log(`⏰ [PENDIENTE] Motivo: Documentación incompleta o sin documento especial`);
+    
+    // Actualizar estado del registro web si se proporciona el ID
+    if (req.body.idRegistroWeb) {
+      const fs = require('fs').promises;
+      const registroWebPath = path.join(__dirname, '../data/Registro_Web.json');
+      
+      try {
+        const data = await fs.readFile(registroWebPath, 'utf8');
+        const registros = JSON.parse(data);
+        
+        const indice = registros.findIndex(r => r.id === req.body.idRegistroWeb);
+        if (indice !== -1) {
+          registros[indice].estado = 'PENDIENTE';
+          registros[indice].observaciones = `Registro enviado a pendientes el ${new Date().toLocaleDateString('es-AR')} - Documentación incompleta`;
+          registros[indice].fechaActualizacion = new Date().toISOString();
+          
+          await fs.writeFile(registroWebPath, JSON.stringify(registros, null, 2));
+          console.log(`⏰ [ACTUALIZACIÓN] Estado del registro web ${req.body.idRegistroWeb} actualizado a PENDIENTE`);
+        }
+      } catch (error) {
+        console.error('Error al actualizar registro web:', error);
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Registro procesado y enviado a registros pendientes por documentación incompleta.',
+      motivo: 'Documentación insuficiente: se requieren al menos 4 documentos incluyendo certificado primario o analítico parcial.',
+      totalArchivos: totalArchivos,
+      archivosNuevos: Object.keys(archivosNuevos).length,
+      archivosWeb: archivosWebExistentes.length
+    });
+    
+  } catch (error) {
+    console.error('Error en /registrar-web-pendiente:', error);
+    res.status(500).json({ message: 'Error interno: ' + error.message });
   }
 });
 

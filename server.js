@@ -52,6 +52,12 @@ app.use(
   express.static(path.join(__dirname, 'archivosDocWeb')) // carpeta real
 );
 
+// Servir archivos de registros pendientes
+app.use(
+  '/archivosDocumentacion',                       // URL pública
+  express.static(path.join(__dirname, 'archivosDocumentacion')) // carpeta real
+);
+
 
 // Rutas
 app.use('/api/users', userRoutes);
@@ -74,8 +80,9 @@ app.use('/api/documentacion', documentacionRoutes);
 app.use('/api/documentos-faltantes', documentosFaltantesRoutes);
 app.use('/api/estado-documental', estadoDocumentalRoutes);
 app.use('/api/registros-web', require('./routes/registrosWeb')); // Nueva ruta para registros web
+app.use('/api/registros-pendientes', require('./routes/registrosPendientes')); // Nueva ruta para registros pendientes
 app.use('/api/ubicaciones', ubicacionesRoutes); // Nueva ruta para ubicaciones
-app.use('/api/notificaciones', require('./routes/notificaciones')); // Nueva ruta para notificaciones por email
+app.use('/api/notificaciones', require('./routes/notificaciones_new')); // Nueva ruta para notificaciones por email
 // Middleware para manejo de errores globales
 app.use((err, req, res, next) => {
     console.error(err.stack);

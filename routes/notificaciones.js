@@ -7,113 +7,100 @@ const {
     enviarEmailsMasivos 
 } = require('../services/emailService');
 
-// Ruta del archivo JSON donde están los registros web pendientes
+// Ruta del archivo JSON donde están los registros pendientes de administrador
+const REGISTROS_PENDIENTES_PATH = path.join(__dirname, '..', 'data', 'Registros_Pendientes.json');
 const REGISTROS_WEB_PATH = path.join(__dirname, '..', 'data', 'Registro_Web.json');
 
 // Función para obtener registros pendientes desde el archivo JSON
 const obtenerRegistrosPendientes = async () => {
     try {
-        // Leer el archivo JSON
-        const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
-        const todosLosRegistros = JSON.parse(data);
+        console.log('📋 Obteniendo registros pendientes de administrador desde:', REGISTROS_PENDIENTES_PATH);
         
-        // Filtrar solo los registros pendientes
-        const registrosPendientes = todosLosRegistros.filter(registro => {
-            return registro.estado === 'PENDIENTE' && 
-                   registro.tipo === 'WEB_REGISTRATION';
-        });
+        // Leer el archivo de registros pendientes de administrador
+        const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
+        const registros = JSON.parse(data);
         
-        // Procesar los registros para agregar información adicional
-        const registrosProcesados = registrosPendientes.map(registro => {
-            const fechaCreacion = new Date(registro.timestamp);
-            const fechaVencimiento = new Date(fechaCreacion);
-            fechaVencimiento.setDate(fechaVencimiento.getDate() + 7);
-            
-            // Determinar documentos subidos basado en los archivos
-            const documentosSubidos = registro.archivos ? Object.keys(registro.archivos) : [];
-            
-            // Lista de documentos requeridos (puedes ajustar según necesidad)
-            const documentosRequeridos = [
-                'foto', 'archivo_dni', 'archivo_cuil', 'archivo_fichaMedica', 
-                'archivo_partidaNacimiento', 'archivo_solicitudPase', 
-                'archivo_analiticoParcial', 'archivo_certificadoNivelPrimario'
-            ];
-            
-            const documentosFaltantes = documentosRequeridos.filter(doc => 
-                !documentosSubidos.includes(doc)
-            );
-            
-            return {
-                id: registro.id,
-                nombre: registro.datos.nombre,
-                apellido: registro.datos.apellido,
-                dni: registro.datos.dni,
-                email: registro.datos.email,
-                telefono: registro.datos.telefono,
-                modalidad: registro.datos.modalidad,
-                fechaCreacion: fechaCreacion.toISOString(),
-                fechaVencimiento: fechaVencimiento.toISOString(),
-                documentosSubidos,
-                documentosFaltantes,
-                tipoRegistro: documentosSubidos.length === 0 ? 'SIN_DOCUMENTACION' : 'DOCUMENTACION_INCOMPLETA',
-                planAnio: registro.datos.planAnio
-            };
-        });
+        // Transformar el formato para compatibilidad con el sistema de email
+        const registrosTransformados = registros.map(registro => ({
+            ...registro,
+            id: registro.dni, // Usar DNI como ID para compatibilidad
+            nombre: registro.datos?.nombre || registro.nombre,
+            apellido: registro.datos?.apellido || registro.apellido,
+            email: registro.datos?.email || registro.email,
+            modalidad: registro.datos?.modalidad || registro.modalidad,
+            tipoRegistro: registro.tipo || 'REGISTRO_PENDIENTE',
+            fechaVencimiento: registro.fechaVencimiento || calcularFechaVencimiento(registro.timestamp),
+            documentosSubidos: registro.documentosSubidos || Object.keys(registro.archivos || {}),
+            // Calcular fecha de vencimiento si no existe (7 días desde timestamp)
+            ...(!registro.fechaVencimiento && {
+                fechaVencimiento: calcularFechaVencimiento(registro.timestamp)
+            })
+        }));
         
-        console.log(`📋 Encontrados ${registrosProcesados.length} registros pendientes`);
-        return registrosProcesados;
+        console.log(`📋 Registros pendientes encontrados: ${registrosTransformados.length}`);
+        return registrosTransformados;
         
     } catch (error) {
         console.error('Error al obtener registros pendientes:', error);
-        
         // Si no existe el archivo, retornar array vacío
         if (error.code === 'ENOENT') {
+            console.log('📋 Archivo de registros pendientes no existe, retornando array vacío');
             return [];
         }
-        
-        throw error;
+        return [];
     }
+};
+
+// Función para calcular fecha de vencimiento (7 días desde timestamp)
+const calcularFechaVencimiento = (timestamp) => {
+    const fechaCreacion = new Date(timestamp);
+    const fechaVencimiento = new Date(fechaCreacion.getTime() + (7 * 24 * 60 * 60 * 1000)); // +7 días
+    return fechaVencimiento.toISOString();
 };
 
 // POST: Enviar email a un estudiante específico
 router.post('/enviar-individual', async (req, res) => {
     try {
-        const { registroId } = req.body;
+        const { dni } = req.body; // Cambiar de registroId a dni
         
-        if (!registroId) {
+        if (!dni) {
             return res.status(400).json({
                 success: false,
-                message: 'ID del registro requerido'
+                message: 'DNI del estudiante requerido'
             });
         }
 
+        console.log(`📧 Buscando registro pendiente para DNI: ${dni}`);
+
         // Obtener los registros pendientes
         const registros = await obtenerRegistrosPendientes();
-        const registro = registros.find(r => r.id == registroId);
+        const registro = registros.find(r => r.dni === dni);
         
         if (!registro) {
             return res.status(404).json({
                 success: false,
-                message: 'Registro no encontrado o ya procesado'
+                message: `Registro pendiente con DNI ${dni} no encontrado`
             });
         }
 
-        if (!registro.email || !registro.email.includes('@')) {
+        const email = registro.datos?.email || registro.email;
+        if (!email || !email.includes('@')) {
             return res.status(400).json({
                 success: false,
                 message: 'El estudiante no tiene email válido registrado'
             });
         }
 
-        console.log(`📧 Enviando email individual a: ${registro.email}`);
+        console.log(`📧 Enviando email individual a: ${email} (${registro.datos?.nombre || registro.nombre} ${registro.datos?.apellido || registro.apellido})`);
         
         const resultado = await enviarEmailEstudiante(registro);
         
         if (resultado.success) {
             res.json({
                 success: true,
-                message: `Email enviado exitosamente a ${registro.nombre} ${registro.apellido}`,
-                email: registro.email
+                message: `Email enviado exitosamente a ${registro.datos?.nombre || registro.nombre} ${registro.datos?.apellido || registro.apellido}`,
+                email: email,
+                dni: dni
             });
         } else {
             res.status(500).json({
