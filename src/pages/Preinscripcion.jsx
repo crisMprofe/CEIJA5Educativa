@@ -19,9 +19,14 @@ const Preinscripcion = ({ isAdmin }) => {
     const modalidadFromUrl = searchParams.get('modalidad'); // Capturar modalidad desde URL
     const completarParam = searchParams.get('completar'); // Nuevo: DNI para completar registro pendiente
     const completarWebParam = searchParams.get('completarWeb'); // Nuevo: ID del registro web a completar
+    const datosWebParam = searchParams.get('datosWeb'); // Nuevo: Datos completos del registro web
     const webParam = searchParams.get('web'); // Detectar si viene desde web
+    const origenParam = searchParams.get('origen'); // Nuevo: Origen de navegación (registros-web, registros-pendientes)
     const [accion, setAccion] = useState(null);
     const [modalidadSeleccionada, setModalidadSeleccionada] = useState(modalidadFromUrl || 'Presencial'); // Valor por defecto
+    
+    // Parsear datos del registro web si existen
+    const datosRegistroWeb = datosWebParam ? JSON.parse(decodeURIComponent(datosWebParam)) : null;
 
     // DEBUG: Verifica que modalidadSeleccionada tenga valor
     // Puedes quitar este log luego de depurar
@@ -240,12 +245,21 @@ const Preinscripcion = ({ isAdmin }) => {
                         isAdmin={isAdmin}
                         isWebUser={webParam === 'true'} // Nuevo: indicar si es usuario web
                         completarRegistro={completarParam} // Nuevo: pasar DNI para completar
+                        completarRegistroWeb={completarWebParam} // Nuevo: pasar ID del registro web
+                        datosRegistroWeb={datosRegistroWeb} // Nuevo: pasar datos completos del registro web
                         onClose={() => {
-                            // Si es usuario web, volver a Home (menú hamburguesa)
-                            if (webParam === 'true') {
+                            // Navegación contextual basada en el origen
+                            if (origenParam === 'registros-web') {
+                                console.log('✖️ Cerrando y volviendo a Registros Web');
+                                navigate('/dashboard', { state: { openRegistrosWeb: true } });
+                            } else if (origenParam === 'registros-pendientes') {
+                                console.log('✖️ Cerrando y volviendo a Registros Pendientes');
+                                navigate('/dashboard', { state: { openRegistrosPendientes: true } });
+                            } else if (webParam === 'true') {
+                                // Si es usuario web, volver a Home (menú hamburguesa)
                                 navigate('/');
                             } else {
-                                // Si es admin, volver al menú de modalidad
+                                // Si es admin sin origen específico, volver al menú de modalidad
                                 setAccion(null);
                                 if (!modalidadFromUrl) {
                                     setModalidadSeleccionada('Presencial');
@@ -253,12 +267,18 @@ const Preinscripcion = ({ isAdmin }) => {
                             }
                         }}
                         onBack={() => {
-                            // Botón "Volver" debe regresar al selector de modalidad
-                            if (webParam === 'true') {
+                            // Navegación contextual basada en el origen
+                            if (origenParam === 'registros-web') {
+                                console.log('🔙 Volviendo a Registros Web');
+                                navigate('/dashboard', { state: { openRegistrosWeb: true } });
+                            } else if (origenParam === 'registros-pendientes') {
+                                console.log('🔙 Volviendo a Registros Pendientes');
+                                navigate('/dashboard', { state: { openRegistrosPendientes: true } });
+                            } else if (webParam === 'true') {
                                 // Para usuarios web, ir al componente Modalidad
                                 navigate('/?modalidad=selector');
                             } else {
-                                // Para admin, volver al menú de modalidad
+                                // Para admin sin origen específico, volver al menú de modalidad
                                 setAccion(null);
                             }
                         }}

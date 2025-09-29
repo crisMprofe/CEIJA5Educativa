@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../context/useUserContext';
 /*import { NavLink } from 'react-router-dom';*/
 import Modalidad from '../components/Modalidad';
@@ -14,12 +14,28 @@ import '../estilos/dashboard.css';
 
 const Dashboard = () => {
   const { user } = useUserContext();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [alert, setAlert] = useState({ text: '', variant: '' }); // Estado para AlertaMens
   const [showModalRegistros, setShowModalRegistros] = useState(false); // Estado para modal de registros
   const [registrosPendientes, setRegistrosPendientes] = useState([]); // Estado para los registros
   const [showGestorRegistrosWeb, setShowGestorRegistrosWeb] = useState(false); // Estado para gestor de registros web
-  const navigate = useNavigate();
+
+  // Manejar navegación contextual desde formularios
+  useEffect(() => {
+    if (location.state?.openRegistrosWeb) {
+      console.log('🔙 Abriendo Registros Web desde navegación contextual');
+      handleRegistrosWeb();
+      // Limpiar el estado para evitar que se vuelva a abrir
+      navigate('/dashboard', { replace: true });
+    } else if (location.state?.openRegistrosPendientes) {
+      console.log('🔙 Abriendo Registros Pendientes desde navegación contextual');
+      handleRegistrosSinDocumentacion();
+      // Limpiar el estado para evitar que se vuelva a abrir
+      navigate('/dashboard', { replace: true });
+    }
+  }, [location.state, navigate]);
 
   if (!user) {
     return <BotonCargando loading={true} />;
@@ -100,9 +116,14 @@ const handleCloseGestorRegistrosWeb = () => {
 };
 
 // Handler para completar un registro web
-const handleCompletarRegistroWeb = (datosRegistro, idRegistro) => {
+const handleCompletarRegistroWeb = (registroCompleto) => {
   try {
+    const datosRegistro = registroCompleto.datos;
+    const idRegistro = registroCompleto.id;
+    const archivosAdjuntos = registroCompleto.archivos || {};
+    
     console.log('🚀 Iniciando completación de registro web:', datosRegistro);
+    console.log('📎 Archivos adjuntos:', archivosAdjuntos);
     
     // Cerrar el modal de registros web
     handleCloseGestorRegistrosWeb();
@@ -115,22 +136,69 @@ const handleCompletarRegistroWeb = (datosRegistro, idRegistro) => {
     
     // Navegar al formulario de inscripción con los datos pre-cargados
     if (user.rol === 'admDirector') {
-      // Construir URL con todos los parámetros necesarios
+      // Preparar todos los datos del registro web para el formulario
+      const datosCompletos = JSON.stringify({
+        // Datos personales
+        nombre: datosRegistro.nombre || '',
+        apellido: datosRegistro.apellido || '',
+        dni: datosRegistro.dni || '',
+        cuil: datosRegistro.cuil || '',
+        email: datosRegistro.email || '',
+        telefono: datosRegistro.telefono || '',
+        fechaNacimiento: datosRegistro.fechaNacimiento || '',
+        tipoDocumento: datosRegistro.tipoDocumento || 'DNI',
+        paisEmision: datosRegistro.paisEmision || 'Argentina',
+        
+        // Domicilio
+        calle: datosRegistro.calle || '',
+        numero: datosRegistro.numero || '',
+        barrio: datosRegistro.barrio || '',
+        localidad: datosRegistro.localidad || '',
+        provincia: datosRegistro.provincia || '',
+        codigoPostal: datosRegistro.codigoPostal || '',
+        
+        // Información académica
+        modalidad: datosRegistro.modalidad || '',
+        modalidadId: datosRegistro.modalidadId || '',
+        planAnio: datosRegistro.planAnio || '',
+        modulos: datosRegistro.modulos || '',
+        idModulo: datosRegistro.idModulo || null,
+        
+        // Información del registro web original
+        idRegistroWeb: idRegistro,
+        fechaRegistroWeb: registroCompleto.timestamp || new Date().toISOString(),
+        usuarioWeb: datosRegistro.usuario || 'usuario_web',
+        
+        // Archivos adjuntos del registro web
+        archivosAdjuntos: Object.keys(archivosAdjuntos).map(tipo => {
+          const nombreDocumento = {
+            'foto': '📷 Foto',
+            'archivo_dni': '📄 DNI',
+            'archivo_cuil': '📄 CUIL',
+            'archivo_fichaMedica': '🏥 Ficha Médica',
+            'archivo_partidaNacimiento': '📜 Partida de Nacimiento',
+            'archivo_solicitudPase': '📝 Solicitud de Pase',
+            'archivo_analiticoParcial': '📊 Analítico Parcial',
+            'archivo_certificadoNivelPrimario': '🎓 Certificado Primario'
+          }[tipo] || `📎 ${tipo}`;
+          
+          return {
+            tipo: tipo,
+            nombre: nombreDocumento,
+            ruta: archivosAdjuntos[tipo],
+            archivo: archivosAdjuntos[tipo].split('/').pop()
+          };
+        }),
+        archivosOriginales: archivosAdjuntos // Mantener la estructura original también
+      });
+      
+      // Construir URL con parámetros esenciales
       const params = new URLSearchParams({
         completarWeb: idRegistro,
         dni: datosRegistro.dni,
         modalidad: datosRegistro.modalidad || '',
-        // Agregar más datos para pre-cargar el formulario
-        nombre: datosRegistro.nombre || '',
-        apellido: datosRegistro.apellido || '',
-        email: datosRegistro.email || '',
-        telefono: datosRegistro.telefono || '',
-        fechaNacimiento: datosRegistro.fechaNacimiento || '',
-        calle: datosRegistro.calle || '',
-        numero: datosRegistro.numero || '',
-        localidad: datosRegistro.localidad || '',
-        codigoPostal: datosRegistro.codigoPostal || '',
-        provincia: datosRegistro.provincia || ''
+        datosWeb: encodeURIComponent(datosCompletos),
+        origen: 'registros-web' // Añadir origen para navegación contextual
       });
       
       navigate(`/dashboard/formulario-inscripcion-adm?${params.toString()}`);
@@ -209,11 +277,11 @@ const handleCompletarRegistro = (registro) => {
     
     // Navegar al formulario de inscripción con el DNI pre-cargado
     if (user.rol === 'admDirector') {
-      navigate(`/dashboard/formulario-inscripcion-adm?completar=${registro.dni}&modalidad=${encodeURIComponent(registro.modalidad || '')}`);
+      navigate(`/dashboard/formulario-inscripcion-adm?completar=${registro.dni}&modalidad=${encodeURIComponent(registro.modalidad || '')}&origen=registros-pendientes`);
     } else {
       // Para usuarios normales, pasar por el selector de modalidad si es necesario
       if (registro.modalidad) {
-        navigate(`/dashboard/formulario-inscripcion-adm?completar=${registro.dni}&modalidad=${encodeURIComponent(registro.modalidad)}`);
+        navigate(`/dashboard/formulario-inscripcion-adm?completar=${registro.dni}&modalidad=${encodeURIComponent(registro.modalidad)}&origen=registros-pendientes`);
       } else {
         // Abrir modal de modalidad
         setIsModalOpen(true);
@@ -294,6 +362,7 @@ const handleCompletarRegistro = (registro) => {
         <GestorRegistrosWeb 
           onClose={handleCloseGestorRegistrosWeb}
           onRegistroSeleccionado={handleCompletarRegistroWeb}
+          key={showGestorRegistrosWeb} // Forzar re-render cuando se abre
         />
       )}
     </div>

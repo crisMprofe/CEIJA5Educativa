@@ -1,31 +1,103 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 import CloseButton from './CloseButton';
-import { descargarRegistrosCSV } from '../utils/registroSinDocumentacion';
+import { descargarRegistrosCSV, obtenerRegistrosSinDocumentacion, limpiarDuplicadosManualmente, verificarDuplicados, testearSistema7Dias } from '../utils/registroSinDocumentacion';
 import { notificacionesService } from '../services/notificacionesService';
+import { migracionService } from '../services/migracionService';
+import { registrosPendientesService } from '../services/registrosPendientesService';
+import { obtenerDocumentosRequeridos } from '../utils/registroSinDocumentacion';
 import '../estilos/modalM.css';
 import '../estilos/botones.css';
+import '../estilos/ModalRegistrosPendientes.css';
 
-const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescargar, onCompletarRegistro }) => {
+const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescargar }) => {
+    const navigate = useNavigate();
     const [descargando, setDescargando] = useState(false);
     const [enviandoEmail, setEnviandoEmail] = useState(false);
     const [mensajeEmail, setMensajeEmail] = useState('');
     const [registros, setRegistros] = useState([]);
     const [cargandoRegistros, setCargandoRegistros] = useState(true);
+    const [estadoDuplicados, setEstadoDuplicados] = useState(null);
+    const [limpiandoDuplicados, setLimpiandoDuplicados] = useState(false);
 
-    // Cargar registros desde el backend al montar el componente
+    // Función para recargar registros
+    const recargarRegistros = async () => {
+        try {
+            console.log('🔄 Recargando registros pendientes desde localStorage...');
+            setMensajeEmail('Actualizando lista de registros...');
+            
+            // Obtener registros actualizados del localStorage
+            const registrosActualizados = obtenerRegistrosSinDocumentacion();
+            console.log('📋 Registros actualizados:', registrosActualizados);
+            
+            // Comparar con la lista anterior para detectar cambios
+            const registrosAnteriores = registros.length;
+            const registrosNuevos = registrosActualizados.length;
+            
+            setRegistros(registrosActualizados);
+            
+            if (registrosNuevos < registrosAnteriores) {
+                const diferencia = registrosAnteriores - registrosNuevos;
+                setMensajeEmail(`✅ Lista actualizada - ${diferencia} registro${diferencia > 1 ? 's' : ''} procesado${diferencia > 1 ? 's' : ''}`);
+            } else if (registrosNuevos === registrosAnteriores) {
+                setMensajeEmail('✅ Lista actualizada - sin cambios');
+            } else {
+                setMensajeEmail('✅ Lista actualizada - nuevos registros pendientes');
+            }
+            
+            setTimeout(() => setMensajeEmail(''), 3000);
+            
+        } catch (error) {
+            console.error('❌ Error al recargar registros:', error);
+            setMensajeEmail(`❌ Error al actualizar: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        }
+    };
+
+    // Función auxiliar para verificar y limpiar registros completados
+    const verificarYLimpiarRegistrosCompletados = async () => {
+        try {
+            // Obtener registros actuales del localStorage
+            const registrosActuales = obtenerRegistrosSinDocumentacion();
+            const idsActuales = new Set(registrosActuales.map(r => r.id));
+            
+            // Filtrar registros locales para mantener solo los que siguen pendientes
+            setRegistros(prevRegistros => {
+                const registrosFiltrados = prevRegistros.filter(r => idsActuales.has(r.id));
+                
+                if (registrosFiltrados.length !== prevRegistros.length) {
+                    const eliminados = prevRegistros.length - registrosFiltrados.length;
+                    console.log(`🧹 Limpiados ${eliminados} registro(s) completado(s) de la lista local`);
+                }
+                
+                return registrosFiltrados;
+            });
+            
+        } catch (error) {
+            console.error('Error al verificar registros completados:', error);
+        }
+    };
+
+    // Cargar registros desde localStorage al montar el componente
     useEffect(() => {
         const cargarRegistrosPendientes = async () => {
             try {
                 setCargandoRegistros(true);
-                console.log('🔄 Cargando registros pendientes desde backend...');
+                console.log('🔄 Cargando registros pendientes desde localStorage...');
                 
-                const registrosDesdeBackend = await notificacionesService.obtenerRegistrosPendientes();
-                console.log('📋 Registros obtenidos:', registrosDesdeBackend);
+                // Obtener registros del localStorage (registros de administrador)
+                const registrosLocalStorage = obtenerRegistrosSinDocumentacion();
+                console.log('📋 Registros desde localStorage:', registrosLocalStorage);
                 
-                setRegistros(registrosDesdeBackend);
+                setRegistros(registrosLocalStorage);
                 setMensajeEmail('✅ Registros cargados exitosamente');
                 setTimeout(() => setMensajeEmail(''), 2000);
+                
+                // Verificación automática de duplicados al cargar
+                setTimeout(() => {
+                    verificarEstadoDuplicados();
+                }, 500);
                 
             } catch (error) {
                 console.error('❌ Error al cargar registros:', error);
@@ -46,6 +118,13 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
         };
 
         cargarRegistrosPendientes();
+
+        // Configurar intervalo para verificar registros completados cada 30 segundos
+        const intervalo = setInterval(() => {
+            verificarYLimpiarRegistrosCompletados();
+        }, 30000);
+
+        return () => clearInterval(intervalo);
     }, [registrosProp]);
 
     const obtenerInfoVencimiento = (registro) => {
@@ -88,7 +167,7 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
     const enviarEmailIndividual = async (registro) => {
         try {
             setMensajeEmail('Enviando notificación...');
-            const result = await notificacionesService.enviarEmailIndividual(registro.id);
+            await notificacionesService.enviarEmailIndividual(registro.dni);
             
             setMensajeEmail(`✅ Email enviado exitosamente a ${registro.nombre} ${registro.apellido}`);
             setTimeout(() => setMensajeEmail(''), 3000);
@@ -138,6 +217,131 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
         }
     };
 
+    // Función para migrar registros de localStorage al archivo JSON del backend
+    const migrarRegistrosLocalStorage = async () => {
+        setEnviandoEmail(true);
+        try {
+            setMensajeEmail('🚀 Migrando registros desde localStorage al servidor...');
+            
+            const resultado = await migracionService.ejecutarMigracionCompleta();
+            
+            if (resultado.success) {
+                setMensajeEmail(`✅ Migración exitosa: ${resultado.registrosMigrados} registros migrados al archivo JSON`);
+                
+                // Recargar registros después de la migración
+                setTimeout(async () => {
+                    try {
+                        const registrosServidor = await notificacionesService.obtenerRegistrosPendientes();
+                        setRegistros(registrosServidor);
+                        setMensajeEmail('📋 Registros recargados desde el servidor');
+                    } catch (error) {
+                        console.error('Error al recargar después de migración:', error);
+                    }
+                }, 2000);
+                
+            } else {
+                setMensajeEmail(`❌ Error en migración: ${resultado.message}`);
+            }
+            
+            setTimeout(() => setMensajeEmail(''), 8000);
+            
+        } catch (error) {
+            console.error('Error al migrar registros:', error);
+            setMensajeEmail(`❌ Error al migrar registros: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        } finally {
+            setEnviandoEmail(false);
+        }
+    };
+
+    // Función para eliminar un registro pendiente
+    const eliminarRegistro = async (registro) => {
+        if (!confirm(`¿Estás seguro de que quieres eliminar el registro de ${registro.nombre} ${registro.apellido}?`)) {
+            return;
+        }
+
+        try {
+            setMensajeEmail(`🗑️ Eliminando registro de ${registro.nombre} ${registro.apellido}...`);
+            
+            const resultado = await notificacionesService.eliminarRegistro(registro.dni);
+            
+            if (resultado.success) {
+                // Eliminar de la lista local inmediatamente
+                setRegistros(prevRegistros => 
+                    prevRegistros.filter(r => r.dni !== registro.dni)
+                );
+                
+                setMensajeEmail(`✅ Registro de ${registro.nombre} ${registro.apellido} eliminado exitosamente`);
+                setTimeout(() => setMensajeEmail(''), 3000);
+                
+                // También eliminar de localStorage si existe
+                try {
+                    const registrosLocal = obtenerRegistrosSinDocumentacion();
+                    const registrosFiltrados = registrosLocal.filter(r => r.dni !== registro.dni);
+                    localStorage.setItem('registrosSinDocumentacion', JSON.stringify(registrosFiltrados, null, 2));
+                } catch (error) {
+                    console.log('No se pudo eliminar de localStorage (normal si ya no está):', error);
+                }
+                
+            } else {
+                setMensajeEmail(`❌ Error al eliminar registro: ${resultado.message}`);
+                setTimeout(() => setMensajeEmail(''), 5000);
+            }
+            
+        } catch (error) {
+            console.error('Error al eliminar registro:', error);
+            setMensajeEmail(`❌ Error al eliminar registro: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        }
+    };
+
+    // Función para completar un registro pendiente (navegar al formulario de inscripción)
+    const completarRegistro = async (registro) => {
+        try {
+            console.log('🔄 Cargando datos del registro pendiente:', registro);
+            setMensajeEmail(`📋 Cargando datos de ${registro.nombre} ${registro.apellido}...`);
+            
+            // Obtener datos completos del registro desde el archivo JSON
+            const datosCompletos = await registrosPendientesService.obtenerRegistroPorDni(registro.dni);
+            console.log('📋 Datos completos obtenidos:', datosCompletos);
+            
+            // Transformar datos para el formulario
+            const datosFormulario = registrosPendientesService.transformarParaFormulario(datosCompletos);
+            console.log('📋 Datos transformados para formulario:', datosFormulario);
+            
+            // Obtener archivos existentes para el modal
+            const archivosExistentes = registrosPendientesService.obtenerArchivosParaModal(datosCompletos);
+            console.log('📎 Archivos existentes:', archivosExistentes);
+            
+            // Guardar datos en sessionStorage para que el formulario los use
+            sessionStorage.setItem('registroPendienteCompleto', JSON.stringify({
+                ...datosFormulario,
+                archivosExistentes: archivosExistentes
+            }));
+            
+            // Cerrar el modal actual
+            onClose();
+            
+            // Navegar al formulario de inscripción con parámetros
+            const params = new URLSearchParams({
+                completar: registro.dni,
+                modalidad: encodeURIComponent(datosCompletos.datos?.modalidad || ''),
+                origen: 'registros-pendientes',
+                precargar: 'true' // Indica que debe pre-cargar datos y archivos
+            });
+            
+            navigate(`/dashboard/formulario-inscripcion-adm?${params.toString()}`);
+            
+            setMensajeEmail(`✅ Abriendo formulario para ${registro.nombre} ${registro.apellido}`);
+            setTimeout(() => setMensajeEmail(''), 2000);
+            
+        } catch (error) {
+            console.error('Error al completar registro:', error);
+            setMensajeEmail(`❌ Error al cargar datos: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        }
+    };
+
     const handleDescargar = async () => {
         setDescargando(true);
         try {
@@ -163,7 +367,7 @@ Total de registros pendientes: ${registros.length}
 
             registros.forEach((registro, index) => {
                 const info = obtenerInfoVencimiento(registro);
-                const estadoDoc = obtenerEstadoDocumentacion(registro);
+                const estadoDoc = obtenerEstadoDocumentacionRegistro(registro);
                 
                 contenidoReporte += `${index + 1}. ${registro.nombre.toUpperCase()} ${registro.apellido.toUpperCase()}
    DNI: ${registro.dni}
@@ -251,6 +455,87 @@ NOTA IMPORTANTE:
         }
     };
 
+    // Función para verificar estado de duplicados
+    const verificarEstadoDuplicados = async () => {
+        try {
+            console.log('🔍 Verificando estado de duplicados...');
+            const estado = verificarDuplicados();
+            setEstadoDuplicados(estado);
+            
+            if (estado && estado.cantidadDuplicados > 0) {
+                setMensajeEmail(`⚠️ Se encontraron ${estado.cantidadDuplicados} DNI(s) con registros duplicados`);
+                setTimeout(() => setMensajeEmail(''), 5000);
+            } else {
+                setMensajeEmail('✅ No se encontraron registros duplicados');
+                setTimeout(() => setMensajeEmail(''), 3000);
+            }
+            
+            return estado;
+        } catch (error) {
+            console.error('❌ Error al verificar duplicados:', error);
+            setMensajeEmail(`❌ Error al verificar duplicados: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+            return null;
+        }
+    };
+
+    // Función para limpiar duplicados manualmente
+    const limpiarDuplicadosManual = async () => {
+        setLimpiandoDuplicados(true);
+        try {
+            console.log('🧹 Iniciando limpieza manual de duplicados...');
+            setMensajeEmail('Limpiando registros duplicados...');
+            
+            const resultado = limpiarDuplicadosManualmente();
+            
+            if (resultado.success) {
+                setMensajeEmail(`✅ ${resultado.mensaje}`);
+                
+                // Recargar registros después de la limpieza
+                setTimeout(async () => {
+                    await recargarRegistros();
+                    await verificarEstadoDuplicados();
+                }, 1000);
+            } else {
+                setMensajeEmail(`❌ ${resultado.mensaje}`);
+            }
+            
+            setTimeout(() => setMensajeEmail(''), 5000);
+            
+        } catch (error) {
+            console.error('❌ Error al limpiar duplicados:', error);
+            setMensajeEmail(`❌ Error al limpiar duplicados: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        } finally {
+            setLimpiandoDuplicados(false);
+        }
+    };
+
+    // 🧪 Función para probar el sistema de 7 días
+    const probarSistema7Dias = () => {
+        try {
+            console.log('🧪 Ejecutando prueba del sistema de 7 días desde Modal...');
+            setMensajeEmail('🧪 Analizando sistema de 7 días...');
+            
+            const resultado = testearSistema7Dias();
+            
+            if (resultado) {
+                const mensaje = `🧪 Análisis completado: ${resultado.registrosVigentes} vigentes, ${resultado.registrosVencidos} vencidos, ${resultado.calculosCorrectos}/${resultado.totalRegistros} cálculos correctos`;
+                setMensajeEmail(mensaje);
+                console.log('📊 Resultado del análisis:', resultado);
+            } else {
+                setMensajeEmail('❌ Error en el análisis del sistema');
+            }
+            
+            setTimeout(() => setMensajeEmail(''), 8000);
+            
+        } catch (error) {
+            console.error('❌ Error al probar sistema:', error);
+            setMensajeEmail(`❌ Error: ${error.message}`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+        }
+    };
+
     const getTipoIcon = (tipo) => {
         switch (tipo) {
             case 'SIN_DOCUMENTACION': return '📋';
@@ -279,16 +564,27 @@ NOTA IMPORTANTE:
         "archivo_certificadoNivelPrimario": "🎓 Certificado Nivel Primario"
     };
 
-    // Lista completa de documentos requeridos
-    const documentosRequeridos = [
-        "foto", "archivo_dni", "archivo_cuil", "archivo_fichaMedica", 
-        "archivo_partidaNacimiento", "archivo_solicitudPase", 
-        "archivo_analiticoParcial", "archivo_certificadoNivelPrimario"
-    ];
+    // Lista completa de documentos requeridos - YA NO SE USA (se obtiene dinámicamente)
+    // const documentosRequeridos = [...] - ELIMINADO para usar la función dinámica
 
-    // Función para obtener el estado de documentación de un registro
-    const obtenerEstadoDocumentacion = (registro) => {
+    // Función para obtener el estado de documentación de un registro - CON LÓGICA DE DOCUMENTOS ALTERNATIVOS
+    const obtenerEstadoDocumentacionRegistro = (registro) => {
         console.log('🔍 Analizando documentación para registro:', registro.id, registro);
+        
+        // Obtener documentos requeridos dinámicamente según modalidad del registro
+        const requerimientos = obtenerDocumentosRequeridos(
+            registro.modalidad || '', 
+            registro.planAnio || '', 
+            registro.modulos || ''
+        );
+        
+        const documentosRequeridosDinamicos = requerimientos.documentos || [];
+        const documentosAlternativos = requerimientos.alternativos;
+        
+        console.log(`📋 Documentos requeridos para ${registro.modalidad}:`, documentosRequeridosDinamicos);
+        if (documentosAlternativos) {
+            console.log(`🔄 Alternativas:`, documentosAlternativos.descripcion);
+        }
         
         // Manejar diferentes estructuras de datos
         let documentosSubidos = [];
@@ -311,15 +607,61 @@ NOTA IMPORTANTE:
             console.log('⚠️ No se encontraron documentos, usando array vacío');
         }
         
-        const documentosFaltantes = documentosRequeridos.filter(doc => 
-            !documentosSubidos.includes(doc)
-        );
+        // Procesar documentos alternativos si existen
+        let documentosFaltantes = [];
+        let documentosValidosSubidos = [];
+        
+        if (documentosAlternativos) {
+            // Verificar si tiene el documento preferido o la alternativa
+            const tienePreferido = documentosSubidos.includes(documentosAlternativos.preferido);
+            const tieneAlternativa = documentosSubidos.includes(documentosAlternativos.alternativa);
+            
+            // Validar documentos base (excluyendo los alternativos)
+            for (const doc of documentosRequeridosDinamicos) {
+                if (doc === documentosAlternativos.preferido || doc === documentosAlternativos.alternativa) {
+                    // Es parte del grupo alternativo
+                    if (tienePreferido) {
+                        documentosValidosSubidos.push(documentosAlternativos.preferido);
+                    } else if (tieneAlternativa) {
+                        documentosValidosSubidos.push(documentosAlternativos.alternativa);
+                    } else {
+                        documentosFaltantes.push(documentosAlternativos.preferido); // Mostrar el preferido como faltante
+                    }
+                } else {
+                    // Documento regular
+                    if (documentosSubidos.includes(doc)) {
+                        documentosValidosSubidos.push(doc);
+                    } else {
+                        documentosFaltantes.push(doc);
+                    }
+                }
+            }
+            
+            // Evitar duplicados
+            documentosValidosSubidos = [...new Set(documentosValidosSubidos)];
+            documentosFaltantes = [...new Set(documentosFaltantes)];
+            
+        } else {
+            // Sin documentos alternativos, validación normal
+            documentosValidosSubidos = documentosSubidos.filter(doc => 
+                documentosRequeridosDinamicos.includes(doc)
+            );
+            documentosFaltantes = documentosRequeridosDinamicos.filter(doc => 
+                !documentosSubidos.includes(doc)
+            );
+        }
+        
+        // Calcular totales correctos
+        const totalRequeridos = documentosRequeridosDinamicos.length - (documentosAlternativos ? 1 : 0);
         
         const resultado = {
-            subidos: documentosSubidos,
+            subidos: documentosValidosSubidos,
             faltantes: documentosFaltantes,
-            totalSubidos: documentosSubidos.length,
-            totalRequeridos: documentosRequeridos.length
+            totalSubidos: documentosValidosSubidos.length,
+            totalRequeridos: totalRequeridos,
+            modalidad: registro.modalidad,
+            plan: registro.planAnio || registro.modulos,
+            documentosAlternativos: documentosAlternativos
         };
         
         console.log('📊 Estado de documentación:', resultado);
@@ -327,359 +669,365 @@ NOTA IMPORTANTE:
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-container registros-pendientes">
-                {/* Header del modal */}
-                <div style={{
-                    borderBottom: '2px solid #2d4177',
-                    paddingBottom: '15px',
-                    marginBottom: '20px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                }}>
-                    <h2 style={{
-                        color: '#2d4177',
-                        margin: 0,
-                        fontSize: '1.4rem',
-                        fontWeight: '600'
-                    }}>
-                        📅 Registros Pendientes ({registros.length})
-                    </h2>
-                    <div style={{ position: 'relative' }}>
-                        <CloseButton onClose={onClose} variant="modal" />
+        <div className="modal-registros-pendientes">
+            <div className="modal-overlay">
+                <div className="modal-container registros-pendientes">
+                    {/* Header del modal */}
+                    <div className="modal-header">
+                        <h2>
+                            📅 Registros Pendientes ({registros.length})
+                        </h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <button 
+                                onClick={recargarRegistros}
+                                className="btn-recargar"
+                                title="Actualizar lista de registros"
+                                style={{
+                                    background: '#28a745',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    padding: '6px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem'
+                                }}
+                            >
+                                🔄 Actualizar
+                            </button>
+                            <CloseButton onClose={onClose} variant="modal" />
+                        </div>
                     </div>
-                </div>
 
-                {/* Lista de registros */}
-                <div className="lista-registros" style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    marginBottom: '20px'
-                }}>
-                    {cargandoRegistros ? (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: '40px',
-                            color: '#6c757d'
-                        }}>
-                            <div style={{ fontSize: '1.2rem', marginBottom: '10px' }}>⏳</div>
-                            <div>Cargando registros pendientes...</div>
-                        </div>
-                    ) : registros.length === 0 ? (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: '40px',
-                            color: '#6c757d'
-                        }}>
-                            <div style={{ fontSize: '1.2rem', marginBottom: '10px' }}>📋</div>
-                            <div>No hay registros pendientes</div>
-                        </div>
-                    ) : (
-                        registros.map((registro, index) => {
-                        const info = obtenerInfoVencimiento(registro);
-                        const estadoDoc = obtenerEstadoDocumentacion(registro);
-                        
-                        return (
-                            <div key={registro.id || index} className="registro-item" style={{
-                                border: '1px solid #e1e8ed',
-                                borderRadius: '8px',
-                                padding: '16px',
-                                marginBottom: '12px',
-                                backgroundColor: info.vencido ? '#fff5f5' : '#f8fafc',
-                                borderLeft: `4px solid ${info.color}`
-                            }}>
-                                <div className="registro-grid" style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: '12px',
-                                    alignItems: 'start'
-                                }}>
-                                    {/* Columna izquierda */}
-                                    <div>
-                                        <h4 style={{
-                                            margin: '0 0 8px 0',
-                                            color: '#2d4177',
-                                            fontSize: '1.1rem'
-                                        }}>
-                                            {registro.nombre} {registro.apellido}
-                                        </h4>
-                                        <p style={{
-                                            margin: '4px 0',
-                                            color: '#495057',
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            <strong>📄 DNI:</strong> {registro.dni}
-                                        </p>
-                                        <p style={{
-                                            margin: '4px 0',
-                                            color: '#495057',
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            <strong>📧 Email:</strong> {registro.email || <span style={{color: '#dc3545', fontStyle: 'italic'}}>Sin email</span>}
-                                        </p>
-                                        <p style={{
-                                            margin: '4px 0',
-                                            color: '#495057',
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            <strong>{getTipoIcon(registro.tipoRegistro)} Tipo:</strong> {formatearTipo(registro.tipoRegistro)}
-                                        </p>
-                                        <p style={{
-                                            margin: '4px 0',
-                                            color: '#495057',
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            <strong>📎 Documentos:</strong> {estadoDoc.totalSubidos}/{estadoDoc.totalRequeridos}
-                                        </p>
+                    {/* Contenido principal */}
+                    <div className="modal-content">
+                        {/* Lista de registros */}
+                        <div className="lista-registros">
+                            {cargandoRegistros ? (
+                                <div className="estado-cargando">
+                                    <div>⏳</div>
+                                    <div>Cargando registros pendientes...</div>
+                                </div>
+                            ) : registros.length === 0 ? (
+                                <div className="estado-vacio">
+                                    <div>📋</div>
+                                    <div>No hay registros pendientes</div>
+                                </div>
+                            ) : (
+                                registros.map((registro, index) => {
+                                const info = obtenerInfoVencimiento(registro);
+                                const estadoDoc = obtenerEstadoDocumentacionRegistro(registro);
+                                
+                                return (
+                                    <div key={registro.id || index} 
+                                         className={`registro-item ${info.vencido ? 'registro-vencido' : 'registro-vigente'}`} 
+                                         style={{ borderLeftColor: info.color }}>
+                                        <div className="registro-grid">
+                                            {/* Información principal en horizontal */}
+                                            <div className="registro-info-principal">
+                                                {/* Columna izquierda - Información del estudiante */}
+                                                <div className="registro-info-estudiante">
+                                                    <h4>{registro.nombre} {registro.apellido}</h4>
+                                                    <p><strong>📄 DNI:</strong> {registro.dni}</p>
+                                                    <p>
+                                                        <strong>📧 Email:</strong> {
+                                                            registro.email || 
+                                                            <span style={{color: '#dc3545', fontStyle: 'italic'}}>Sin email</span>
+                                                        }
+                                                    </p>
+                                                    <p>
+                                                        <strong>{getTipoIcon(registro.tipoRegistro)} Tipo:</strong> {formatearTipo(registro.tipoRegistro)}
+                                                    </p>
+                                                    <p>
+                                                        <strong>📎 Documentos:</strong> {estadoDoc.totalSubidos}/{estadoDoc.totalRequeridos}
+                                                    </p>
+                                                </div>
+                                                
+                                                {/* Columna derecha - Estado y tiempos */}
+                                                <div className="registro-info-derecha">
+                                                    <div className="registro-vencimiento" style={{ color: info.color }}>
+                                                        {info.vencido ? '🔴 VENCIDO' : `🕒 ${info.mensaje}`}
+                                                    </div>
+                                                    {!info.vencido && (
+                                                        <div className="registro-fecha-limite">
+                                                            Vence: {info.fechaVencimiento}
+                                                        </div>
+                                                    )}
+                                                    {registro.modalidad && (
+                                                        <div className="registro-modalidad">
+                                                            📚 {registro.modalidad}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                        {/* Sección de documentos subidos */}
-                                        {estadoDoc.subidos.length > 0 && (
-                                            <div style={{
-                                                marginTop: '8px',
-                                                padding: '8px',
-                                                backgroundColor: '#e8f5e8',
-                                                borderRadius: '4px',
-                                                fontSize: '0.8rem'
-                                            }}>
-                                                <strong style={{ color: '#2e7d32' }}>✅ Documentos subidos:</strong>
-                                                <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
-                                                    {estadoDoc.subidos.map(doc => (
-                                                        <li key={doc} style={{ color: '#2e7d32' }}>
-                                                            {mapeoDocumentos[doc] || doc}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
+                                            {/* Documentos en layout horizontal */}
+                                            <div className="documentos-container">
+                                                {/* Sección de documentos subidos */}
+                                                {estadoDoc.subidos.length > 0 && (
+                                                    <div className="seccion-documentos documentos-subidos">
+                                                        <strong>✅ Documentos subidos:</strong>
+                                                        <ul>
+                                                            {estadoDoc.subidos.map(doc => (
+                                                                <li key={doc}>
+                                                                    {mapeoDocumentos[doc] || doc}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
 
-                                        {/* Sección de documentos faltantes */}
-                                        {estadoDoc.faltantes.length > 0 && (
-                                            <div style={{
-                                                marginTop: '8px',
-                                                padding: '8px',
-                                                backgroundColor: '#fff3e0',
-                                                borderRadius: '4px',
-                                                fontSize: '0.8rem'
-                                            }}>
-                                                <strong style={{ color: '#f57c00' }}>⚠️ Documentos faltantes:</strong>
-                                                <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
-                                                    {estadoDoc.faltantes.map(doc => (
-                                                        <li key={doc} style={{ color: '#f57c00' }}>
-                                                            {mapeoDocumentos[doc] || doc}
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                                {/* Sección de documentos faltantes */}
+                                                {estadoDoc.faltantes.length > 0 && (
+                                                    <div className="seccion-documentos documentos-faltantes">
+                                                        <strong>⚠️ Documentos faltantes:</strong>
+                                                        <ul>
+                                                            {estadoDoc.faltantes.map(doc => (
+                                                                <li key={doc}>
+                                                                    {estadoDoc.documentosAlternativos && doc === estadoDoc.documentosAlternativos.preferido ? 
+                                                                        `${mapeoDocumentos[doc] || doc} (o alternativamente: ${mapeoDocumentos[estadoDoc.documentosAlternativos.alternativa] || estadoDoc.documentosAlternativos.alternativa})` :
+                                                                        mapeoDocumentos[doc] || doc
+                                                                    }
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                        {/* Información adicional sobre documentos alternativos */}
+                                                        {estadoDoc.documentosAlternativos && estadoDoc.faltantes.includes(estadoDoc.documentosAlternativos.preferido) && (
+                                                            <div className="info-alternativos">
+                                                                ℹ️ {estadoDoc.documentosAlternativos.descripcion}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Columna derecha */}
-                                    <div className="registro-info-derecha" style={{ textAlign: 'right' }}>
-                                        <div style={{
-                                            color: info.color,
-                                            fontWeight: 'bold',
-                                            fontSize: '0.95rem',
-                                            marginBottom: '4px'
-                                        }}>
-                                            {info.vencido ? '🔴 VENCIDO' : `🕒 ${info.mensaje}`}
-                                        </div>
-                                        {!info.vencido && (
-                                            <div style={{
-                                                color: '#6c757d',
-                                                fontSize: '0.8rem',
-                                                fontStyle: 'italic'
-                                            }}>
-                                                Vence: {info.fechaVencimiento}
-                                            </div>
-                                        )}
-                                        {registro.modalidad && (
-                                            <div style={{
-                                                color: '#6c757d',
-                                                fontSize: '0.8rem',
-                                                marginTop: '4px'
-                                            }}>
-                                                📚 {registro.modalidad}
-                                            </div>
-                                        )}
-                                        {/* Botones de acción */}
-                                        <div style={{ 
-                                            marginTop: '8px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '4px'
-                                        }}>
-                                            {/* Botón para completar registro */}
-                                            {!info.vencido && onCompletarRegistro && (
-                                                <button
-                                                    onClick={() => onCompletarRegistro(registro)}
-                                                    className="boton-principal"
-                                                    style={{
-                                                        backgroundColor: '#007bff',
-                                                        borderColor: '#007bff',
-                                                        fontSize: '0.8rem',
-                                                        padding: '4px 8px',
-                                                        minWidth: '120px'
-                                                    }}
-                                                    title="Completar este registro con documentación"
-                                                >
-                                                    ✅ Completar
-                                                </button>
+
+                                            {/* Información especial cuando hay documentos alternativos pero está completo */}
+                                            {estadoDoc.documentosAlternativos && estadoDoc.faltantes.length === 0 && (
+                                                <div className="info-documento-usado">
+                                                    {estadoDoc.subidos.includes(estadoDoc.documentosAlternativos.preferido) ? 
+                                                        `✨ Presenta documento preferido: ${mapeoDocumentos[estadoDoc.documentosAlternativos.preferido]}` :
+                                                        `📝 Presenta alternativa: ${mapeoDocumentos[estadoDoc.documentosAlternativos.alternativa]}`
+                                                    }
+                                                </div>
                                             )}
-                                            
-                                            {/* Botón para enviar email individual */}
-                                            {registro.email && !info.vencido && (
+
+                                            {/* Botones de acción */}
+                                            <div className="registro-acciones">
+                                                {/* Botón para completar registro */}
+                                                {!info.vencido && (
+                                                    <button
+                                                        onClick={() => completarRegistro(registro)}
+                                                        className="btn-completar"
+                                                        title="Marcar este registro como completado y procesado"
+                                                        disabled={enviandoEmail}
+                                                    >
+                                                        ✅ Completar
+                                                    </button>
+                                                )}
+
+                                                {/* Botón para eliminar registro */}
                                                 <button
-                                                    onClick={() => enviarEmailIndividual(registro)}
-                                                    className="boton-principal"
+                                                    onClick={() => eliminarRegistro(registro)}
+                                                    className="btn-eliminar"
+                                                    title="Eliminar este registro permanentemente"
                                                     disabled={enviandoEmail}
                                                     style={{
-                                                        backgroundColor: enviandoEmail ? '#ccc' : '#28a745',
-                                                        borderColor: enviandoEmail ? '#ccc' : '#28a745',
-                                                        fontSize: '0.8rem',
-                                                        padding: '4px 8px',
-                                                        minWidth: '120px',
-                                                        cursor: enviandoEmail ? 'not-allowed' : 'pointer'
+                                                        backgroundColor: '#dc3545',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        padding: '8px 12px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '12px',
+                                                        margin: '2px'
                                                     }}
-                                                    title={`Enviar notificación por email a ${registro.email}`}
                                                 >
-                                                    {enviandoEmail ? '📧 Enviando...' : '📧 Notificar'}
+                                                    🗑️ Eliminar
                                                 </button>
-                                            )}
+                                                
+                                                {/* Botón para enviar email individual */}
+                                                {registro.email && !info.vencido && (
+                                                    <button
+                                                        onClick={() => enviarEmailIndividual(registro)}
+                                                        className="btn-notificar"
+                                                        disabled={enviandoEmail}
+                                                        title={`Enviar notificación por email a ${registro.email}`}
+                                                    >
+                                                        {enviandoEmail ? '📧 Enviando...' : '📧 Notificar'}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                            );
-                        })
-                    )}
-                </div>                {/* Footer con botones */}
-                <div style={{
-                    borderTop: '1px solid #e1e8ed',
-                    paddingTop: '15px'
-                }}>
-                    {/* Mensaje de estado de emails */}
-                    {mensajeEmail && (
-                        <div style={{
-                            padding: '10px',
-                            marginBottom: '15px',
-                            borderRadius: '4px',
-                            backgroundColor: mensajeEmail.includes('❌') ? '#f8d7da' : '#d4edda',
-                            color: mensajeEmail.includes('❌') ? '#721c24' : '#155724',
-                            border: `1px solid ${mensajeEmail.includes('❌') ? '#f5c6cb' : '#c3e6cb'}`,
-                            fontSize: '0.9rem',
-                            textAlign: 'center'
-                        }}>
-                            {mensajeEmail}
+                                );
+                            })
+                        )}
                         </div>
-                    )}
-                    
-                    {/* Sección de botones de email */}
-                    <div style={{
-                        marginBottom: '15px',
-                        padding: '15px',
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '6px',
-                        border: '1px solid #e9ecef'
-                    }}>
-                        <h4 style={{
-                            margin: '0 0 10px 0',
-                            color: '#2d4177',
-                            fontSize: '1rem'
-                        }}>
-                            📧 Notificaciones por Email
-                        </h4>
-                        <div style={{
-                            display: 'flex',
-                            gap: '10px',
-                            flexWrap: 'wrap',
-                            justifyContent: 'center'
-                        }}>
-                            <button 
-                                onClick={enviarEmailsUrgentes}
-                                className="boton-principal"
-                                disabled={enviandoEmail}
-                                style={{
-                                    backgroundColor: enviandoEmail ? '#ccc' : '#dc3545',
-                                    borderColor: enviandoEmail ? '#ccc' : '#dc3545',
-                                    fontSize: '0.9rem',
-                                    cursor: enviandoEmail ? 'not-allowed' : 'pointer'
-                                }}
-                                title="Enviar emails solo a registros urgentes (próximos a vencer)"
-                            >
-                                {enviandoEmail ? '⚡ Enviando...' : '⚡ Urgentes'}
-                            </button>
-                            <button 
-                                onClick={enviarEmailsMasivos}
-                                className="boton-principal"
-                                disabled={enviandoEmail}
-                                style={{
-                                    backgroundColor: enviandoEmail ? '#ccc' : '#28a745',
-                                    borderColor: enviandoEmail ? '#ccc' : '#28a745',
-                                    fontSize: '0.9rem',
-                                    cursor: enviandoEmail ? 'not-allowed' : 'pointer'
-                                }}
-                                title="Enviar email a todos los estudiantes con registros pendientes"
-                            >
-                                {enviandoEmail ? '📧 Enviando...' : '📧 Todos'}
-                            </button>
-                        </div>
-                        <p style={{
-                            margin: '8px 0 0 0',
-                            fontSize: '0.8rem',
-                            color: '#6c757d',
-                            textAlign: 'center',
-                            fontStyle: 'italic'
-                        }}>
-                            Los emails incluyen información personalizada sobre documentación faltante y plazos
-                        </p>
                     </div>
                     
-                    {/* Botones de descarga */}
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        gap: '10px',
-                        flexWrap: 'wrap'
-                    }}>
-                        <button 
-                            onClick={generarReporteAdministrativo}
-                            className="boton-principal"
-                            style={{
-                                backgroundColor: '#007bff',
-                                borderColor: '#007bff',
-                                fontSize: '0.9rem'
-                            }}
-                            title="Generar reporte legible para administración escolar"
-                        >
-                            📋 Reporte TXT
-                        </button>
-                        <button 
-                            onClick={generarReporteCSV}
-                            className="boton-principal"
-                            style={{
-                                backgroundColor: '#17a2b8',
-                                borderColor: '#17a2b8',
-                                fontSize: '0.9rem'
-                            }}
-                            title="Generar archivo Excel (CSV) para análisis de datos"
-                        >
-                            📊 Excel (CSV)
-                        </button>
-                        <button 
-                            onClick={handleDescargar}
-                            className="boton-principal"
-                            disabled={descargando}
-                            style={{
-                                backgroundColor: descargando ? '#ccc' : '#28a745',
-                                borderColor: descargando ? '#ccc' : '#28a745',
-                                cursor: descargando ? 'not-allowed' : 'pointer',
-                                fontSize: '0.9rem'
-                            }}
-                            title="Descargar archivo JSON técnico (para programadores)"
-                        >
-                            {descargando ? '⏳ Descargando...' : '💾 JSON Técnico'}
-                        </button>
+                    {/* Footer */}
+                    <div className="modal-footer">
+                        {/* Mensaje de estado de emails */}
+                        {mensajeEmail && (
+                            <div className={`mensaje-email ${mensajeEmail.includes('❌') ? 'error' : 'success'}`}>
+                                {mensajeEmail}
+                            </div>
+                        )}
+                        
+                        {/* Sección de botones de email */}
+                        <div className="seccion-emails">
+                            <h4>📧 Notificaciones por Email</h4>
+                            <div className="botones-emails">
+                                <button 
+                                    onClick={enviarEmailsUrgentes}
+                                    className="btn-urgente"
+                                    disabled={enviandoEmail}
+                                    title="Enviar emails solo a registros urgentes (próximos a vencer)"
+                                >
+                                    {enviandoEmail ? '⚡ Enviando...' : '⚡ Urgentes'}
+                                </button>
+                                <button 
+                                    onClick={enviarEmailsMasivos}
+                                    className="btn-todos-emails"
+                                    disabled={enviandoEmail}
+                                    title="Enviar email a todos los estudiantes con registros pendientes"
+                                >
+                                    {enviandoEmail ? '📧 Enviando...' : '📧 Todos'}
+                                </button>
+                                <button 
+                                    onClick={migrarRegistrosLocalStorage}
+                                    className="btn-migracion"
+                                    disabled={enviandoEmail}
+                                    title="Migrar registros desde localStorage al archivo JSON del servidor"
+                                    style={{
+                                        backgroundColor: '#17a2b8',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '8px 12px',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        marginLeft: '10px'
+                                    }}
+                                >
+                                    {enviandoEmail ? '📦 Migrando...' : '📦 Migrar a JSON'}
+                                </button>
+                            </div>
+                            <p className="info-emails">
+                                Los emails incluyen información personalizada sobre documentación faltante y plazos
+                            </p>
+                        </div>
+                        
+                        {/* Botones de descarga */}
+                        <div className="botones-descarga">
+                            <button 
+                                onClick={generarReporteAdministrativo}
+                                className="btn-reporte-txt"
+                                title="Generar reporte legible para administración escolar"
+                            >
+                                📋 Reporte TXT
+                            </button>
+                            <button 
+                                onClick={generarReporteCSV}
+                                className="btn-excel-csv"
+                                title="Generar archivo Excel (CSV) para análisis de datos"
+                            >
+                                📊 Excel (CSV)
+                            </button>
+                            <button 
+                                onClick={handleDescargar}
+                                className="btn-json-tecnico"
+                                disabled={descargando}
+                                title="Descargar archivo JSON técnico (para programadores)"
+                            >
+                                {descargando ? '⏳ Descargando...' : '💾 JSON Técnico'}
+                            </button>
+                        </div>
+                        
+                        {/* Botones para gestión de duplicados */}
+                        <div className="botones-duplicados" style={{
+                            display: 'flex',
+                            gap: '10px',
+                            justifyContent: 'center',
+                            marginTop: '15px',
+                            paddingTop: '15px',
+                            borderTop: '1px solid #e0e0e0'
+                        }}>
+                            <button 
+                                onClick={verificarEstadoDuplicados}
+                                className="btn-verificar-duplicados"
+                                title="Verificar si existen registros duplicados para el mismo DNI"
+                                style={{
+                                    background: '#17a2b8',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    padding: '8px 16px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                🔍 Verificar Duplicados
+                            </button>
+                            
+                            {estadoDuplicados && estadoDuplicados.cantidadDuplicados > 0 && (
+                                <button 
+                                    onClick={limpiarDuplicadosManual}
+                                    disabled={limpiandoDuplicados}
+                                    className="btn-limpiar-duplicados"
+                                    title={`Encontrados ${estadoDuplicados.cantidadDuplicados} DNI(s) duplicados - Click para limpiar`}
+                                    style={{
+                                        background: limpiandoDuplicados ? '#6c757d' : '#dc3545',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '8px 16px',
+                                        cursor: limpiandoDuplicados ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.9rem'
+                                    }}
+                                >
+                                    {limpiandoDuplicados ? '⏳ Limpiando...' : `🧹 Limpiar ${estadoDuplicados.cantidadDuplicados} Duplicado(s)`}
+                                </button>
+                            )}
+                            
+                            {/* Botón para testing del sistema de 7 días (solo en desarrollo) */}
+                            {window.location.hostname === 'localhost' && (
+                                <button 
+                                    onClick={probarSistema7Dias}
+                                    className="btn-test-sistema"
+                                    title="Probar funcionamiento del sistema de vencimiento de 7 días"
+                                    style={{
+                                        background: '#6f42c1',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '8px 16px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.9rem'
+                                    }}
+                                >
+                                    🧪 Test 7 Días
+                                </button>
+                            )}
+                        </div>
+                        
+                        {/* Información de estado de duplicados */}
+                        {estadoDuplicados && (
+                            <div style={{
+                                marginTop: '10px',
+                                padding: '10px',
+                                background: estadoDuplicados.cantidadDuplicados > 0 ? '#fff3cd' : '#d4edda',
+                                border: `1px solid ${estadoDuplicados.cantidadDuplicados > 0 ? '#ffeaa7' : '#c3e6cb'}`,
+                                borderRadius: '4px',
+                                fontSize: '0.85rem'
+                            }}>
+                                📊 <strong>Estado:</strong> {estadoDuplicados.totalRegistros} registros totales, {estadoDuplicados.dnisUnicos} DNI únicos
+                                {estadoDuplicados.cantidadDuplicados > 0 && (
+                                    <div style={{ marginTop: '5px', color: '#856404' }}>
+                                        ⚠️ {estadoDuplicados.cantidadDuplicados} DNI(s) tienen registros duplicados
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

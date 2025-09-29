@@ -222,8 +222,8 @@ li > button {
   position: fixed;
   bottom: 5px;
   right: 10px;
-  max-width: 80px;
-  max-height: 55px;
+  max-width: 175px;
+  max-height: 110px;
 }
 
 /* Responsive adjustments */

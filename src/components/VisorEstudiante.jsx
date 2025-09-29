@@ -1,6 +1,8 @@
 import TarjetaAcademica from './VisorEstudiante/TarjetaAcademica';
 import TarjetaDomicilio from './VisorEstudiante/TarjetaDomicilio';
 import TarjetaPersonales from './VisorEstudiante/TarjetaPersonales';
+import AlertaMens from './AlertaMens';
+import FormatError from '../utils/MensajeError';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useModulosYEstados } from '../hooks/useModulosYEstados';
@@ -46,6 +48,7 @@ const VisorEstudiante = ({ estudiante, onClose, onModificar, onVolver, isConsult
     });
     // Estado para saber si hubo cambios globales
     const [formChanged, setFormChanged] = useState(false);
+    const [alerta, setAlerta] = useState({ text: '', variant: '' });
     // const [editMode, setEditMode] = useState({
     
 
@@ -103,7 +106,7 @@ useEffect(() => {
     const handleGuardarTodo = () => {
         // Validar cambios
         if (!formChanged) {
-            alert('No hay cambios para guardar.');
+            setAlerta({ text: 'No hay cambios para guardar.', variant: 'warning' });
             return;
         }
         // Validar planAnioId antes de enviar
@@ -118,9 +121,9 @@ useEffect(() => {
             try {
                 onModificar('todo', datos); // 'todo' indica que se envía todo
                 setFormChanged(false);
-                alert('Cambios guardados correctamente.');
+                setAlerta({ text: 'Cambios guardados correctamente.', variant: 'success' });
             } catch (error) {
-                alert('Error al guardar cambios.');
+                setAlerta({ text: `Error al guardar cambios: ${FormatError(error)}`, variant: 'error' });
                 console.error('🚨 Error al guardar todo:', error);
             }
         }
@@ -223,6 +226,15 @@ useEffect(() => {
                             </div>
                         )}
                     </div>
+
+                    {/* Alertas */}
+                    {alerta.text && (
+                        <AlertaMens 
+                            text={alerta.text} 
+                            variant={alerta.variant}
+                            onClose={() => setAlerta({ text: '', variant: '' })}
+                        />
+                    )}
                 </div>
             );
 };

@@ -9,6 +9,7 @@ const GestionEstudianteView = ({
     alert,
     setAlert,
     previews,
+    files, // Agregar files como prop
     handleFileChange,
     handleChange,
     accion,
@@ -18,7 +19,10 @@ const GestionEstudianteView = ({
     isAdmin,
     isWebUser, // Nuevo prop para usuario web
     isSubmitting,
-    completarRegistro // Nuevo prop para completar registro
+    completarRegistro, // Nuevo prop para completar registro
+    completarRegistroWeb, // Nuevo prop para ID del registro web
+    datosRegistroWeb, // Nuevo prop para datos del registro web
+    tipoRegistro // Nuevo prop para tipo de registro
 }) => {
     return (
         <div className={`formulario-inscripcion-${isAdmin ? 'adm' : 'est'}`}>
@@ -29,6 +33,7 @@ const GestionEstudianteView = ({
             <RegistroEstd
                 modalidad={values.modalidad}
                 previews={previews}
+                files={files} // Pasar files como prop
                 handleFileChange={handleFileChange}
                 handleChange={handleChange}
                 alert={alert}
@@ -41,6 +46,9 @@ const GestionEstudianteView = ({
                 isWebUser={isWebUser} // Pasar prop de usuario web
                 isSubmitting={isSubmitting}
                 completarRegistro={completarRegistro} // Pasar el prop
+                completarRegistroWeb={completarRegistroWeb} // Pasar ID del registro web
+                datosRegistroWeb={datosRegistroWeb} // Pasar datos del registro web
+                tipoRegistro={tipoRegistro} // Pasar el tipo de registro
                 onClose={onClose} // Botón cerrar
                 onVolver={onBack} // Botón volver - usar onBack
             />
@@ -55,6 +63,7 @@ GestionEstudianteView.propTypes = {
     alert: PropTypes.object.isRequired,
     setAlert: PropTypes.func.isRequired,
     previews: PropTypes.object.isRequired,
+    files: PropTypes.object, // Agregar files como prop
     handleFileChange: PropTypes.func.isRequired,
     handleChange: PropTypes.func.isRequired,
     accion: PropTypes.string.isRequired,
@@ -65,6 +74,9 @@ GestionEstudianteView.propTypes = {
     isWebUser: PropTypes.bool, // Indicar si es usuario web
     isSubmitting: PropTypes.bool.isRequired,
     completarRegistro: PropTypes.string, // DNI del registro a completar
+    completarRegistroWeb: PropTypes.string, // ID del registro web a completar
+    datosRegistroWeb: PropTypes.object, // Datos completos del registro web
+    tipoRegistro: PropTypes.oneOf(['pendiente', 'web']), // Tipo de registro
 };
 
 export default GestionEstudianteView;

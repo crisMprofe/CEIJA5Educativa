@@ -54,22 +54,21 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
         try {
             // Llamar la función del componente padre para completar registro
             if (onRegistroSeleccionado) {
-                // Pasar los datos del registro y el ID al componente padre
-                onRegistroSeleccionado(registro.datos, registro.id);
+                // Pasar el registro completo al componente padre (incluye datos, archivos, etc.)
+                onRegistroSeleccionado(registro);
             }
             
-            // Actualizar el estado del registro a "PROCESADO"
-            await registrosWebService.actualizarRegistroWeb(registro.id, {
-                estado: 'PROCESADO',
-                observaciones: `Registro enviado para completar inscripción el ${new Date().toLocaleDateString('es-AR')}`
-            });
+            // NO cambiar estado aquí - solo se cambia cuando admin presiona "Registrar"
+            // El estado se mantendrá como estaba originalmente hasta completar la inscripción
             
-            // Recargar los datos para mostrar el cambio de estado
-            await cargarRegistrosWeb();
-            await cargarEstadisticas();
+            const mensajeSegunEstado = {
+                'PENDIENTE': 'Registro cargado para completar inscripción',
+                'PROCESADO': 'Registro cargado para revisar y completar inscripción presencial',
+                'ANULADO': 'Registro reactivado para completar inscripción'
+            };
             
             setAlerta({
-                text: 'Registro cargado para completar inscripción',
+                text: mensajeSegunEstado[registro.estado] || 'Registro cargado para gestionar',
                 variant: 'success'
             });
             
@@ -243,6 +242,56 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
                                                 <div className="registro-info">
                                                     Domicilio: {registro.datos.calle} {registro.datos.numero}, {registro.datos.localidad}
                                                 </div>
+                                                {/* Mostrar documentos adjuntos */}
+                                                {registro.archivos && Object.keys(registro.archivos).length > 0 && (
+                                                    <div className="registro-documentos">
+                                                        <strong style={{ color: '#2e7d32' }}>📎 Documentos adjuntos ({Object.keys(registro.archivos).length}):</strong>
+                                                        <ul style={{ 
+                                                            margin: '5px 0 0 15px', 
+                                                            padding: 0, 
+                                                            fontSize: '0.85rem',
+                                                            color: '#666'
+                                                        }}>
+                                                            {Object.entries(registro.archivos).map(([tipo, ruta]) => {
+                                                                const nombreDocumento = {
+                                                                    'foto': '📷 Foto',
+                                                                    'archivo_dni': '📄 DNI',
+                                                                    'archivo_cuil': '📄 CUIL',
+                                                                    'archivo_fichaMedica': '🏥 Ficha Médica',
+                                                                    'archivo_partidaNacimiento': '📜 Partida de Nacimiento',
+                                                                    'archivo_solicitudPase': '📝 Solicitud de Pase',
+                                                                    'archivo_analiticoParcial': '📊 Analítico Parcial',
+                                                                    'archivo_certificadoNivelPrimario': '🎓 Certificado Primario'
+                                                                }[tipo] || `📎 ${tipo}`;
+                                                                
+                                                                return (
+                                                                    <li key={tipo} style={{ marginBottom: '2px' }}>
+                                                                        <span style={{ color: '#4caf50' }}>✅ {nombreDocumento}</span>
+                                                                        <small style={{ color: '#999', marginLeft: '5px' }}>
+                                                                            ({ruta.split('/').pop()})
+                                                                        </small>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                        <div style={{ 
+                                                            fontSize: '0.8rem', 
+                                                            color: '#ff9800', 
+                                                            marginTop: '5px',
+                                                            fontStyle: 'italic'
+                                                        }}>
+                                                            💡 Al completar inscripción se mostrarán estos documentos para verificar
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* Mensaje si no hay documentos */}
+                                                {(!registro.archivos || Object.keys(registro.archivos).length === 0) && (
+                                                    <div className="registro-documentos">
+                                                        <span style={{ color: '#f44336', fontSize: '0.85rem' }}>
+                                                            ⚠️ Sin documentos adjuntos - Deberá completar toda la documentación
+                                                        </span>
+                                                    </div>
+                                                )}
                                                 <div className="registro-info">
                                                     <small>Fecha: {formatearFecha(registro.timestamp)}</small>
                                                 </div>
@@ -260,21 +309,33 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
                                                     {registro.estado}
                                                 </span>
 
-                                                {registro.estado === 'PENDIENTE' && (
-                                                    <button
-                                                        className="btn-procesar"
-                                                        onClick={() => manejarProcesarRegistro(registro)}
-                                                        disabled={procesando === registro.id}
-                                                    >
-                                                        {procesando === registro.id ? (
-                                                            <BotonCargando loading={true} size="small">
-                                                                Procesando...
-                                                            </BotonCargando>
-                                                        ) : (
-                                                            '✅ Completar Inscripción'
-                                                        )}
-                                                    </button>
-                                                )}
+                                                {/* TODOS los registros web deben permitir completar inscripción */}
+                                                <button
+                                                    className="btn-procesar"
+                                                    onClick={() => manejarProcesarRegistro(registro)}
+                                                    disabled={procesando === registro.id}
+                                                    title={
+                                                        registro.estado === 'PENDIENTE' 
+                                                        ? 'Completar inscripción del registro web'
+                                                        : registro.estado === 'PROCESADO'
+                                                        ? 'Revisar y completar inscripción presencial'
+                                                        : 'Gestionar registro web'
+                                                    }
+                                                >
+                                                    {procesando === registro.id ? (
+                                                        <BotonCargando loading={true} size="small">
+                                                            Procesando...
+                                                        </BotonCargando>
+                                                    ) : registro.estado === 'PENDIENTE' ? (
+                                                        '✅ Completar Inscripción'
+                                                    ) : registro.estado === 'PROCESADO' ? (
+                                                        '🔍 Revisar & Completar'
+                                                    ) : registro.estado === 'ANULADO' ? (
+                                                        '🔄 Reactivar Registro'
+                                                    ) : (
+                                                        '📝 Gestionar Registro'
+                                                    )}
+                                                </button>
                                                 
                                                 <button
                                                     className="btn-eliminar"

@@ -1,5 +1,9 @@
 import { Field, ErrorMessage, useFormikContext } from 'formik';
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import AlertaMens from './AlertaMens';
+import FormatError from '../utils/MensajeError';
+import '../estilos/ModalAgregarBarrio.css';
 
 export const Domicilio = ({ esAdmin = false }) => {
     const { values, setFieldValue } = useFormikContext();
@@ -14,6 +18,10 @@ export const Domicilio = ({ esAdmin = false }) => {
     const [barrios, setBarrios] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showModalBarrio, setShowModalBarrio] = useState(false);
+    const [nuevoBarrio, setNuevoBarrio] = useState('');
+    const [guardandoBarrio, setGuardandoBarrio] = useState(false);
+    const [alerta, setAlerta] = useState({ text: '', variant: '' });
 
     const API_BASE = 'http://localhost:5000/api/ubicaciones';
 
@@ -127,9 +135,81 @@ export const Domicilio = ({ esAdmin = false }) => {
     };
 
     const handleAddNew = (tipo) => {
-        // TODO: Implementar modales para agregar nueva ubicación
-        console.log(`➕ [ADMIN] Agregar nueva ${tipo}`);
-        alert(`Funcionalidad "Agregar ${tipo}" en desarrollo`);
+        if (tipo === 'barrio') {
+            if (!values.localidad) {
+                setAlerta({ text: 'Primero debe seleccionar una localidad', variant: 'error' });
+                return;
+            }
+            setShowModalBarrio(true);
+            setNuevoBarrio('');
+        } else {
+            // TODO: Implementar modales para agregar provincia y localidad
+            console.log(`➕ [ADMIN] Agregar nueva ${tipo}`);
+            setAlerta({ text: `Funcionalidad "Agregar ${tipo}" en desarrollo`, variant: 'info' });
+        }
+    };
+
+    // Función para guardar nuevo barrio
+    const guardarNuevoBarrio = async () => {
+        if (!nuevoBarrio.trim()) {
+            setAlerta({ text: 'Por favor ingrese un nombre para el barrio', variant: 'error' });
+            return;
+        }
+
+        if (!values.localidad) {
+            setAlerta({ text: 'Error: No hay localidad seleccionada', variant: 'error' });
+            return;
+        }
+
+        try {
+            setGuardandoBarrio(true);
+            console.log('💾 Guardando nuevo barrio:', {
+                nombre: nuevoBarrio.trim(),
+                idLocalidad: values.localidad
+            });
+
+            const response = await fetch(`${API_BASE}/barrios`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nombre: nuevoBarrio.trim(),
+                    idLocalidad: values.localidad
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                // Recargar la lista de barrios
+                const responseBarrios = await fetch(`${API_BASE}/barrios/${values.localidad}`);
+                const dataBarrios = await responseBarrios.json();
+                
+                if (dataBarrios.success && dataBarrios.data) {
+                    setBarrios(dataBarrios.data);
+                    
+                    // Seleccionar automáticamente el barrio recién creado
+                    setFieldValue('barrio', data.data.id);
+                    
+                    console.log('✅ Barrio creado exitosamente:', data.data);
+                    setAlerta({ text: `Barrio "${nuevoBarrio}" creado exitosamente`, variant: 'success' });
+                    
+                    setShowModalBarrio(false);
+                    setNuevoBarrio('');
+                } else {
+                    throw new Error('Error al recargar lista de barrios');
+                }
+            } else {
+                throw new Error(data.message || 'Error al crear barrio');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error al crear barrio:', error);
+            setAlerta({ text: `Error al crear barrio: ${FormatError(error)}`, variant: 'error' });
+        } finally {
+            setGuardandoBarrio(false);
+        }
     };
 
     return (
@@ -167,14 +247,13 @@ export const Domicilio = ({ esAdmin = false }) => {
             <div className="localprovincia">
                 <div className="form-group">
                     <label>Provincia:</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="domicilio-input-con-boton">
                         <select
                             name="provincia"
                             value={values.provincia || ''}
                             onChange={handleSelectChange}
-                            className="form-control"
+                            className="form-control domicilio-select-flex"
                             disabled={loading}
-                            style={{ flex: 1 }}
                         >
                             <option value="">Seleccione Provincia</option>
                             {provincias.map(provincia => (
@@ -187,16 +266,7 @@ export const Domicilio = ({ esAdmin = false }) => {
                             <button
                                 type="button"
                                 onClick={() => handleAddNew('provincia')}
-                                className="btn-add-location"
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: '#28a745',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px'
-                                }}
+                                className="btn-add-location btn-add-provincia"
                                 title="Agregar nueva provincia"
                             >
                                 ➕
@@ -211,14 +281,13 @@ export const Domicilio = ({ esAdmin = false }) => {
                 
                 <div className="form-group">
                     <label>Localidad:</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="domicilio-input-con-boton">
                         <select
                             name="localidad"
                             value={values.localidad || ''}
                             onChange={handleSelectChange}
-                            className="form-control"
+                            className="form-control domicilio-select-flex"
                             disabled={!values.provincia || loading}
-                            style={{ flex: 1 }}
                         >
                             <option value="">
                                 {!values.provincia ? 'Primero seleccione provincia' : 'Seleccione Localidad'}
@@ -233,16 +302,7 @@ export const Domicilio = ({ esAdmin = false }) => {
                             <button
                                 type="button"
                                 onClick={() => handleAddNew('localidad')}
-                                className="btn-add-location"
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: '#007bff',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px'
-                                }}
+                                className="btn-add-location btn-add-localidad"
                                 title="Agregar nueva localidad"
                             >
                                 ➕
@@ -258,14 +318,13 @@ export const Domicilio = ({ esAdmin = false }) => {
             
             <div className="form-group">
                 <label>Barrio:</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="domicilio-input-con-boton">
                     <select
                         name="barrio"
                         value={values.barrio || ''}
                         onChange={handleSelectChange}
-                        className="form-control"
+                        className="form-control domicilio-select-flex"
                         disabled={!values.localidad || loading}
-                        style={{ flex: 1 }}
                     >
                         <option value="">
                             {!values.localidad ? 'Primero seleccione localidad' : 'Seleccione Barrio'}
@@ -280,16 +339,7 @@ export const Domicilio = ({ esAdmin = false }) => {
                         <button
                             type="button"
                             onClick={() => handleAddNew('barrio')}
-                            className="btn-add-location"
-                            style={{
-                                padding: '8px 12px',
-                                backgroundColor: '#ffc107',
-                                color: 'black',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '14px'
-                            }}
+                            className="btn-add-location btn-add-barrio"
                             title="Agregar nuevo barrio"
                         >
                             ➕
@@ -301,6 +351,67 @@ export const Domicilio = ({ esAdmin = false }) => {
                     {barrios.length} barrios disponibles
                 </small>
             </div>
+
+            {/* Modal para agregar nuevo barrio */}
+            {showModalBarrio && (
+                <div className="modal-agregar-barrio-overlay">
+                    <div className="modal-agregar-barrio-container">
+                        <h3 className="modal-agregar-barrio-titulo">
+                            🏠 Agregar Nuevo Barrio
+                        </h3>
+                        
+                        <div className="modal-agregar-barrio-grupo">
+                            <label className="modal-agregar-barrio-label">
+                                Nombre del barrio:
+                            </label>
+                            <input
+                                type="text"
+                                value={nuevoBarrio}
+                                onChange={(e) => setNuevoBarrio(e.target.value)}
+                                placeholder="Ej: Centro, San José, Villa María..."
+                                className="modal-agregar-barrio-input"
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                        guardarNuevoBarrio();
+                                    }
+                                }}
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="modal-agregar-barrio-botones">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowModalBarrio(false);
+                                    setNuevoBarrio('');
+                                }}
+                                disabled={guardandoBarrio}
+                                className="modal-agregar-barrio-btn modal-agregar-barrio-btn-cancelar"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={guardarNuevoBarrio}
+                                disabled={guardandoBarrio || !nuevoBarrio.trim()}
+                                className={`modal-agregar-barrio-btn modal-agregar-barrio-btn-crear ${
+                                    guardandoBarrio ? 'modal-agregar-barrio-guardando' : ''
+                                }`}
+                            >
+                                {guardandoBarrio ? (
+                                    <>
+                                        <span className="modal-agregar-barrio-spinner"></span>
+                                        Guardando...
+                                    </>
+                                ) : (
+                                    <>✅ Crear Barrio</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Estado informativo */}
             <div style={{
@@ -319,6 +430,19 @@ export const Domicilio = ({ esAdmin = false }) => {
                 <br />
                 📊 {provincias.length} provincias, {localidades.length} localidades, {barrios.length} barrios
             </div>
+
+            {/* Alertas */}
+            {alerta.text && (
+                <AlertaMens 
+                    text={alerta.text} 
+                    variant={alerta.variant}
+                    onClose={() => setAlerta({ text: '', variant: '' })}
+                />
+            )}
         </div>
     );
+};
+
+Domicilio.propTypes = {
+    esAdmin: PropTypes.bool
 };

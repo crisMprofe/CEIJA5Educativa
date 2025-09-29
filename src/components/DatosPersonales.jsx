@@ -74,50 +74,68 @@ export const DatosPersonales = memo(() => {
         <ValidadorDni />
         <div className="form-datos">
                 <h3>Datos Personales</h3>
-                <div className="form-group">
-                     <label>Nombre:</label>
-                     <Field type="text" name="nombre" placeholder="Nombre" className="form-control" />
-                     <ErrorMessage name="nombre" component="div" className="error" />
-                </div>
-                <div className="form-group">
-                    <label>Apellido:</label>
-                    <Field type="text" name="apellido" placeholder="Apellido" className="form-control" />
-                    <ErrorMessage name="apellido" component="div" className="error" />
+                
+                {/* Grupo de Nombre y Apellido en línea */}
+                <div className="nombre-apellido-group">
+                    <div className="form-group">
+                         <label>Nombre:</label>
+                         <Field type="text" name="nombre" placeholder="Nombre" className="form-control" />
+                         <ErrorMessage name="nombre" component="div" className="error" />
+                    </div>
+                    <div className="form-group">
+                        <label>Apellido:</label>
+                        <Field type="text" name="apellido" placeholder="Apellido" className="form-control" />
+                        <ErrorMessage name="apellido" component="div" className="error" />
+                    </div>
                 </div>
                 
-                <div className="form-group">
-                    <label>Tipo de Documento:</label>
-                    <Field as="select" name="tipoDocumento" className="form-control">
-                        <option value="">Seleccione tipo de documento</option>
-                        <option value="DNI">DNI Argentino</option>
-                        <option value="PASAPORTE">Pasaporte</option>
-                        <option value="CEDULA">Cédula de Identidad</option>
-                        <option value="OTRO">Otro Documento</option>
-                    </Field>
-                    <ErrorMessage name="tipoDocumento" component="div" className="error" />
-                </div>
+                {/* Grupo de campos de documento en línea */}
+                <div className="documento-inline-group">
+                    <div className="form-group">
+                        <label>Tipo de Documento:</label>
+                        <Field as="select" name="tipoDocumento" className="form-control">
+                            <option value="">Seleccione tipo de documento</option>
+                            <option value="DNI">DNI Argentino</option>
+                            <option value="PASAPORTE">Pasaporte</option>
+                            <option value="CEDULA">Cédula de Identidad</option>
+                            <option value="OTRO">Otro Documento</option>
+                        </Field>
+                        <ErrorMessage name="tipoDocumento" component="div" className="error" />
+                    </div>
 
-                <div className="form-group">
-                    <label>
-                        {values.tipoDocumento === 'DNI' ? 'DNI:' : 
-                         values.tipoDocumento === 'PASAPORTE' ? 'Número de Pasaporte:' :
-                         values.tipoDocumento === 'CEDULA' ? 'Número de Cédula:' :
-                         'Número de Documento:'}
-                    </label>
-                    <Field 
-                        type="text" 
-                        name="dni" 
-                        placeholder={
-                            values.tipoDocumento === 'DNI' ? 'DNI (8 dígitos)' : 
-                            values.tipoDocumento === 'PASAPORTE' ? 'Número de pasaporte' :
-                            values.tipoDocumento === 'CEDULA' ? 'Número de cédula' :
-                            'Número de documento'
-                        }
-                        className="form-control" 
-                        maxLength={values.tipoDocumento === 'DNI' ? "8" : "20"}
-                        onBlur={handleDniBlur}
-                    />
-                    <ErrorMessage name="dni" component="div" className="error" />
+                    <div className="form-group">
+                        <label>
+                            {values.tipoDocumento === 'DNI' ? 'DNI:' : 
+                             values.tipoDocumento === 'PASAPORTE' ? 'Número de Pasaporte:' :
+                             values.tipoDocumento === 'CEDULA' ? 'Número de Cédula:' :
+                             'Número de Documento:'}
+                        </label>
+                        <Field 
+                            type="text" 
+                            name="dni" 
+                            placeholder={
+                                values.tipoDocumento === 'DNI' ? 'DNI (8 dígitos)' : 
+                                values.tipoDocumento === 'PASAPORTE' ? 'Número de pasaporte' :
+                                values.tipoDocumento === 'CEDULA' ? 'Número de cédula' :
+                                'Número de documento'
+                            }
+                            className="form-control" 
+                            maxLength={values.tipoDocumento === 'DNI' ? "8" : "20"}
+                            onBlur={handleDniBlur}
+                        />
+                        <ErrorMessage name="dni" component="div" className="error" />
+                    </div>
+
+                    {values.tipoDocumento === 'DNI' && (
+                        <div className="form-group">
+                            <label>CUIL:</label>
+                            <Field type="text" name="cuil" placeholder="CUIL" className="form-control" />
+                            <ErrorMessage name="cuil" component="div" className="error" />
+                            <small className="form-text text-muted">
+                                Se completa automáticamente con el DNI. Prefijo: 20 (masculino), 27 (femenino), 23 (empresa)
+                            </small>
+                        </div>
+                    )}
                 </div>
 
                 {values.tipoDocumento !== 'DNI' && values.tipoDocumento && (
@@ -128,16 +146,6 @@ export const DatosPersonales = memo(() => {
                     </div>
                 )}
 
-                {values.tipoDocumento === 'DNI' && (
-                    <div className="form-group">
-                        <label>CUIL:</label>
-                        <Field type="text" name="cuil" placeholder="CUIL" className="form-control" />
-                        <ErrorMessage name="cuil" component="div" className="error" />
-                        <small className="form-text text-muted">
-                            Se completa automáticamente con el DNI. Prefijo: 20 (masculino), 27 (femenino), 23 (empresa)
-                        </small>
-                    </div>
-                )}
                 <div className="form-group">
                     <label>Email:</label>
                     <Field type="email" name="email" placeholder="Correo electrónico" className="form-control" />

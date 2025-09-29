@@ -11,6 +11,8 @@ import AlertaMens from '../components/AlertaMens';
 import PropTypes from 'prop-types';
 import '../estilos/estilosInscripcion.css';
 import '../estilos/botones.css';
+import '../estilos/RegistroEstd.css';
+import '../estilos/FormularioMejorado.css';
 import EstadoInscripcion from '../components/EstadoInscripcion';
 import BotonCargando from '../components/BotonCargando';
 
@@ -122,18 +124,9 @@ const RegistroEstd = ({
 
             {/* Mensaje informativo cuando se está completando un registro */}
             {completarRegistro && (
-                <div style={{
-                    background: 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)',
-                    border: '1px solid #2196f3',
-                    borderRadius: '8px',
-                    padding: '15px',
-                    margin: '15px 0',
-                    textAlign: 'center'
-                }}>
-                    <h4 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>
-                        🔄 Completando Registro Pendiente
-                    </h4>
-                    <p style={{ color: '#424242', margin: 0, fontSize: '0.9rem' }}>
+                <div className="mensaje-registro-pendiente">
+                    <h4>🔄 Completando Registro Pendiente</h4>
+                    <p>
                         Los datos del registro pendiente han sido cargados automáticamente. 
                         Complete la documentación faltante para finalizar la inscripción.
                     </p>
@@ -141,26 +134,30 @@ const RegistroEstd = ({
             )}
 
             <div className="formd">
+                <div className="form-datos">
                     <DatosPersonales />
+                </div>
+                <div className="form-domicilio">
                     <Domicilio esAdmin={isAdmin} />
-                    <div className="form-eleccion">
-                        <ModalidadSelection
-                            modalidad={values.modalidad}
-                            modalidadId={values.modalidadId}
-                            setFieldValue={setFieldValue}
-                            values={values}
-                            showMateriasList={showMateriasList}
-                            handleChange={handleChange}
-                            editMode={{}}
-                            formData={formData}
-                            setFormData={setFormData}
-                        />
-                    </div>
-                    <div className="left-container button-stack">
-                        <h4>Acciones</h4>
-                        <button type="button" className="boton-principal" onClick={() => setIsModalOpen(true)}>
-                            Adjuntar Documentación
-                        </button>
+                </div>
+                <div className="form-eleccion">
+                    <ModalidadSelection
+                        modalidad={values.modalidad}
+                        modalidadId={values.modalidadId}
+                        setFieldValue={setFieldValue}
+                        values={values}
+                        showMateriasList={showMateriasList}
+                        handleChange={handleChange}
+                        editMode={{}}
+                        formData={formData}
+                        setFormData={setFormData}
+                    />
+                </div>
+                <div className="left-container button-stack">
+                    <h4>Acciones</h4>
+                    <button type="button" className="boton-principal" onClick={() => setIsModalOpen(true)}>
+                        Adjuntar Documentación
+                    </button>
                         {accion === "Eliminar" ? (
                             <button
                                 type="button"

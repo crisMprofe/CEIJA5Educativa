@@ -18,14 +18,14 @@ export const notificacionesService = {
     },
 
     // Enviar email individual
-    enviarEmailIndividual: async (registroId) => {
+    enviarEmailIndividual: async (dni) => {
         try {
             const response = await fetch('/api/notificaciones/enviar-individual', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ registroId })
+                body: JSON.stringify({ dni })
             });
 
             const data = await response.json();
@@ -84,6 +84,53 @@ export const notificacionesService = {
             return data;
         } catch (error) {
             console.error('Error al enviar emails urgentes:', error);
+            throw error;
+        }
+    },
+
+    // Eliminar registro pendiente
+    eliminarRegistro: async (dni) => {
+        try {
+            const response = await fetch(`/api/notificaciones/eliminar-registro/${dni}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al eliminar registro');
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error al eliminar registro:', error);
+            throw error;
+        }
+    },
+
+    // Completar registro pendiente
+    completarRegistro: async (dni) => {
+        try {
+            const response = await fetch('/api/notificaciones/completar-registro', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ dni })
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al completar registro');
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error al completar registro:', error);
             throw error;
         }
     }

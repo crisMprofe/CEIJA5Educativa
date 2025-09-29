@@ -89,7 +89,7 @@ const PaginaPruebaDomicilio = () => {
                 <h3>Instrucciones de Uso:</h3>
                 <ul>
                     <li><strong>Usuario Normal:</strong> Solo puede seleccionar de las opciones disponibles en los selects</li>
-                    <li><strong>Administrador:</strong> Ve botones "+" junto a cada select para agregar nuevas opciones</li>
+                    <li><strong>Administrador:</strong> Ve botones &quot;+&quot; junto a cada select para agregar nuevas opciones</li>
                     <li><strong>Funcionamiento:</strong> 
                         <ul>
                             <li>Selecciona una provincia → se cargan las localidades de esa provincia</li>

@@ -10,12 +10,25 @@ const EstadoInscripcion = ({ value, handleChange, errors = {} }) => {
     const [estados, setEstados] = useState([]);
     const [touched, setTouched] = useState(false);
 
-   
     useEffect(() => {
         // Cargar estados desde la API
         const fetchEstados = async () => {
-            const data = await service.getEstadosInscripcion();
-            setEstados(data);
+            try {
+                const data = await service.getEstadosInscripcion();
+                // Verificar si la respuesta es un error
+                if (data && data.error) {
+                    console.error('Error al obtener estados:', data.error);
+                    setEstados([]); // Establecer array vacío en caso de error
+                } else if (Array.isArray(data)) {
+                    setEstados(data);
+                } else {
+                    console.error('Datos de estados no válidos:', data);
+                    setEstados([]); // Establecer array vacío si no es un array
+                }
+            } catch (error) {
+                console.error('Error en fetchEstados:', error);
+                setEstados([]); // Establecer array vacío en caso de error
+            }
         };
         fetchEstados();
     }, []);
@@ -30,10 +43,10 @@ const EstadoInscripcion = ({ value, handleChange, errors = {} }) => {
                 type="select"
                 options={[
                     { value: '', label: 'Estado' },
-                    ...estados.map(e => ({
+                    ...(Array.isArray(estados) ? estados.map(e => ({
                         value: e.id, // Aquí va el id
                         label: e.descripcionEstado
-                    }))
+                    })) : [])
                 ]}
                 registro={{ value, onChange: handleChange, onBlur: handleBlur }}
             />

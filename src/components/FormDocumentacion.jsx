@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import '../estilos/estilosFormDocumentacion.css';
@@ -109,7 +108,7 @@ const FormDocumentacion = ({ previews, handleFileChange, onClose, onProceedToReg
                                         type="file"
                                         name={name}
                                         className="small-select"
-                                        onChange={(e) => handleFileChange(e, name)} // Llama a handleFileChange
+                                        onChange={(e) => handleFileChange(e, name)}
                                         accept="image/*,application/pdf"
                                     />
                                 </div>
@@ -195,4 +194,3 @@ FormDocumentacion.propTypes = {
 };
 
 export default FormDocumentacion;
-

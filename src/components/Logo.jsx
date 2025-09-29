@@ -1,4 +1,4 @@
-import LogoCE from '../assets/images/LogoCE.png';
+import LogoCE from '../assets/images/ceija5Educ.png';
 import '../estilos/estilosLogo.css';
 
 export const Logo = () => {

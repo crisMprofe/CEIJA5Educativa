@@ -44,12 +44,35 @@ const createEstd = async (formDataToSend, setAlert) => {
         const msg = FormatError(error);
         if (setAlert) setAlert({ text: msg, variant: 'error' });
         if (import.meta.env.DEV) {
-            console.error('Error en createEstd - respuesta servidor:', error.response?.data);
+            console.error('Error en createEstd - respuesta servidor:', JSON.stringify(error.response?.data, null, 2));
+            console.error('Error en createEstd - error completo:', error);
         }
         throw new Error(msg);
     }
 };
+// Registrar registro web que va a pendientes por criterios no cumplidos
+const createWebPendiente = async (formDataToSend) => {
+    try {
+        console.log('⏰ [createWebPendiente] Enviando a registros pendientes...');
+        const response = await axiosInstance.post('/estudiantes/registrar-web-pendiente', formDataToSend);
+        console.log('⏰ [createWebPendiente] Respuesta recibida:', response);
+        if (import.meta.env.DEV) {
+            console.log('⏰ [createWebPendiente] response.data:', response.data);
+        }
+        return response.data;
+    } catch (error) {
+        console.error('⏰ [createWebPendiente] Error capturado:', error);
+        const msg = FormatError(error);
+        if (import.meta.env.DEV) {
+            console.error('⏰ [createWebPendiente] Error formateado:', msg);
+            console.error('⏰ [createWebPendiente] error.response?.data:', error.response?.data);
+        }
+        throw new Error(msg);
+    }
+};
+
 export default {
     createWebInscription,       
     createEstd,
+    createWebPendiente,
 }
