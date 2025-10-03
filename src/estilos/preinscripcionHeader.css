@@ -414,3 +414,49 @@
 .cambiar-modalidad-btn:last-child {
   margin-right: 0;
 }
+
+/* Estilos para header simplificado de administrador */
+.header-inscripcion.admin-simplified {
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border-bottom: 2px solid #ddd;
+  padding: 8px 20px;
+  margin: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.header-inscripcion.admin-simplified .header-modalidad-selector {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.header-inscripcion.admin-simplified .boton-principal-pill {
+  background: #fff;
+  border: 1px solid #ccc;
+  color: #333;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 90px;
+}
+
+.header-inscripcion.admin-simplified .boton-principal-pill:hover {
+  border-color: #2d4177;
+  color: #2d4177;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(45, 65, 119, 0.15);
+}
+
+.header-inscripcion.admin-simplified .boton-principal-pill.selected {
+  background: #2d4177;
+  border-color: #2d4177;
+  color: white;
+  box-shadow: 0 2px 8px rgba(45, 65, 119, 0.25);
+}

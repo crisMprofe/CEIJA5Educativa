@@ -5,28 +5,36 @@ import useGestionDocumentacion from '../hooks/useGestionDocumentacion';
 import { useInitialValues } from '../hooks/useInitialValues';
 import { useRegistroWebData } from '../hooks/useRegistroWebData';
 import { useSubmitHandler } from '../hooks/useSubmitHandler';
-import { useAlerts } from '../hooks/useAlerts';
-import AlertSystem from '../components/AlertSystem';
+import { useGlobalAlerts } from '../hooks/useGlobalAlerts';
 import GestionEstudianteView from './GestionEstudianteView';
 
-const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWebUser, onClose, onBack }) => {
+const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWebUser, onClose, onBack, datosRegistroPendiente }) => {
     const navigate = useNavigate();
     
     // Hooks personalizados
     const {
         files,
         previews,
-        alert: docAlert,
-        setAlert: setDocAlert,
         handleFileChange,
         buildDetalleDocumentacion,
         resetArchivos,
     } = useGestionDocumentacion();
 
     const { completarWebParam, datosRegistroWeb } = useRegistroWebData(modalidad);
-    const initialValues = useInitialValues(modalidad, completarRegistro, datosRegistroWeb);
+    const initialValues = useInitialValues(modalidad, completarRegistro, datosRegistroWeb, datosRegistroPendiente);
     const { handleSubmit: handleSubmitForm } = useSubmitHandler(
-        setDocAlert, 
+        (alertData) => {
+            // Usar el sistema de alertas principal (AlertSystem) en lugar de docAlert
+            if (alertData.variant === 'success') {
+                showSuccess(alertData.text);
+            } else if (alertData.variant === 'error') {
+                showError(alertData.text);
+            } else if (alertData.variant === 'warning') {
+                showWarning(alertData.text);
+            } else {
+                showInfo(alertData.text);
+            }
+        }, 
         files, 
         previews, 
         resetArchivos, 
@@ -34,30 +42,20 @@ const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWe
     );
 
     // Hooks adicionales para mejor funcionalidad
-    const { alert, showError, showSuccess, hideAlert } = useAlerts();
+    const { showError, showSuccess, showWarning, showInfo } = useGlobalAlerts();
 
     // Wrapper para el handleSubmit que incluye los parámetros específicos del componente
     const handleSubmit = async (values, formikBag) => {
-        try {
-            const result = await handleSubmitForm(
-                values, 
-                formikBag, 
-                accion, 
-                isAdmin, 
-                isWebUser, 
-                completarWebParam, 
-                modalidad
-            );
-            
-            if (result?.success) {
-                showSuccess(result.message || 'Operación completada exitosamente');
-            } else if (result?.error) {
-                showError(result.error);
-            }
-        } catch (error) {
-            showError('Error inesperado durante el envío del formulario');
-            console.error('Error en handleSubmit:', error);
-        }
+        // El useSubmitHandler ya maneja todos los mensajes a través de la función setAlert que pasamos
+        await handleSubmitForm(
+            values, 
+            formikBag, 
+            accion, 
+            isAdmin, 
+            isWebUser, 
+            completarWebParam, 
+            modalidad
+        );
     };
 
     // Función simplificada para manejo de archivos - usar solo useGestionDocumentacion
@@ -68,7 +66,7 @@ const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWe
 
     return (
         <>
-            <AlertSystem alert={alert} onClose={hideAlert} />
+
             <Formik
                 initialValues={initialValues}
                 onSubmit={handleSubmit}
@@ -79,8 +77,18 @@ const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWe
                         onBack={onBack}
                         navigate={navigate}
                         previews={previews}
-                        alert={docAlert}
-                        setAlert={setDocAlert}
+                        setAlert={(alertData) => {
+                            // Usar el sistema de alertas principal (AlertSystem)
+                            if (alertData.variant === 'success') {
+                                showSuccess(alertData.text);
+                            } else if (alertData.variant === 'error') {
+                                showError(alertData.text);
+                            } else if (alertData.variant === 'warning') {
+                                showWarning(alertData.text);
+                            } else {
+                                showInfo(alertData.text);
+                            }
+                        }}
                         accion={accion}
                         isAdmin={isAdmin}
                         isWebUser={isWebUser}
@@ -104,6 +112,7 @@ GestionEstudiante.propTypes = {
     isWebUser: PropTypes.bool,
     onClose: PropTypes.func.isRequired,
     onBack: PropTypes.func,
+    datosRegistroPendiente: PropTypes.object,
 };
 
 export default GestionEstudiante;

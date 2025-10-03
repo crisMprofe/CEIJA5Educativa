@@ -1,10 +1,14 @@
+
 import PropTypes from 'prop-types';
-import { usePlanesPorModalidad } from '../../hooks/usePlanesPorModalidad';
 import Input from '../Input';
 
-const CursoPlanSelector = ({ modalidadId, value, setFieldValue }) => {
-    // ✅ Cargar los planes según la modalidad
-    const planes = usePlanesPorModalidad(modalidadId);
+/**
+ * Selector de Curso/Plan filtrado por modalidad.
+ * Recibe los planes ya filtrados como prop.
+ */
+const CursoPlanSelector = ({ planes, value, setFieldValue }) => {
+    // Logs para depuración
+    console.log('CursoPlanSelector props:', { planes, value });
 
     const handleCursoPlanChange = (e) => {
         const selectedPlanId = Number(e.target.value);
@@ -19,6 +23,11 @@ const CursoPlanSelector = ({ modalidadId, value, setFieldValue }) => {
 
     return (
         <div className="curso-plan-selector">
+            {(!planes || planes.length === 0) && (
+                <div style={{ color: 'red', marginBottom: '0.5rem' }}>
+                    ⚠️ No hay planes disponibles para la modalidad seleccionada.
+                </div>
+            )}
             <Input
                 label="Curso / Plan"
                 name="cursoPlanId"
@@ -40,7 +49,12 @@ const CursoPlanSelector = ({ modalidadId, value, setFieldValue }) => {
 };
 
 CursoPlanSelector.propTypes = {
-    modalidadId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    planes: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            plan: PropTypes.string.isRequired
+        })
+    ).isRequired,
     value: PropTypes.object.isRequired, // Debe contener cursoPlanId y cursoPlan
     setFieldValue: PropTypes.func.isRequired
 };

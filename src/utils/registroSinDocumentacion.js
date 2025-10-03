@@ -628,16 +628,26 @@ export const detenerLimpiezaAutomatica = () => {
 // Función para obtener información de vencimiento
 export const obtenerInfoVencimiento = (registro) => {
     const ahora = new Date();
-    const vencimiento = new Date(registro.fechaVencimiento);
-    const msRestantes = vencimiento.getTime() - ahora.getTime();
-    
-    if (msRestantes <= 0) {
-        return { vencido: true, diasRestantes: 0, mensaje: 'VENCIDO' };
+    let vencimiento;
+    // Si el registro tiene fechaVencimiento, úsala; si no, calcula sumando 7 días al timestamp
+    if (registro.fechaVencimiento) {
+        vencimiento = new Date(registro.fechaVencimiento);
+    } else if (registro.timestamp) {
+        vencimiento = new Date(registro.timestamp);
+        vencimiento.setDate(vencimiento.getDate() + 7);
+    } else {
+        // Si no hay datos, considera vencido
+        return { vencido: true, diasRestantes: 0, mensaje: 'VENCIDO', fechaVencimiento: 'Sin fecha' };
     }
-    
+
+    const msRestantes = vencimiento.getTime() - ahora.getTime();
+    if (msRestantes <= 0) {
+        return { vencido: true, diasRestantes: 0, mensaje: 'VENCIDO', fechaVencimiento: vencimiento.toLocaleString() };
+    }
+
     const diasRestantes = Math.ceil(msRestantes / (1000 * 60 * 60 * 24));
     const horasRestantes = Math.ceil(msRestantes / (1000 * 60 * 60));
-    
+
     let mensaje;
     if (diasRestantes > 1) {
         mensaje = `${diasRestantes} días restantes`;
@@ -646,10 +656,10 @@ export const obtenerInfoVencimiento = (registro) => {
     } else {
         mensaje = `${horasRestantes}h restantes`;
     }
-    
-    return { 
-        vencido: false, 
-        diasRestantes, 
+
+    return {
+        vencido: false,
+        diasRestantes,
         horasRestantes,
         mensaje,
         fechaVencimiento: vencimiento.toLocaleString()
@@ -845,22 +855,35 @@ export const eliminarDuplicadosPorDNI = (registros) => {
 };
 
 // Función para obtener todos los registros sin documentación (con limpieza automática)
-export const obtenerRegistrosSinDocumentacion = () => {
+export const obtenerRegistrosSinDocumentacion = (todos = false) => {
     try {
-        const registros = JSON.parse(localStorage.getItem('registrosSinDocumentacion') || '[]');
-        
-        // Automáticamente limpiar vencidos y duplicados cada vez que se consulte
-        const registrosLimpios = limpiarRegistrosVencidos(registros);
-        const registrosDedupicados = eliminarDuplicadosPorDNI(registrosLimpios);
-        
-        // Si hubo cambios en la limpieza, guardar de vuelta
-        if (registrosDedupicados.length !== registros.length) {
-            localStorage.setItem('registrosSinDocumentacion', JSON.stringify(registrosDedupicados, null, 2));
-            const eliminados = registros.length - registrosDedupicados.length;
-            console.log(`🧹 Limpieza automática: ${eliminados} registro(s) duplicado(s) o vencido(s) eliminado(s)`);
+        // Leer registros desde el archivo Registros_Pendientes.json usando fetch (solo en entorno navegador)
+        if (typeof window !== 'undefined') {
+            // Sincrónico para compatibilidad, pero en producción usaría async/await y promesas
+            const request = new XMLHttpRequest();
+            request.open('GET', '/api/registros-pendientes', false); // endpoint backend
+            request.send(null);
+            if (request.status === 200) {
+                const registros = JSON.parse(request.responseText);
+                if (todos) {
+                    // Devuelve todos los registros
+                    return registros;
+                }
+                // Filtrar los que realmente no tienen documentación y no están PROCESADO si son web
+                const registrosSinDoc = registros.filter(r => {
+                    const esWeb = r.origen === 'web' || r.tipo === 'web';
+                    if (esWeb && r.estado === 'PROCESADO') return false;
+                    return !r.tieneDocumentacion || (r.documentosSubidos && r.documentosSubidos.length === 0);
+                });
+                return registrosSinDoc;
+            } else {
+                console.error('❌ Error al obtener registros pendientes:', request.statusText);
+                return [];
+            }
+        } else {
+            // Node.js: leer desde el sistema de archivos si se requiere
+            return [];
         }
-        
-        return registrosDedupicados;
     } catch (error) {
         console.error('❌ Error al obtener registros sin documentación:', error);
         return [];

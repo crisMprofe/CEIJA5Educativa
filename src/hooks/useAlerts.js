@@ -1,80 +1,109 @@
 import { useState, useCallback } from 'react';
 
 /**
- * Hook personalizado para manejo de alertas y notificaciones
+ * Hook personalizado para manejo de alertas flotantes y modales de confirmación
  */
 export const useAlerts = () => {
-    const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+    const [alerts, setAlerts] = useState([]);
+    const [modal, setModal] = useState({ show: false, message: '', onConfirm: null, onCancel: null });
     const [loading, setLoading] = useState(false);
 
-    // Ocultar alerta
-    const hideAlert = useCallback(() => {
-        setAlert({ show: false, type: '', message: '' });
+    // Remover alerta por ID
+    const removeAlert = useCallback((alertId) => {
+        setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+    }, []);
+
+    // Agregar nueva alerta flotante
+    const addAlert = useCallback((type, message, duration = null) => {
+        const newAlert = {
+            id: Date.now() + Math.random(),
+            type,
+            message,
+            timestamp: Date.now()
+        };
+
+        setAlerts(prev => [...prev, newAlert]);
+
+        // Auto-remover después del tiempo especificado
+        if (duration !== null) {
+            setTimeout(() => {
+                removeAlert(newAlert.id);
+            }, duration);
+        }
+
+        return newAlert.id;
+    }, [removeAlert]);
+
+    // Limpiar todas las alertas
+    const clearAlerts = useCallback(() => {
+        setAlerts([]);
     }, []);
 
     // Mostrar alerta de éxito
     const showSuccess = useCallback((message) => {
-        setAlert({
-            show: true,
-            type: 'success',
-            message: message || 'Operación completada exitosamente'
-        });
-        
-        // Auto-ocultar después de 5 segundos
-        setTimeout(() => hideAlert(), 5000);
-    }, [hideAlert]);
+        return addAlert('success', message || 'Operación completada exitosamente', 5000);
+    }, [addAlert]);
 
     // Mostrar alerta de error
     const showError = useCallback((message) => {
-        setAlert({
-            show: true,
-            type: 'error',
-            message: message || 'Ha ocurrido un error inesperado'
-        });
-        
-        // Auto-ocultar después de 8 segundos para errores
-        setTimeout(() => hideAlert(), 8000);
-    }, [hideAlert]);
+        return addAlert('error', message || 'Ha ocurrido un error inesperado', 8000);
+    }, [addAlert]);
 
     // Mostrar alerta de advertencia
     const showWarning = useCallback((message) => {
-        setAlert({
-            show: true,
-            type: 'warning',
-            message: message || 'Advertencia'
-        });
-        
-        // Auto-ocultar después de 6 segundos
-        setTimeout(() => hideAlert(), 6000);
-    }, [hideAlert]);
+        return addAlert('warning', message || 'Advertencia', 6000);
+    }, [addAlert]);
 
     // Mostrar alerta de información
     const showInfo = useCallback((message) => {
-        setAlert({
-            show: true,
-            type: 'info',
-            message: message
-        });
-        
-        // Auto-ocultar después de 4 segundos
-        setTimeout(() => hideAlert(), 4000);
-    }, [hideAlert]);
+        return addAlert('info', message, 4000);
+    }, [addAlert]);
 
     // Mostrar estado de carga
     const showLoading = useCallback((message = 'Cargando...') => {
         setLoading(true);
-        setAlert({
-            show: true,
-            type: 'loading',
-            message: message
-        });
-    }, []);
+        return addAlert('loading', message, null); // Sin auto-remove
+    }, [addAlert]);
 
     // Ocultar estado de carga
     const hideLoading = useCallback(() => {
         setLoading(false);
-        hideAlert();
-    }, [hideAlert]);
+        // Remover solo las alertas de loading
+        setAlerts(prev => prev.filter(alert => alert.type !== 'loading'));
+    }, []);
+
+    // Mostrar modal de confirmación
+    const showConfirmModal = useCallback((message, onConfirm, onCancel = null) => {
+        return new Promise((resolve) => {
+            setModal({
+                show: true,
+                message: message || '¿Está seguro de realizar esta acción?',
+                onConfirm: () => {
+                    setModal({ show: false, message: '', onConfirm: null, onCancel: null });
+                    if (onConfirm) onConfirm();
+                    resolve(true);
+                },
+                onCancel: () => {
+                    setModal({ show: false, message: '', onConfirm: null, onCancel: null });
+                    if (onCancel) onCancel();
+                    resolve(false);
+                }
+            });
+        });
+    }, []);
+
+    // Cerrar modal
+    const closeModal = useCallback(() => {
+        if (modal.onCancel) {
+            modal.onCancel();
+        }
+        setModal({ show: false, message: '', onConfirm: null, onCancel: null });
+    }, [modal]);
+
+    // Confirmar acción (reemplaza window.confirm)
+    const confirmAction = useCallback(async (message) => {
+        return await showConfirmModal(message);
+    }, [showConfirmModal]);
 
     // Manejar errores de validación
     const handleValidationErrors = useCallback((errors) => {
@@ -99,27 +128,31 @@ export const useAlerts = () => {
         }
     }, [showSuccess, showError]);
 
-    // Confirmar acción peligrosa
-    const confirmAction = useCallback((message, onConfirm) => {
-        const confirmed = window.confirm(message || '¿Está seguro de realizar esta acción?');
-        if (confirmed && onConfirm) {
-            onConfirm();
-        }
-        return confirmed;
-    }, []);
-
     return {
-        alert,
+        // Estados
+        alerts,
+        modal,
         loading,
+        
+        // Funciones de alertas
         showSuccess,
         showError,
         showWarning,
         showInfo,
-        hideAlert,
+        removeAlert,
+        clearAlerts,
+        
+        // Funciones de loading
         showLoading,
         hideLoading,
+        
+        // Funciones de modal
+        showConfirmModal,
+        closeModal,
+        confirmAction,
+        
+        // Utilidades
         handleValidationErrors,
-        handleApiResponse,
-        confirmAction
+        handleApiResponse
     };
 };

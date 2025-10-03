@@ -2,33 +2,33 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import CloseButton from './CloseButton';
-import { descargarRegistrosCSV, obtenerRegistrosSinDocumentacion, limpiarDuplicadosManualmente, verificarDuplicados, testearSistema7Dias } from '../utils/registroSinDocumentacion';
-import { notificacionesService } from '../services/notificacionesService';
-import { migracionService } from '../services/migracionService';
-import { registrosPendientesService } from '../services/registrosPendientesService';
+import { obtenerRegistrosSinDocumentacion, limpiarDuplicadosManualmente, verificarDuplicados, testearSistema7Dias } from '../utils/registroSinDocumentacion';
+import registrosPendientesService from '../services/serviceRegistrosPendientes';
 import { obtenerDocumentosRequeridos } from '../utils/registroSinDocumentacion';
+import { useGlobalAlerts } from '../hooks/useGlobalAlerts';
 import '../estilos/modalM.css';
 import '../estilos/botones.css';
 import '../estilos/ModalRegistrosPendientes.css';
 
-const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescargar }) => {
+const ModalRegistrosPendientes = ({ onClose }) => {
     const navigate = useNavigate();
-    const [descargando, setDescargando] = useState(false);
-    const [enviandoEmail, setEnviandoEmail] = useState(false);
-    const [mensajeEmail, setMensajeEmail] = useState('');
+    const { showSuccess, showError, showWarning, confirmAction } = useGlobalAlerts();
     const [registros, setRegistros] = useState([]);
-    const [cargandoRegistros, setCargandoRegistros] = useState(true);
+    const [mensajeEmail, setMensajeEmail] = useState('');
+    const [enviandoEmail, setEnviandoEmail] = useState(false);
+    const [descargando, setDescargando] = useState(false);
     const [estadoDuplicados, setEstadoDuplicados] = useState(null);
+    const [cargandoRegistros, setCargandoRegistros] = useState(false);
     const [limpiandoDuplicados, setLimpiandoDuplicados] = useState(false);
 
     // Función para recargar registros
     const recargarRegistros = async () => {
         try {
-            console.log('🔄 Recargando registros pendientes desde localStorage...');
+            console.log('🔄 Recargando registros pendientes desde servidor...');
             setMensajeEmail('Actualizando lista de registros...');
             
-            // Obtener registros actualizados del localStorage
-            const registrosActualizados = obtenerRegistrosSinDocumentacion();
+            // Obtener registros actualizados del servidor
+            const registrosActualizados = await registrosPendientesService.obtenerRegistrosPendientes();
             console.log('📋 Registros actualizados:', registrosActualizados);
             
             // Comparar con la lista anterior para detectar cambios
@@ -79,19 +79,19 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
         }
     };
 
-    // Cargar registros desde localStorage al montar el componente
+    // Cargar registros desde el archivo JSON del backend
     useEffect(() => {
         const cargarRegistrosPendientes = async () => {
             try {
                 setCargandoRegistros(true);
-                console.log('🔄 Cargando registros pendientes desde localStorage...');
+                console.log('🔄 Cargando registros pendientes desde archivo JSON...');
                 
-                // Obtener registros del localStorage (registros de administrador)
-                const registrosLocalStorage = obtenerRegistrosSinDocumentacion();
-                console.log('📋 Registros desde localStorage:', registrosLocalStorage);
+                // Obtener registros del archivo JSON del backend
+                const registrosBackend = await registrosPendientesService.obtenerRegistrosPendientes();
+                console.log('📋 Registros desde backend:', registrosBackend);
                 
-                setRegistros(registrosLocalStorage);
-                setMensajeEmail('✅ Registros cargados exitosamente');
+                setRegistros(registrosBackend);
+                setMensajeEmail('✅ Registros cargados exitosamente desde servidor');
                 setTimeout(() => setMensajeEmail(''), 2000);
                 
                 // Verificación automática de duplicados al cargar
@@ -103,15 +103,10 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
                 console.error('❌ Error al cargar registros:', error);
                 setMensajeEmail(`❌ Error al cargar registros: ${error.message}`);
                 
-                // Si falla, usar los registros que se pasaron como prop (fallback)
-                if (registrosProp && registrosProp.length > 0) {
-                    console.log('📋 Usando registros de prop como fallback:', registrosProp);
-                    setRegistros(registrosProp);
-                    setMensajeEmail('⚠️ Cargando desde cache local');
-                    setTimeout(() => setMensajeEmail(''), 3000);
-                } else {
-                    setRegistros([]);
-                }
+                // Si falla, establecer array vacío
+                setRegistros([]);
+                setMensajeEmail('⚠️ No se pudieron cargar registros');
+                setTimeout(() => setMensajeEmail(''), 3000);
             } finally {
                 setCargandoRegistros(false);
             }
@@ -125,11 +120,15 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
         }, 30000);
 
         return () => clearInterval(intervalo);
-    }, [registrosProp]);
+    }, []);
 
     const obtenerInfoVencimiento = (registro) => {
         const ahora = new Date();
-        const vencimiento = new Date(registro.fechaVencimiento);
+        
+        // Calcular vencimiento: 7 días desde el timestamp
+        const fechaRegistro = new Date(registro.timestamp);
+        const vencimiento = new Date(fechaRegistro.getTime() + (7 * 24 * 60 * 60 * 1000)); // +7 días
+        
         const msRestantes = vencimiento.getTime() - ahora.getTime();
         
         if (msRestantes <= 0) {
@@ -165,17 +164,44 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
 
     // Función para enviar email a un estudiante individual
     const enviarEmailIndividual = async (registro) => {
+        const nombreCompleto = `${registro.datos?.nombre || registro.nombre} ${registro.datos?.apellido || registro.apellido}`;
+        const email = registro.datos?.email || registro.email;
+        
+        if (!email || !email.includes('@')) {
+            setMensajeEmail(`❌ ${nombreCompleto} no tiene email válido registrado`);
+            setTimeout(() => setMensajeEmail(''), 5000);
+            return;
+        }
+        
         try {
-            setMensajeEmail('Enviando notificación...');
-            await notificacionesService.enviarEmailIndividual(registro.dni);
+            setEnviandoEmail(true);
+            setMensajeEmail(`📧 Enviando notificación a ${nombreCompleto}...`);
             
-            setMensajeEmail(`✅ Email enviado exitosamente a ${registro.nombre} ${registro.apellido}`);
-            setTimeout(() => setMensajeEmail(''), 3000);
+            // Usar fetch directo al endpoint de backend
+            const response = await fetch('http://localhost:5000/api/notificaciones/enviar-individual', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ dni: registro.dni })
+            });
+            
+            const resultado = await response.json();
+            
+            if (resultado.success) {
+                setMensajeEmail(`✅ Email enviado exitosamente a ${nombreCompleto} (${email})`);
+                setTimeout(() => setMensajeEmail(''), 3000);
+            } else {
+                setMensajeEmail(`❌ Error: ${resultado.message}`);
+                setTimeout(() => setMensajeEmail(''), 5000);
+            }
             
         } catch (error) {
             console.error('Error al enviar email:', error);
-            setMensajeEmail(`❌ Error al enviar email: ${error.message}`);
+            setMensajeEmail(`❌ Error al enviar email a ${nombreCompleto}: ${error.message}`);
             setTimeout(() => setMensajeEmail(''), 5000);
+        } finally {
+            setEnviandoEmail(false);
         }
     };
 
@@ -183,15 +209,28 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
     const enviarEmailsMasivos = async () => {
         setEnviandoEmail(true);
         try {
-            setMensajeEmail('Enviando notificaciones masivas...');
-            const result = await notificacionesService.enviarEmailsMasivos();
+            setMensajeEmail('📧 Enviando notificaciones masivas a todos los estudiantes...');
             
-            setMensajeEmail(`✅ Emails enviados exitosamente a ${result.enviados} estudiantes`);
-            setTimeout(() => setMensajeEmail(''), 3000);
+            const response = await fetch('http://localhost:5000/api/notificaciones/enviar-masivo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const resultado = await response.json();
+            
+            if (resultado.success) {
+                setMensajeEmail(`✅ Emails masivos completados: ${resultado.enviados} enviados${resultado.fallidos > 0 ? `, ${resultado.fallidos} fallidos` : ''}`);
+                setTimeout(() => setMensajeEmail(''), 4000);
+            } else {
+                setMensajeEmail(`❌ Error en envío masivo: ${resultado.message}`);
+                setTimeout(() => setMensajeEmail(''), 5000);
+            }
             
         } catch (error) {
             console.error('Error al enviar emails masivos:', error);
-            setMensajeEmail(`❌ Error al enviar emails: ${error.message}`);
+            setMensajeEmail(`❌ Error al enviar emails masivos: ${error.message}`);
             setTimeout(() => setMensajeEmail(''), 5000);
         } finally {
             setEnviandoEmail(false);
@@ -202,11 +241,25 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
     const enviarEmailsUrgentes = async () => {
         setEnviandoEmail(true);
         try {
-            setMensajeEmail('Enviando notificaciones urgentes...');
-            const result = await notificacionesService.enviarEmailsUrgentes(3);
+            setMensajeEmail('⚡ Enviando notificaciones urgentes (≤3 días)...');
             
-            setMensajeEmail(`⚡ Emails urgentes enviados a ${result.enviados} estudiantes`);
-            setTimeout(() => setMensajeEmail(''), 3000);
+            const response = await fetch('http://localhost:5000/api/notificaciones/enviar-urgentes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ diasUmbral: 3 })
+            });
+            
+            const resultado = await response.json();
+            
+            if (resultado.success) {
+                setMensajeEmail(`⚡ Emails urgentes completados: ${resultado.enviados} enviados${resultado.fallidos > 0 ? `, ${resultado.fallidos} fallidos` : ''}`);
+                setTimeout(() => setMensajeEmail(''), 4000);
+            } else {
+                setMensajeEmail(`❌ Error en envío urgente: ${resultado.message}`);
+                setTimeout(() => setMensajeEmail(''), 5000);
+            }
             
         } catch (error) {
             console.error('Error al enviar emails urgentes:', error);
@@ -217,75 +270,47 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
         }
     };
 
-    // Función para migrar registros de localStorage al archivo JSON del backend
-    const migrarRegistrosLocalStorage = async () => {
-        setEnviandoEmail(true);
-        try {
-            setMensajeEmail('🚀 Migrando registros desde localStorage al servidor...');
-            
-            const resultado = await migracionService.ejecutarMigracionCompleta();
-            
-            if (resultado.success) {
-                setMensajeEmail(`✅ Migración exitosa: ${resultado.registrosMigrados} registros migrados al archivo JSON`);
-                
-                // Recargar registros después de la migración
-                setTimeout(async () => {
-                    try {
-                        const registrosServidor = await notificacionesService.obtenerRegistrosPendientes();
-                        setRegistros(registrosServidor);
-                        setMensajeEmail('📋 Registros recargados desde el servidor');
-                    } catch (error) {
-                        console.error('Error al recargar después de migración:', error);
-                    }
-                }, 2000);
-                
-            } else {
-                setMensajeEmail(`❌ Error en migración: ${resultado.message}`);
-            }
-            
-            setTimeout(() => setMensajeEmail(''), 8000);
-            
-        } catch (error) {
-            console.error('Error al migrar registros:', error);
-            setMensajeEmail(`❌ Error al migrar registros: ${error.message}`);
-            setTimeout(() => setMensajeEmail(''), 5000);
-        } finally {
-            setEnviandoEmail(false);
-        }
-    };
+    // Función eliminada: migrarRegistrosLocalStorage - ya no es necesaria
 
     // Función para eliminar un registro pendiente
     const eliminarRegistro = async (registro) => {
-        if (!confirm(`¿Estás seguro de que quieres eliminar el registro de ${registro.nombre} ${registro.apellido}?`)) {
-            return;
-        }
+        const nombreCompleto = `${registro.datos?.nombre || registro.nombre} ${registro.datos?.apellido || registro.apellido}`;
+        
+        // Usar confirmación del hook
+        const procederEliminacion = () => {
+            procesarEliminacion(registro, nombreCompleto);
+        };
+        
+        confirmAction(
+            `¿Estás seguro de que quieres eliminar el registro de ${nombreCompleto}?`,
+            procederEliminacion
+        );
+    };
 
+    // Función auxiliar para procesar la eliminación
+    const procesarEliminacion = async (registro, nombreCompleto) => {
         try {
-            setMensajeEmail(`🗑️ Eliminando registro de ${registro.nombre} ${registro.apellido}...`);
+            setMensajeEmail(`🗑️ Eliminando registro de ${nombreCompleto}...`);
             
-            const resultado = await notificacionesService.eliminarRegistro(registro.dni);
+            // Usar el servicio correcto del backend
+            await registrosPendientesService.eliminarRegistroPendiente(registro.dni);
+            console.log('✅ Registro eliminado del backend exitosamente');
             
-            if (resultado.success) {
-                // Eliminar de la lista local inmediatamente
-                setRegistros(prevRegistros => 
-                    prevRegistros.filter(r => r.dni !== registro.dni)
-                );
-                
-                setMensajeEmail(`✅ Registro de ${registro.nombre} ${registro.apellido} eliminado exitosamente`);
-                setTimeout(() => setMensajeEmail(''), 3000);
-                
-                // También eliminar de localStorage si existe
-                try {
-                    const registrosLocal = obtenerRegistrosSinDocumentacion();
-                    const registrosFiltrados = registrosLocal.filter(r => r.dni !== registro.dni);
-                    localStorage.setItem('registrosSinDocumentacion', JSON.stringify(registrosFiltrados, null, 2));
-                } catch (error) {
-                    console.log('No se pudo eliminar de localStorage (normal si ya no está):', error);
-                }
-                
-            } else {
-                setMensajeEmail(`❌ Error al eliminar registro: ${resultado.message}`);
-                setTimeout(() => setMensajeEmail(''), 5000);
+            // Eliminar de la lista local inmediatamente
+            setRegistros(prevRegistros => 
+                prevRegistros.filter(r => r.dni !== registro.dni)
+            );
+            
+            setMensajeEmail(`✅ Registro de ${nombreCompleto} eliminado exitosamente`);
+            setTimeout(() => setMensajeEmail(''), 3000);
+            
+            // También eliminar de localStorage si existe
+            try {
+                const registrosLocal = obtenerRegistrosSinDocumentacion();
+                const registrosFiltrados = registrosLocal.filter(r => r.dni !== registro.dni);
+                localStorage.setItem('registrosSinDocumentacion', JSON.stringify(registrosFiltrados, null, 2));
+            } catch (error) {
+                console.log('No se pudo eliminar de localStorage (normal si ya no está):', error);
             }
             
         } catch (error) {
@@ -299,40 +324,71 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
     const completarRegistro = async (registro) => {
         try {
             console.log('🔄 Cargando datos del registro pendiente:', registro);
-            setMensajeEmail(`📋 Cargando datos de ${registro.nombre} ${registro.apellido}...`);
+            setMensajeEmail(`📋 Cargando datos de ${registro.datos?.nombre || registro.nombre} ${registro.datos?.apellido || registro.apellido}...`);
             
-            // Obtener datos completos del registro desde el archivo JSON
-            const datosCompletos = await registrosPendientesService.obtenerRegistroPorDni(registro.dni);
+            // Obtener datos completos del registro desde el archivo JSON del backend
+            const response = await fetch(`http://localhost:5000/api/registros-pendientes/${registro.dni}`);
+            const datosCompletos = await response.json();
             console.log('📋 Datos completos obtenidos:', datosCompletos);
             
-            // Transformar datos para el formulario
-            const datosFormulario = registrosPendientesService.transformarParaFormulario(datosCompletos);
-            console.log('📋 Datos transformados para formulario:', datosFormulario);
+            // Extraer datos del registro para el formulario
+            const datosParaFormulario = {
+                // Datos personales
+                dni: datosCompletos.dni || registro.dni,
+                nombre: datosCompletos.datos?.nombre || registro.datos?.nombre || registro.nombre,
+                apellido: datosCompletos.datos?.apellido || registro.datos?.apellido || registro.apellido,
+                email: datosCompletos.datos?.email || registro.datos?.email || registro.email,
+                telefono: datosCompletos.datos?.telefono || registro.datos?.telefono || registro.telefono,
+                fechaNacimiento: datosCompletos.datos?.fechaNacimiento || registro.datos?.fechaNacimiento,
+                tipoDocumento: datosCompletos.datos?.tipoDocumento || registro.datos?.tipoDocumento || 'DNI',
+                cuil: datosCompletos.datos?.cuil || registro.datos?.cuil,
+                paisEmision: datosCompletos.datos?.paisEmision || registro.datos?.paisEmision,
+                // Domicilio
+                calle: datosCompletos.datos?.calle || registro.datos?.calle,
+                numero: datosCompletos.datos?.numero || registro.datos?.numero,
+                provincia: datosCompletos.datos?.provincia || registro.datos?.provincia,
+                localidad: datosCompletos.datos?.localidad || registro.datos?.localidad,
+                barrio: datosCompletos.datos?.barrio || registro.datos?.barrio,
+                // Modalidad y plan
+                modalidad: datosCompletos.datos?.modalidad || registro.datos?.modalidad || registro.modalidad,
+                modalidadId: datosCompletos.datos?.modalidadId || registro.datos?.modalidadId,
+                planAnio: datosCompletos.datos?.planAnio || registro.datos?.planAnio,
+                modulos: datosCompletos.datos?.modulos || registro.datos?.modulos,
+                idModulo: datosCompletos.datos?.idModulo || registro.datos?.idModulo,
+                // Información académica adicional
+                administrador: datosCompletos.datos?.administrador || registro.datos?.administrador,
+                motivoPendiente: datosCompletos.datos?.motivoPendiente || registro.datos?.motivoPendiente,
+                // Metadatos del registro
+                timestamp: datosCompletos.timestamp || registro.timestamp,
+                fechaRegistro: datosCompletos.fechaRegistro || registro.fechaRegistro,
+                horaRegistro: datosCompletos.horaRegistro || registro.horaRegistro,
+                tipo: datosCompletos.tipo || registro.tipo,
+                estado: datosCompletos.estado || registro.estado,
+                observaciones: datosCompletos.observaciones || registro.observaciones,
+                // AGREGAR: Archivos existentes para mostrar en el modal de documentación
+                archivosExistentes: datosCompletos.archivos || registro.archivos || {}
+            };
             
-            // Obtener archivos existentes para el modal
-            const archivosExistentes = registrosPendientesService.obtenerArchivosParaModal(datosCompletos);
-            console.log('📎 Archivos existentes:', archivosExistentes);
+            console.log('� Datos preparados para formulario:', datosParaFormulario);
             
             // Guardar datos en sessionStorage para que el formulario los use
-            sessionStorage.setItem('registroPendienteCompleto', JSON.stringify({
-                ...datosFormulario,
-                archivosExistentes: archivosExistentes
-            }));
+            sessionStorage.setItem('datosRegistroPendiente', JSON.stringify(datosParaFormulario));
             
             // Cerrar el modal actual
             onClose();
             
-            // Navegar al formulario de inscripción con parámetros
+            // Navegar al formulario de inscripción con parámetros y datos completos
+            const datosEncoded = encodeURIComponent(JSON.stringify(datosParaFormulario));
             const params = new URLSearchParams({
                 completar: registro.dni,
-                modalidad: encodeURIComponent(datosCompletos.datos?.modalidad || ''),
-                origen: 'registros-pendientes',
-                precargar: 'true' // Indica que debe pre-cargar datos y archivos
+                modalidad: encodeURIComponent(datosParaFormulario.modalidad || ''),
+                datosCompletos: datosEncoded,
+                origen: 'registros-pendientes'
             });
             
             navigate(`/dashboard/formulario-inscripcion-adm?${params.toString()}`);
             
-            setMensajeEmail(`✅ Abriendo formulario para ${registro.nombre} ${registro.apellido}`);
+            setMensajeEmail(`✅ Abriendo formulario para ${datosParaFormulario.nombre} ${datosParaFormulario.apellido}`);
             setTimeout(() => setMensajeEmail(''), 2000);
             
         } catch (error) {
@@ -342,18 +398,17 @@ const ModalRegistrosPendientes = ({ registros: registrosProp, onClose, onDescarg
         }
     };
 
-    const handleDescargar = async () => {
-        setDescargando(true);
-        try {
-            await onDescargar();
-        } finally {
-            setDescargando(false);
-        }
-    };
+    // Función de descarga ya manejada en generarReporteAdministrativo y generarReporteCSV
 
     // Función para generar reporte administrativo legible
     const generarReporteAdministrativo = () => {
         try {
+            if (!registros || registros.length === 0) {
+                showWarning('No hay registros pendientes para generar el reporte TXT');
+                return false;
+            }
+
+            setDescargando(true);
             const fechaActual = new Date().toLocaleDateString('es-AR');
             const horaActual = new Date().toLocaleTimeString('es-AR');
             
@@ -365,62 +420,85 @@ Total de registros pendientes: ${registros.length}
 
 `;
 
+            // Mapeo de documentos simplificado para el reporte
+            const mapeoDocumentosReporte = {
+                'dni': 'DNI',
+                'cuil': 'CUIL',
+                'foto': 'Fotografía',
+                'fichaMedica': 'Ficha Médica',
+                'partidaNacimiento': 'Partida de Nacimiento',
+                'analiticoParcial': 'Analítico Parcial',
+                'certificadoNivelPrimario': 'Certificado Nivel Primario',
+                'solicitudPase': 'Solicitud de Pase'
+            };
+
             registros.forEach((registro, index) => {
-                const info = obtenerInfoVencimiento(registro);
-                const estadoDoc = obtenerEstadoDocumentacionRegistro(registro);
+                const nombre = registro.datos?.nombre || registro.nombre || 'Sin nombre';
+                const apellido = registro.datos?.apellido || registro.apellido || 'Sin apellido';
+                const dni = registro.datos?.dni || registro.dni || 'Sin DNI';
+                const email = registro.datos?.email || registro.email || 'No proporcionado';
+                const modalidad = registro.datos?.modalidad || registro.modalidad || 'No especificada';
                 
-                contenidoReporte += `${index + 1}. ${registro.nombre.toUpperCase()} ${registro.apellido.toUpperCase()}
-   DNI: ${registro.dni}
-   Email: ${registro.email || 'No proporcionado'}
-   Modalidad: ${registro.modalidad}
-   Tipo de registro: ${formatearTipo(registro.tipoRegistro)}
-   Estado: ${info.vencido ? 'VENCIDO ❌' : `⏳ ${info.mensaje}`}
-   ${!info.vencido ? `Fecha límite: ${info.fechaVencimiento}` : 'Registro vencido - será eliminado automáticamente'}
-   
-   📋 DOCUMENTACIÓN (${estadoDoc.totalSubidos}/${estadoDoc.totalRequeridos} documentos):
-   
-   ✅ DOCUMENTOS YA PRESENTADOS:`;
-   
-                if (estadoDoc.subidos.length > 0) {
-                    estadoDoc.subidos.forEach(doc => {
-                        contenidoReporte += `\n      • ${mapeoDocumentos[doc] || doc}`;
-                    });
-                } else {
-                    contenidoReporte += `\n      • Ningún documento presentado aún`;
-                }
+                // Calcular días restantes
+                const fechaCreacion = new Date(registro.fechaCreacion || registro.fecha);
+                const diasTranscurridos = Math.floor((new Date() - fechaCreacion) / (1000 * 60 * 60 * 24));
+                const diasRestantes = Math.max(0, 7 - diasTranscurridos);
+                const vencido = diasRestantes === 0;
                 
-                contenidoReporte += `\n   
-   ⚠️  DOCUMENTOS FALTANTES:`;
+                contenidoReporte += `${index + 1}. ${nombre.toUpperCase()} ${apellido.toUpperCase()}
+   DNI: ${dni}
+   Email: ${email}
+   Modalidad: ${modalidad}
+   Estado: ${vencido ? 'VENCIDO ❌' : `⏳ ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} restante${diasRestantes !== 1 ? 's' : ''}`}
+   Fecha límite: ${new Date(fechaCreacion.getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('es-AR')}
+   
+   📋 DOCUMENTACIÓN REQUERIDA:`;
+   
+                // Obtener documentos requeridos por modalidad
+                const requerimientosDoc = obtenerDocumentosRequeridos(modalidad);
+                const docsRequeridos = Array.isArray(requerimientosDoc) ? requerimientosDoc : (requerimientosDoc.documentos || []);
+                const archivos = registro.archivos || [];
                 
-                if (estadoDoc.faltantes.length > 0) {
-                    estadoDoc.faltantes.forEach(doc => {
-                        contenidoReporte += `\n      • ${mapeoDocumentos[doc] || doc}`;
-                    });
-                } else {
-                    contenidoReporte += `\n      • Documentación completa`;
-                }
+                docsRequeridos.forEach(doc => {
+                    const tieneDocumento = Array.isArray(archivos) ? archivos.some(archivo => archivo.includes(doc)) : Object.keys(archivos).includes(doc);
+                    const estado = tieneDocumento ? '✅' : '❌';
+                    const nombreDoc = mapeoDocumentosReporte[doc] || doc;
+                    contenidoReporte += `\n      ${estado} ${nombreDoc}`;
+                });
                 
                 contenidoReporte += `\n\n${'─'.repeat(80)}\n\n`;
             });
 
+            const registrosSinDoc = registros.filter(r => (r.tipoRegistro || 'SIN_DOCUMENTACION') === 'SIN_DOCUMENTACION').length;
+            const registrosIncompletos = registros.filter(r => (r.tipoRegistro || 'SIN_DOCUMENTACION') === 'DOCUMENTACION_INCOMPLETA').length;
+            const registrosVencidos = registros.filter(r => {
+                const fechaCreacion = new Date(r.fechaCreacion || r.fecha);
+                const diasTranscurridos = Math.floor((new Date() - fechaCreacion) / (1000 * 60 * 60 * 24));
+                return diasTranscurridos >= 7;
+            }).length;
+
             contenidoReporte += `RESUMEN:
-• Registros sin documentación: ${registros.filter(r => r.tipoRegistro === 'SIN_DOCUMENTACION').length}
-• Registros con documentación incompleta: ${registros.filter(r => r.tipoRegistro === 'DOCUMENTACION_INCOMPLETA').length}
-• Registros vencidos: ${registros.filter(r => obtenerInfoVencimiento(r).vencido).length}
+• Registros sin documentación: ${registrosSinDoc}
+• Registros con documentación incompleta: ${registrosIncompletos}
+• Registros vencidos: ${registrosVencidos}
 
 NOTA IMPORTANTE:
 - Los registros se eliminan automáticamente después de 7 días desde su creación
 - Los estudiantes pueden completar su documentación desde el sistema web
 - Para consultas técnicas, contactar al administrador del sistema
-`;
 
-            // Crear y descargar el archivo
+================================================================================
+Reporte generado por Sistema de Gestión de Estudiantes - CEIJA 5
+================================================================================`;
+
+            // Crear y descargar el archivo con codificación UTF-8
             const blob = new Blob([contenidoReporte], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             
             link.href = url;
             link.download = `Reporte-Registros-Pendientes-${new Date().toISOString().split('T')[0]}.txt`;
+            link.style.display = 'none';
             
             document.body.appendChild(link);
             link.click();
@@ -428,30 +506,130 @@ NOTA IMPORTANTE:
             
             URL.revokeObjectURL(url);
             
+            showSuccess(`Reporte TXT descargado exitosamente (${registros.length} registros)`);
+            
             console.log('📄 Reporte administrativo descargado exitosamente');
             return true;
         } catch (error) {
             console.error('❌ Error al generar reporte administrativo:', error);
+            showError(`Error al generar reporte TXT: ${error.message}`);
             return false;
+        } finally {
+            setDescargando(false);
         }
     };
 
     // Función para generar archivo CSV para Excel - MEJORADA
     const generarReporteCSV = () => {
         try {
-            // Usar la función mejorada de registroSinDocumentacion.js
-            const exito = descargarRegistrosCSV();
-            
-            if (exito) {
-                console.log('📊 Archivo CSV descargado exitosamente con formato mejorado');
-                return true;
-            } else {
-                console.error('❌ Error al generar archivo CSV');
+            if (!registros || registros.length === 0) {
+                showWarning('No hay registros pendientes para generar el archivo Excel');
                 return false;
             }
+
+            setDescargando(true);
+            
+            // Crear encabezados CSV
+            const encabezados = [
+                'Nombre',
+                'Apellido',
+                'DNI',
+                'Email',
+                'Modalidad',
+                'Fecha Creación',
+                'Días Restantes',
+                'Estado',
+                'DNI',
+                'CUIL',
+                'Fotografía',
+                'Ficha Médica',
+                'Partida Nacimiento',
+                'Analítico Parcial',
+                'Certificado Primario',
+                'Solicitud Pase'
+            ];
+            
+            // Crear filas de datos
+            const filas = registros.map(registro => {
+                const nombre = registro.datos?.nombre || registro.nombre || '';
+                const apellido = registro.datos?.apellido || registro.apellido || '';
+                const dni = registro.datos?.dni || registro.dni || '';
+                const email = registro.datos?.email || registro.email || '';
+                const modalidad = registro.datos?.modalidad || registro.modalidad || '';
+                
+                // Calcular días restantes
+                const fechaCreacion = new Date(registro.fechaCreacion || registro.fecha);
+                const diasTranscurridos = Math.floor((new Date() - fechaCreacion) / (1000 * 60 * 60 * 24));
+                const diasRestantes = Math.max(0, 7 - diasTranscurridos);
+                const estado = diasRestantes === 0 ? 'VENCIDO' : 'PENDIENTE';
+                
+                // Verificar documentos
+                const archivos = registro.archivos || [];
+                
+                const tieneDoc = (tipoDoc) => {
+                    if (Array.isArray(archivos)) {
+                        return archivos.some(archivo => archivo.includes(tipoDoc)) ? 'SÍ' : 'NO';
+                    } else if (typeof archivos === 'object') {
+                        return Object.keys(archivos).includes(tipoDoc) ? 'SÍ' : 'NO';
+                    }
+                    return 'NO';
+                };
+                
+                return [
+                    `"${nombre}"`,
+                    `"${apellido}"`,
+                    `"${dni}"`,
+                    `"${email}"`,
+                    `"${modalidad}"`,
+                    `"${fechaCreacion.toLocaleDateString('es-AR')}"`,
+                    diasRestantes,
+                    `"${estado}"`,
+                    tieneDoc('dni'),
+                    tieneDoc('cuil'),
+                    tieneDoc('foto'),
+                    tieneDoc('fichaMedica'),
+                    tieneDoc('partidaNacimiento'),
+                    tieneDoc('analiticoParcial'),
+                    tieneDoc('certificadoNivelPrimario'),
+                    tieneDoc('solicitudPase')
+                ];
+            });
+            
+            // Combinar encabezados y filas
+            const csvContent = [
+                encabezados.join(','),
+                ...filas.map(fila => fila.join(','))
+            ].join('\n');
+            
+            // Agregar BOM para UTF-8 para que Excel lo reconozca correctamente
+            const BOM = '\uFEFF';
+            const csvWithBOM = BOM + csvContent;
+            
+            // Crear y descargar el archivo
+            const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            
+            link.href = url;
+            link.download = `Registros-Pendientes-Excel-${new Date().toISOString().split('T')[0]}.csv`;
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+            
+            showSuccess(`Archivo Excel (CSV) descargado exitosamente (${registros.length} registros)`);
+            
+            console.log('📊 Archivo CSV descargado exitosamente con formato mejorado');
+            return true;
         } catch (error) {
             console.error('❌ Error al generar archivo CSV:', error);
+            showError(`Error al generar archivo Excel: ${error.message}`);
             return false;
+        } finally {
+            setDescargando(false);
         }
     };
 
@@ -571,17 +749,20 @@ NOTA IMPORTANTE:
     const obtenerEstadoDocumentacionRegistro = (registro) => {
         console.log('🔍 Analizando documentación para registro:', registro.id, registro);
         
+        // Obtener modalidad desde datos o desde raíz del registro
+        const modalidad = registro.datos?.modalidad || registro.modalidad || '';
+        const planAnio = registro.datos?.planAnio || registro.planAnio || '';
+        const modulos = registro.datos?.modulos || registro.modulos || '';
+        
+        console.log('📋 Datos extraídos - Modalidad:', modalidad, 'Plan:', planAnio, 'Módulos:', modulos);
+        
         // Obtener documentos requeridos dinámicamente según modalidad del registro
-        const requerimientos = obtenerDocumentosRequeridos(
-            registro.modalidad || '', 
-            registro.planAnio || '', 
-            registro.modulos || ''
-        );
+        const requerimientos = obtenerDocumentosRequeridos(modalidad, planAnio, modulos);
         
         const documentosRequeridosDinamicos = requerimientos.documentos || [];
         const documentosAlternativos = requerimientos.alternativos;
         
-        console.log(`📋 Documentos requeridos para ${registro.modalidad}:`, documentosRequeridosDinamicos);
+        console.log(`📋 Documentos requeridos para ${modalidad}:`, documentosRequeridosDinamicos);
         if (documentosAlternativos) {
             console.log(`🔄 Alternativas:`, documentosAlternativos.descripcion);
         }
@@ -659,8 +840,8 @@ NOTA IMPORTANTE:
             faltantes: documentosFaltantes,
             totalSubidos: documentosValidosSubidos.length,
             totalRequeridos: totalRequeridos,
-            modalidad: registro.modalidad,
-            plan: registro.planAnio || registro.modulos,
+            modalidad: modalidad,
+            plan: planAnio || modulos,
             documentosAlternativos: documentosAlternativos
         };
         
@@ -670,6 +851,7 @@ NOTA IMPORTANTE:
 
     return (
         <div className="modal-registros-pendientes">
+
             <div className="modal-overlay">
                 <div className="modal-container registros-pendientes">
                     {/* Header del modal */}
@@ -726,13 +908,16 @@ NOTA IMPORTANTE:
                                             <div className="registro-info-principal">
                                                 {/* Columna izquierda - Información del estudiante */}
                                                 <div className="registro-info-estudiante">
-                                                    <h4>{registro.nombre} {registro.apellido}</h4>
-                                                    <p><strong>📄 DNI:</strong> {registro.dni}</p>
+                                                    <h4>{registro.datos?.nombre || registro.nombre} {registro.datos?.apellido || registro.apellido}</h4>
+                                                    <p><strong>📄 DNI:</strong> {registro.datos?.dni || registro.dni}</p>
                                                     <p>
                                                         <strong>📧 Email:</strong> {
-                                                            registro.email || 
+                                                            (registro.datos?.email || registro.email) || 
                                                             <span style={{color: '#dc3545', fontStyle: 'italic'}}>Sin email</span>
                                                         }
+                                                    </p>
+                                                    <p>
+                                                        <strong>📚 Modalidad:</strong> {registro.datos?.modalidad || registro.modalidad}
                                                     </p>
                                                     <p>
                                                         <strong>{getTipoIcon(registro.tipoRegistro)} Tipo:</strong> {formatearTipo(registro.tipoRegistro)}
@@ -845,14 +1030,25 @@ NOTA IMPORTANTE:
                                                 </button>
                                                 
                                                 {/* Botón para enviar email individual */}
-                                                {registro.email && !info.vencido && (
+                                                {(registro.datos?.email || registro.email) && (
                                                     <button
                                                         onClick={() => enviarEmailIndividual(registro)}
                                                         className="btn-notificar"
                                                         disabled={enviandoEmail}
-                                                        title={`Enviar notificación por email a ${registro.email}`}
+                                                        title={`Enviar notificación por email a ${registro.datos?.email || registro.email}`}
+                                                        style={{
+                                                            backgroundColor: info.vencido ? '#6c757d' : '#17a2b8',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            padding: '8px 12px',
+                                                            borderRadius: '4px',
+                                                            cursor: enviandoEmail ? 'not-allowed' : 'pointer',
+                                                            fontSize: '12px',
+                                                            margin: '2px',
+                                                            opacity: info.vencido ? 0.6 : 1
+                                                        }}
                                                     >
-                                                        {enviandoEmail ? '📧 Enviando...' : '📧 Notificar'}
+                                                        {enviandoEmail ? '📧 Enviando...' : `📧 ${info.vencido ? 'Vencido' : 'Notificar'}`}
                                                     </button>
                                                 )}
                                             </div>
@@ -893,27 +1089,12 @@ NOTA IMPORTANTE:
                                 >
                                     {enviandoEmail ? '📧 Enviando...' : '📧 Todos'}
                                 </button>
-                                <button 
-                                    onClick={migrarRegistrosLocalStorage}
-                                    className="btn-migracion"
-                                    disabled={enviandoEmail}
-                                    title="Migrar registros desde localStorage al archivo JSON del servidor"
-                                    style={{
-                                        backgroundColor: '#17a2b8',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '8px 12px',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        marginLeft: '10px'
-                                    }}
-                                >
-                                    {enviandoEmail ? '📦 Migrando...' : '📦 Migrar a JSON'}
-                                </button>
+
                             </div>
                             <p className="info-emails">
-                                Los emails incluyen información personalizada sobre documentación faltante y plazos
+                                📧 <strong>Notificar:</strong> Email individual con documentos presentados/faltantes y días restantes<br/>
+                                ⚡ <strong>Urgentes:</strong> Solo estudiantes con ≤3 días para completar<br/>
+                                📬 <strong>Todos:</strong> Notificar a todos los estudiantes pendientes
                             </p>
                         </div>
                         
@@ -934,7 +1115,21 @@ NOTA IMPORTANTE:
                                 📊 Excel (CSV)
                             </button>
                             <button 
-                                onClick={handleDescargar}
+                                onClick={() => {
+                                    try {
+                                        const dataStr = JSON.stringify(registros, null, 2);
+                                        const blob = new Blob([dataStr], { type: 'application/json' });
+                                        const url = URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.download = `registros-pendientes-${new Date().toISOString().split('T')[0]}.json`;
+                                        link.click();
+                                        URL.revokeObjectURL(url);
+                                        showSuccess('Archivo JSON descargado exitosamente');
+                                    } catch (error) {
+                                        showError(`Error al descargar JSON: ${error.message}`);
+                                    }
+                                }}
                                 className="btn-json-tecnico"
                                 disabled={descargando}
                                 title="Descargar archivo JSON técnico (para programadores)"
@@ -1036,10 +1231,7 @@ NOTA IMPORTANTE:
 };
 
 ModalRegistrosPendientes.propTypes = {
-    registros: PropTypes.arrayOf(PropTypes.object), // Opcional, se cargan desde backend
-    onClose: PropTypes.func.isRequired,
-    onDescargar: PropTypes.func.isRequired,
-    onCompletarRegistro: PropTypes.func,
+    onClose: PropTypes.func.isRequired
 };
 
 export default ModalRegistrosPendientes;

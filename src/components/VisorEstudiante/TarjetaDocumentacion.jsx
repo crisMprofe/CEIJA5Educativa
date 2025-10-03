@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import useGestionDocumentacion from '../../hooks/useGestionDocumentacion';
 
 const TarjetaDocumentacion = ({ estudiante, editMode, setEditMode, isConsulta, isEliminacion, onGuardar, onCancelar }) => {
+    // Log visual para depuración
+    console.log('🟢 Documentación recibida en TarjetaDocumentacion:', estudiante.documentacion);
     const [archivosSubidos, setArchivosSubidos] = useState({});
 
     const {
@@ -62,7 +64,11 @@ useEffect(() => {
                         const desc = doc.descripcionDocumentacion;
                         const fileSelected = previews[desc]?.file;
                         const fileUploaded = archivosSubidos[desc] || doc.archivoDocumentacion;
-
+                        const fileUrl = doc.archivoDocumentacion
+                            ? (doc.archivoDocumentacion.startsWith('http')
+                                ? doc.archivoDocumentacion
+                                : `http://localhost:5000${doc.archivoDocumentacion}`)
+                            : null;
                         return (
                             <div key={doc.idDocumentaciones || idx} className={`documento-item-tarjeta ${!fileUploaded ? 'faltante' : ''}`}>
                                 <div className="documento-info">
@@ -72,17 +78,19 @@ useEffect(() => {
                                     <span className="documento-nombre-corto">{desc}</span>
                                 </div>
                                 <div className="documento-acciones">
-                                    {doc.archivoDocumentacion && !archivosSubidos[desc] ? (
+                                    {fileUrl && (
                                         <a
-                                            href={doc.archivoDocumentacion.startsWith('http') ? doc.archivoDocumentacion : `http://localhost:5000${doc.archivoDocumentacion}`}
+                                            href={fileUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="btn-ver-archivo-mini"
                                             title="Ver documento"
                                         >👁️ Ver archivo</a>
-                                    ) : fileUploaded ? (
+                                    )}
+                                    {!fileUrl && fileUploaded && (
                                         <span className="documento-entregado" title="Archivo subido" style={{ color: 'green', fontSize: '1.3em', marginLeft: 8 }}>✔️</span>
-                                    ) : (
+                                    )}
+                                    {!fileUploaded && (
                                         <span className="documento-faltante" title="Documento faltante">❌</span>
                                     )}
                                     {!isConsulta && editMode && !fileUploaded && (

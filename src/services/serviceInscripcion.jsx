@@ -70,10 +70,9 @@ const getDocumentosFaltantes = async (dni) => {
 const getEstudiantePorDNI = async (dni) => {
     try {
         console.log('🔍 Buscando estudiante por DNI:', dni);
-        
-        const response = await axiosInstance.get(`/consultar-estudiantes/buscar/${dni}`);
+        // Usar el endpoint que retorna la documentación
+        const response = await axiosInstance.get(`/consultar-estudiantes-dni/${dni}`);
         console.log('👤 Respuesta búsqueda por DNI:', response.data);
-        
         return response.data;
     } catch (error) {
         console.error('🚨 Error al buscar estudiante por DNI:', error);

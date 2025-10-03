@@ -10,12 +10,12 @@
 }
 
 /* Aumentar la altura mínima de las tarjetas para evitar corte visual */
+/* Tarjeta: altura automática, sin scroll interno */
 .tarjeta {
-  min-height: 320px;
-  max-height: 340px;
-  height: 330px;
-  /* Ajusta estos valores según el diseño y la cantidad de contenido */
-  overflow: hidden;
+  min-height: 220px;
+  max-height: none;
+  height: auto;
+  overflow: visible;
 }
 /* Inputs dentro de tarjetas: ancho completo y visualización elegante */
 .tarjeta-contenido input,
@@ -74,6 +74,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
+  overflow: visible;
+  max-height: none;
 }
 .dato-item {
   display: flex;
@@ -489,30 +491,28 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #dee2e6;
-}
-
-.btn-volver {
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.btn-volver:hover {
-  background-color: #5a6268;
-}
-
-.btn-modificar {
-  background-color: #007bff;
-  color: white;
-  border: none;
+  background: #e3eafc;
+  color: #2d4177;
+  border: 1px solid #b0b8d1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  height: 22px;
+  .btn-volver:hover {
+    background-color: #5a6268;
+  }
+  background: #d0d8f6;
+  border-color: #8fa1d1;
+  color: #1a2a5a;
+  text-decoration: underline;
+  transform: scale(1.05);
   padding: 10px 20px;
   border-radius: 5px;
   cursor: pointer;
@@ -637,27 +637,30 @@
 .documentacion-lista-tarjeta {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  /* Eliminamos max-height y overflow para no tener barras de scroll */
+  gap: 10px;
+  overflow: visible;
+  max-height: none;
 }
 
 .documento-item-tarjeta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px;
-  background-color: white;
-  border: 1px solid #dee2e6;
-  border-radius: 5px;
-  font-size: 0.8rem;
+  padding: 10px 12px;
+  background-color: #f9fafc;
+  border: 1.5px solid #cfd8dc;
+  border-radius: 7px;
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+  box-shadow: 0 1px 3px rgba(44, 62, 80, 0.04);
 }
 
 .documento-nombre-corto {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #212529;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d4177;
   flex: 1;
-  margin-left: 8px;
+  margin-left: 10px;
 }
 
 .btn-ver-archivo-mini {

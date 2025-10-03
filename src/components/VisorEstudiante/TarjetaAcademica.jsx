@@ -1,11 +1,10 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
-import ModalidadSelection from '../ModalidadSelection';
+import { useEffect } from 'react';
 import CursoPlanSelector from './CursoPlanSelector';  // corregido nombre
-
 import Input from '../Input';
 import { formatearFecha } from '../../utils/fecha';
 import { useModulosYEstados } from '../../hooks/useModulosYEstados'; // asegúrate que exista
+// import eliminado: usePlanesPorModalidad
 
 const TarjetaAcademica = ({
   estudiante,
@@ -14,32 +13,16 @@ const TarjetaAcademica = ({
   handleInputChange,
   isConsulta,
   modalidad: modalidadProp,
-  modalidadId: modalidadIdProp,
-  modulosId: modulosIdProp,
+  planes = [],
 }) => {
 
-  const [formData] = useState({
-    ...estudiante,
-    cursoPlan: estudiante.planAnio || estudiante.cursoPlan || '',
-    cursoPlanId: estudiante.planAnioId || estudiante.cursoPlanId || '',
-  });
+  // Recibe formData como prop desde VisorEstudiante, si existe
+  const formData = (estudiante && estudiante.formData) ? estudiante.formData : estudiante;
 
   // Calculo modalidad y otros a partir de props y estado local
-  const modalidad = modalidadProp || formData.modalidad || estudiante?.modalidad || '';
-  const modalidadId = modalidadIdProp !== undefined
-    ? Number(modalidadIdProp)
-    : formData.modalidadId
-      ? Number(formData.modalidadId)
-      : modalidad === 'Presencial'
-        ? 1
-        : modalidad === 'Semipresencial'
-          ? 2
-          : 0;
-  const modulosId = modulosIdProp !== undefined
-    ? modulosIdProp
-    : formData.modulosId !== undefined
-      ? formData.modulosId
-      : estudiante?.modulosId || '';
+  // Prioridad: prop > formData > estudiante
+  const modalidad = modalidadProp !== undefined ? modalidadProp : (formData.modalidad !== undefined ? formData.modalidad : estudiante?.modalidad || '');
+  // modalidadId y modulosId ya no se usan directamente, solo se calculan para selects, así que no los defino si no se usan
 
   const [modulos, estadosInscripcion] = useModulosYEstados(
     editMode.academica,
@@ -47,40 +30,49 @@ const TarjetaAcademica = ({
     modalidad
   );
 
+  // Inicializar selects automáticamente al entrar en edición académica
+  useEffect(() => {
+    if (editMode.academica) {
+      // Inicializar plan si está vacío
+      if ((!formData.cursoPlanId && !formData.planAnioId) && planes && planes.length > 0) {
+        handleInputChange('cursoPlanId', planes[0].id);
+        handleInputChange('cursoPlan', planes[0].plan);
+      }
+      // Inicializar módulo si está vacío
+      if ((!formData.modulosId || formData.modulosId === '') && modulos && modulos.length > 0) {
+        handleInputChange('modulosId', modulos[0].id);
+      }
+    }
+    // eslint-disable-next-line
+  }, [editMode.academica, planes, modulos]);
+
+  const handleEditar = () => {
+    setEditMode(prev => ({ ...prev, academica: true }));
+  };
+
   return (
     <div className="tarjeta" style={{ padding: '1rem' }}>
       <div className="tarjeta-header">
         <h3>Información Académica</h3>
         {!isConsulta && (
-          <button onClick={() => setEditMode(prev => ({ ...prev, academica: true }))}>✏️</button>
+          <button onClick={handleEditar}>✏️</button>
         )}
       </div>
 
       <div className="tarjeta-contenido">
         {editMode.academica ? (
-          <div>
-            <ModalidadSelection
-              modalidad={modalidad}
-              modalidadId={modalidadId}
-              handleChange={(e) => handleInputChange(e.target.name, e.target.value)}
-              setFieldValue={(campo, valor) => handleInputChange(campo, valor)}
-              values={{
-                cursoPlan: formData.cursoPlanId || estudiante?.cursoPlanId || '',
-                modulos: modulosId
-              }}
-              showMateriasList={true}
-            />
-
+          <div className="tarjeta-academica-edicion">
+            <div className="modalidad-info" style={{ marginBottom: '10px' }}>
+              <strong>Modalidad:</strong> <span className="modalidad-elegida">{modalidad || 'Sin datos'}</span>
+            </div>
             <CursoPlanSelector
-              modalidadId={modalidadId}
+              planes={planes}
               value={{
                 cursoPlanId: formData.cursoPlanId || '',
                 cursoPlan: formData.cursoPlan || ''
               }}
               setFieldValue={(campo, valor) => handleInputChange(campo, valor)}
             />
-
-            {/* Selector de módulos */}
             <Input
               label="Módulo"
               name="modulosId"
@@ -91,8 +83,6 @@ const TarjetaAcademica = ({
                 onChange: (e) => handleInputChange('modulosId', e.target.value)
               }}
             />
-
-            {/* Selector de estados de inscripción */}
             <Input
               label="Estado de Inscripción"
               name="estadoInscripcionId"
@@ -105,7 +95,6 @@ const TarjetaAcademica = ({
                 onChange: (e) => handleInputChange('estadoInscripcionId', e.target.value)
               }}
             />
-
             <Input
               label="Fecha de Inscripción"
               name="fechaInscripcion"
@@ -145,5 +134,11 @@ TarjetaAcademica.propTypes = {
   modalidad: PropTypes.string,
   modalidadId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   modulosId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  planes: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      plan: PropTypes.string.isRequired
+    })
+  )
 };
 export default TarjetaAcademica;

@@ -1,3 +1,4 @@
+import '../estilos/tarjetas.css';
 import TarjetaAcademica from './VisorEstudiante/TarjetaAcademica';
 import TarjetaDomicilio from './VisorEstudiante/TarjetaDomicilio';
 import TarjetaPersonales from './VisorEstudiante/TarjetaPersonales';
@@ -18,21 +19,30 @@ import { useEffect } from 'react';
 const VisorEstudiante = ({ estudiante, onClose, onModificar, onVolver, isConsulta = false, isEliminacion = false }) => {
     // Usar los datos completos que llegan de la consulta por DNI (incluye foto, inscripción y documentación)
     const [formData, setFormData] = useState(() => {
-        // Mapear todos los campos posibles del estudiante para asegurar que las tarjetas reciban los datos correctos
+        // Desanidar datos si vienen en inscripcion, domicilio, etc.
+        const insc = estudiante.inscripcion || {};
+        const dom = estudiante.domicilio || {};
         return {
             ...estudiante,
-            provincia: estudiante.provincia || '',
+            // Datos personales
+            provincia: estudiante.provincia || dom.provincia || '',
+            localidad: estudiante.localidad || dom.localidad || '',
+            barrio: estudiante.barrio || dom.barrio || '',
+            calle: estudiante.calle || dom.calle || '',
+            numero: estudiante.numero || dom.numero || '',
             foto: estudiante.foto || '',
-            modalidad: estudiante.modalidad || estudiante.modalidadNombre || estudiante.modalidad_id || '',
-            modalidadId: Number(estudiante.modalidadId) || Number(estudiante.idModalidad) || (estudiante.modalidad === 'Presencial' ? 1 : estudiante.modalidad === 'Semipresencial' ? 2 : ''),
-            planAnio: estudiante.planAnio || estudiante.cursoPlan || estudiante.plan || '',
-            planAnioId: Number(estudiante.planAnioId) || Number(estudiante.cursoPlanId) || Number(estudiante.idPlanAnio) || 1,
-            modulos: estudiante.modulo || estudiante.modulos || '',
-            modulosId: Number(estudiante.modulosId) || Number(estudiante.idModulo) || '',
-            estadoInscripcion: estudiante.estadoInscripcion || estudiante.estado || '',
-            estadoInscripcionId: Number(estudiante.estadoInscripcionId) || Number(estudiante.idEstadoInscripcion) || '',
-            fechaInscripcion: estudiante.fechaInscripcion || estudiante.fecha || '',
-            documentacion: Array.isArray(estudiante.documentacion) ? estudiante.documentacion : [],
+            // Datos académicos
+            modalidad: estudiante.modalidad || insc.modalidad || estudiante.modalidadNombre || estudiante.modalidad_id || '',
+            modalidadId: Number(estudiante.modalidadId) || Number(insc.modalidadId) || Number(estudiante.idModalidad) || (estudiante.modalidad === 'Presencial' ? 1 : estudiante.modalidad === 'Semipresencial' ? 2 : ''),
+            planAnio: estudiante.planAnio || insc.plan || estudiante.cursoPlan || estudiante.plan || '',
+            planAnioId: Number(estudiante.planAnioId) || Number(insc.planAnioId) || Number(estudiante.cursoPlanId) || Number(estudiante.idPlanAnio) || 1,
+            modulos: estudiante.modulo || insc.modulo || estudiante.modulos || '',
+            modulosId: Number(estudiante.modulosId) || Number(insc.modulosId) || Number(estudiante.idModulo) || '',
+            estadoInscripcion: estudiante.estadoInscripcion || insc.estado || estudiante.estado || '',
+            estadoInscripcionId: Number(estudiante.estadoInscripcionId) || Number(insc.estadoInscripcionId) || Number(estudiante.idEstadoInscripcion) || '',
+            fechaInscripcion: estudiante.fechaInscripcion || insc.fechaInscripcion || estudiante.fecha || '',
+            // Documentación
+            documentacion: Array.isArray(estudiante.documentacion) ? estudiante.documentacion : (Array.isArray(insc.documentacion) ? insc.documentacion : []),
             email: estudiante.email || '',
             telefono: estudiante.telefono || '',
         };
@@ -155,22 +165,26 @@ useEffect(() => {
 
     return (
         <div className={`visor-estudiante-container ${isConsulta ? 'modo-consulta' : 'modo-gestion'}`}> 
-                    <div className="modal-header-buttons">
-                {onVolver && (
-                    <VolverButton onClick={onVolver} />
-                )}
-                {onClose && (
-                    <CloseButton onClose={onClose} variant="modal" />
-                )}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.5rem', gap: '1rem' }}>
+                <div style={{ flex: '0 0 auto' }}>
+                    {onVolver && (
+                        <VolverButton onClick={onVolver} />
+                    )}
+                </div>
+                <div style={{ flex: '1 1 auto', textAlign: 'center' }}>
+                    <h2 style={{ margin: 0, padding: 0 }}>
+                        {isEliminacion ? 'Eliminar Estudiante' :
+                            isConsulta ? 'Consulta de Estudiante' :
+                            'Detalles del Estudiante'}
+                    </h2>
+                </div>
+                <div style={{ flex: '0 0 auto' }}>
+                    {onClose && (
+                        <CloseButton onClose={onClose} variant="modal" />
+                    )}
+                </div>
             </div>
-                    <div className="visor-header" style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                        <h2>
-                            {isEliminacion ? 'Eliminar Estudiante' :
-                                isConsulta ? 'Consulta de Estudiante' :
-                                'Detalles del Estudiante'}
-                        </h2>
-                    </div>
-                    <div className="visor-contenido layout-tarjetas-2x2">
+            <div className="visor-contenido layout-tarjetas-2x2">
                         <div className="tarjetas-grid-2x2">
                             <TarjetaPersonales
                                 estudiante={estudiante}
@@ -201,6 +215,7 @@ useEffect(() => {
                                 formatearFecha={formatearFecha}
                                 modalidadId={formData.modalidadId}
                                 modulosId={formData.modulosId}
+                                planes={planes}
                             />
                             {/* ✅ Aquí la versión actualizada de TarjetaDocumentacion */}
                             <TarjetaDocumentacion

@@ -12,6 +12,7 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
     const [modulos, setModulos] = useState([]); // Aquí almacenamos los módulos
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [moduloInicialEstablecido, setModuloInicialEstablecido] = useState(false);
 
     const handleSelection = (event) => {
         const newValue = event.target.value;
@@ -63,6 +64,54 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
         };
         fetchModulos();
     }, [modalidadId, modalidad, value]);
+    
+    // Efecto para establecer módulo inicial desde registro pendiente
+    useEffect(() => {
+        // Solo ejecutar si no se ha establecido ya el módulo inicial y tenemos módulos cargados
+        if (moduloInicialEstablecido || modulos.length === 0) {
+            return;
+        }
+        
+        // Buscar si hay un idModulo desde sessionStorage (registro pendiente)
+        const datosRegistroPendiente = sessionStorage.getItem('datosRegistroPendiente');
+        console.log('🔍 Verificando datos para módulo - Modulos length:', modulos.length, 'idModulo actual:', idModulo);
+        
+        if (datosRegistroPendiente) {
+            try {
+                const datos = JSON.parse(datosRegistroPendiente);
+                console.log('📋 Datos desde sessionStorage para módulo:', datos);
+                
+                if (datos.idModulo && Array.isArray(datos.idModulo)) {
+                    // idModulo viene como array ["1", ""], tomar el primer elemento válido
+                    const moduloId = datos.idModulo.find(id => id && id !== '' && id !== null);
+                    console.log('🎯 ModuloId encontrado:', moduloId, 'de array:', datos.idModulo);
+                    
+                    if (moduloId) {
+                        // Verificar que el módulo existe en la lista de módulos disponibles
+                        const moduloExiste = modulos.find(mod => mod.id.toString() === moduloId.toString());
+                        if (moduloExiste) {
+                            console.log('🎓 Estableciendo módulo desde registro pendiente:', moduloId, '- Módulo:', moduloExiste.modulo);
+                            setIdModulo(moduloId);
+                            setFieldValue('modulos', moduloId);
+                            setFieldValue('idModulo', datos.idModulo); // Mantener array original también
+                            setModuloInicialEstablecido(true); // Marcar como establecido
+                        } else {
+                            console.warn('⚠️ Módulo no encontrado en lista disponible:', moduloId);
+                            console.log('📋 Módulos disponibles:', modulos);
+                        }
+                    }
+                } else if (datos.modulos && datos.modulos !== '') {
+                    // Fallback: usar el campo modulos si existe
+                    console.log('🔄 Usando campo modulos como fallback:', datos.modulos);
+                    setIdModulo(datos.modulos);
+                    setFieldValue('modulos', datos.modulos);
+                    setModuloInicialEstablecido(true);
+                }
+            } catch (error) {
+                console.error('Error al procesar idModulo desde registro pendiente:', error);
+            }
+        }
+    }, [modulos, setFieldValue, idModulo, moduloInicialEstablecido]);
 
     return (
         <div>
@@ -108,7 +157,18 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
                     />
                 </div>
             )}
-            {modalidadId === 2 && value && (
+            {(() => {
+                console.log('🔍 Verificando condición para mostrar módulo:', {
+                    modalidadId,
+                    modalidadIdTipo: typeof modalidadId,
+                    modalidadIdEs2: modalidadId === 2,
+                    value,
+                    valueTipo: typeof value,
+                    valueEsValido: !!value,
+                    condicionCompleta: modalidadId === 2 && value
+                });
+                return modalidadId === 2 && value;
+            })() && (
                 <div className="form-group">
                     <label htmlFor="modulo"><strong>📚 Módulo:</strong></label>
                     {loading ? (
@@ -143,14 +203,24 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
                 </div>
                 
             )}
-            {idModulo && (
-                <AreaEstudioSelector
-                    idModulo={idModulo}
-                    modalidadId={modalidadId}
-                    handleAreaEstudioChange={handleModuloChange}
-                    value={value.planAnio} 
-                />
-            )}
+            {idModulo && (() => {
+                // No mostrar AreaEstudioSelector si estamos completando un registro pendiente
+                const esRegistroPendiente = sessionStorage.getItem('datosRegistroPendiente');
+                if (esRegistroPendiente) {
+                    console.log('🚫 Ocultando AreaEstudioSelector porque es registro pendiente');
+                    return null;
+                }
+                
+                console.log('✅ Mostrando AreaEstudioSelector para nuevo registro');
+                return (
+                    <AreaEstudioSelector
+                        idModulo={idModulo}
+                        modalidadId={modalidadId}
+                        handleAreaEstudioChange={handleModuloChange}
+                        value={value.planAnio} 
+                    />
+                );
+            })()}
         </div>
     );
 };

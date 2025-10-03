@@ -21,12 +21,14 @@ const FormDocumentacion = ({ previews, handleFileChange, onClose, onProceedToReg
         return documentos.some(doc => previews?.[doc]?.url);
     }, [previews]);
 
-    // Función que se ejecuta al hacer clic en el botón
+    // Función que se ejecuta al hacer clic en el botón (solo cerrar modal)
     const handleButtonClick = () => {
+        // Siempre cerrar el modal, independientemente de si hay documentos
+        // El registro se realizará cuando el usuario presione el botón "Registrar"
         if (tieneDocumentosAdjuntados && onProceedToRegister) {
-            onProceedToRegister(); // Proceder a registrar
+            onProceedToRegister(); // Cerrar modal con callback
         } else {
-            onClose(); // Cerrar modal
+            onClose(); // Cerrar modal directo
         }
     };
 
@@ -35,6 +37,7 @@ const FormDocumentacion = ({ previews, handleFileChange, onClose, onProceedToReg
             <div className="modal-container" style={{ position: 'relative', maxWidth: 900, width: '98vw', minHeight: 400 }}>
                 {/* Botón dinámico: Cerrar (X) u OK (✓) */}
                 <button 
+                    type="button"
                     onClick={handleButtonClick}
                     className="form-documentacion-close"
                     style={{
@@ -56,7 +59,7 @@ const FormDocumentacion = ({ previews, handleFileChange, onClose, onProceedToReg
                         alignItems: 'center',
                         justifyContent: 'center'
                     }}
-                    title={tieneDocumentosAdjuntados ? "Proceder a registrar" : "Cerrar"}
+                    title={tieneDocumentosAdjuntados ? "Cerrar modal - Presiona 'Registrar' para enviar" : "Cerrar"}
                 >
                     {tieneDocumentosAdjuntados ? '✓' : '×'}
                 </button>
@@ -124,10 +127,12 @@ const FormDocumentacion = ({ previews, handleFileChange, onClose, onProceedToReg
                                                 <span className="archivo-desconocido">Archivo cargado</span>
                                             )}
                                             <div className="archivo-status">
-                                                <span className="archivo-subido">✓ Archivo subido</span>
+                                                <span className={`archivo-subido ${previews[name].existente ? 'archivo-existente' : 'archivo-nuevo'}`}>
+                                                    {previews[name].existente ? '📁 Archivo existente' : '✓ Archivo subido'}
+                                                </span>
                                                 <a
                                                     href={previews[name].url}
-                                                    download={`${label}_${new Date().toISOString().split('T')[0]}`}
+                                                    download={previews[name].nombreArchivo || `${label}_${new Date().toISOString().split('T')[0]}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="btn-ver"

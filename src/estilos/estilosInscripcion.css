@@ -33,16 +33,46 @@
 }
 
 /* Header de los modales de registro, CRUD, etc. */
+
 .modal-header-buttons {
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  width: 100%;
   margin-bottom: 1.5rem;
   position: relative;
-  max-width: 520px;
-  margin-left: auto;
+  z-index: 10;
+  padding-left: 18px;
+  padding-right: 18px;
+  box-sizing: border-box;
+}
+
+.modal-header-buttons > *:first-child {
   margin-right: auto;
+}
+.modal-header-buttons > *:last-child {
+  margin-left: auto;
+}
+
+/* Botones de cerrar y volver con margen y tamaño elegante */
+.cerrar-button,
+.volver-button {
+  margin: 0 4px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(44, 64, 120, 0.08);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.cerrar-button:hover,
+.volver-button:hover {
+  background: #f0f4fa;
+  box-shadow: 0 4px 16px rgba(44, 64, 120, 0.13);
 }
 
 /* Botones de header más cerca de los bordes solo para RegistroEstd */

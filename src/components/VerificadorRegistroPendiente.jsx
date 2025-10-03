@@ -146,11 +146,15 @@ const VerificadorRegistroPendiente = ({ dni, onRegistroCompleto, onSinRegistro }
           <div className="registro-info">
             <div className="info-item">
               <strong>👤 Estudiante:</strong>
-              <span>{registroPendiente.nombre} {registroPendiente.apellido}</span>
+              <span>{registroPendiente.datos?.nombre || registroPendiente.nombre} {registroPendiente.datos?.apellido || registroPendiente.apellido}</span>
             </div>
             <div className="info-item">
               <strong>📄 DNI:</strong>
-              <span>{registroPendiente.dni}</span>
+              <span>{registroPendiente.datos?.dni || registroPendiente.dni}</span>
+            </div>
+            <div className="info-item">
+              <strong>✉️ Email:</strong>
+              <span>{registroPendiente.datos?.email || registroPendiente.email || <span style={{color:'red'}}>Sin email</span>}</span>
             </div>
             <div className="info-item">
               <strong>{getTipoIcon(registroPendiente.tipoRegistro)} Tipo:</strong>
@@ -162,10 +166,10 @@ const VerificadorRegistroPendiente = ({ dni, onRegistroCompleto, onSinRegistro }
                 <span>{registroPendiente.cantidadDocumentosSubidos}/8</span>
               </div>
             )}
-            {registroPendiente.modalidad && (
+            {(registroPendiente.datos?.modalidad || registroPendiente.modalidad) && (
               <div className="info-item">
                 <strong>📚 Modalidad:</strong>
-                <span>{registroPendiente.modalidad}</span>
+                <span>{registroPendiente.datos?.modalidad || registroPendiente.modalidad}</span>
               </div>
             )}
             {!infoVencimiento?.vencido && (

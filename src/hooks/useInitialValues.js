@@ -6,25 +6,35 @@ import { verificarRegistroPendiente } from '../utils/registroSinDocumentacion';
  * @param {string} modalidad - Modalidad seleccionada
  * @param {string} completarRegistro - DNI del registro pendiente a completar
  * @param {object} datosRegistroWeb - Datos del registro web a completar
+ * @param {object} datosRegistroPendiente - Datos del registro pendiente desde URL
+ * @param {string} completarRegistroWeb - ID del registro web a completar
  */
-export const useInitialValues = (modalidad, completarRegistro, datosRegistroWeb) => {
+export const useInitialValues = (modalidad, completarRegistro, datosRegistroWeb, datosRegistroPendiente, completarRegistroWeb) => {
     // Buscar datos en sessionStorage primero (desde modal "Completar")
     let datosSessionStorage = null;
     try {
-        const datosString = sessionStorage.getItem('registroPendienteCompleto');
-        if (datosString) {
-            datosSessionStorage = JSON.parse(datosString);
-            console.log('📋 Datos encontrados en sessionStorage:', datosSessionStorage);
-            // Limpiar sessionStorage después de leer
-            sessionStorage.removeItem('registroPendienteCompleto');
+        // Priorizar datos de registro web si están disponibles
+        const datosWebString = sessionStorage.getItem('datosRegistroWeb');
+        const datosPendienteString = sessionStorage.getItem('datosRegistroPendiente');
+        
+        if (datosWebString) {
+            datosSessionStorage = JSON.parse(datosWebString);
+            console.log('📋 Datos de registro web encontrados en sessionStorage:', datosSessionStorage);
+        } else if (datosPendienteString) {
+            datosSessionStorage = JSON.parse(datosPendienteString);
+            console.log('📋 Datos de registro pendiente encontrados en sessionStorage:', datosSessionStorage);
         }
+        
+        // NO eliminar sessionStorage aquí para permitir múltiples renderizaciones
+        // Los datos se eliminarán cuando se complete el registro o se cierre la página
     } catch (error) {
         console.error('Error al parsear datos de sessionStorage:', error);
     }
     
-    // Determinar qué datos usar
-    const registroPendiente = datosSessionStorage || 
-        (completarRegistro ? verificarRegistroPendiente(completarRegistro) : null);
+    // Determinar qué datos usar - priorizar URL > sessionStorage > localStorage
+    const registroPendiente = datosRegistroPendiente?.datos || datosRegistroWeb?.datos || datosSessionStorage || 
+        (completarRegistro ? verificarRegistroPendiente(completarRegistro) : null) ||
+        (completarRegistroWeb ? null : null); // Para registro web, los datos vienen de sessionStorage
 
     return useMemo(() => {
         const baseValues = {
@@ -62,13 +72,35 @@ export const useInitialValues = (modalidad, completarRegistro, datosRegistroWeb)
         // Si hay registro pendiente, pre-llenar campos
         if (registroPendiente) {
             console.log('📝 Pre-llenando formulario con registro pendiente:', registroPendiente);
+            console.log('🏠 Datos de domicilio desde registro:', {
+                calle: registroPendiente.calle,
+                numero: registroPendiente.numero,
+                provincia: registroPendiente.provincia,
+                localidad: registroPendiente.localidad,
+                barrio: registroPendiente.barrio
+            });
+            console.log('🎓 Datos académicos desde registro:', {
+                modalidad: registroPendiente.modalidad,
+                modalidadId: registroPendiente.modalidadId,
+                modalidadIdParsed: parseInt(registroPendiente.modalidadId),
+                planAnio: registroPendiente.planAnio,
+                planAnioParsed: parseInt(registroPendiente.planAnio),
+                modulos: registroPendiente.modulos,
+                idModulo: registroPendiente.idModulo,
+                idModuloArray: Array.isArray(registroPendiente.idModulo) ? registroPendiente.idModulo : 'No es array'
+            });
+            if (datosRegistroPendiente) {
+                console.log('🌐 Datos desde URL de registro pendiente:', datosRegistroPendiente);
+            }
             return {
                 ...baseValues,
                 nombre: registroPendiente.nombre || '',
                 apellido: registroPendiente.apellido || '',
                 dni: registroPendiente.dni || '',
+                tipoDocumento: registroPendiente.tipoDocumento || 'DNI',
                 cuil: registroPendiente.cuil || '',
                 fechaNacimiento: registroPendiente.fechaNacimiento || '',
+                paisEmision: registroPendiente.paisEmision || 'Argentina',
                 calle: registroPendiente.calle || '',
                 numero: registroPendiente.numero || '',
                 barrio: registroPendiente.barrio || '',
@@ -77,14 +109,12 @@ export const useInitialValues = (modalidad, completarRegistro, datosRegistroWeb)
                 email: registroPendiente.email || '',
                 telefono: registroPendiente.telefono || '',
                 modalidad: registroPendiente.modalidad || modalidad || '',
-                modalidadId: registroPendiente.modalidadId || (modalidad === 'Presencial' ? 1 : modalidad === 'Semipresencial' ? 2 : 1),
-                planAnio: registroPendiente.planAnio || '',
+                modalidadId: parseInt(registroPendiente.modalidadId) || (modalidad === 'Presencial' ? 1 : modalidad === 'Semipresencial' ? 2 : 1),
+                planAnio: parseInt(registroPendiente.planAnio) || registroPendiente.planAnio || '',
                 modulos: registroPendiente.modulos || '',
                 idModulo: registroPendiente.idModulo || '',
             };
-        }
-
-        // Si hay datos de registro web, pre-llenar campos
+        }        // Si hay datos de registro web, pre-llenar campos
         if (datosRegistroWeb) {
             console.log('📝 Pre-llenando formulario con registro web:', datosRegistroWeb);
             return {
@@ -110,5 +140,5 @@ export const useInitialValues = (modalidad, completarRegistro, datosRegistroWeb)
         }
 
         return baseValues;
-    }, [modalidad, registroPendiente, datosRegistroWeb]);
+    }, [modalidad, registroPendiente, datosRegistroWeb, datosRegistroPendiente]);
 };

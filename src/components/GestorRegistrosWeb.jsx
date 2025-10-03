@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import registrosWebService from '../services/serviceRegistrosWeb';
 import AlertaMens from './AlertaMens';
@@ -7,9 +8,10 @@ import CloseButton from './CloseButton';
 import FormatError from '../utils/MensajeError';
 import '../estilos/RegistrosPendientes.css';
 
-const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
+const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }) => {
+    const navigate = useNavigate();
     const [registros, setRegistros] = useState([]);
-    const [stats, setStats] = useState({});
+    const [stats, setStats] = useState({ total: 0, pendientes: 0, procesados: 0, anulados: 0 });
     const [loading, setLoading] = useState(true);
     const [procesando, setProcesando] = useState('');
     const [alerta, setAlerta] = useState({ text: '', variant: '' });
@@ -54,24 +56,40 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
         try {
             // Llamar la función del componente padre para completar registro
             if (onRegistroSeleccionado) {
-                // Pasar el registro completo al componente padre (incluye datos, archivos, etc.)
-                onRegistroSeleccionado(registro);
+                // Navegar usando React Router para evitar error 404
+                // Pasar el registro completo (incluyendo archivos) al formulario
+                const registroCompleto = {
+                    ...registro,
+                    archivos: registro.archivos || {} // Asegurar que archivos existe
+                };
+                const datosWebEncoded = encodeURIComponent(JSON.stringify(registroCompleto));
+                
+                // Navegar a la ruta correcta según si es admin o no
+                const rutaDestino = isAdmin 
+                    ? `/dashboard/formulario-inscripcion-adm?accion=Registrar&modalidad=${registro.datos.modalidad || ''}&completarWeb=${registro.id}&datosWeb=${datosWebEncoded}&origen=registros-web`
+                    : `/preinscripcion-estd?accion=Registrar&modalidad=${registro.datos.modalidad || ''}&completarWeb=${registro.id}&datosWeb=${datosWebEncoded}&origen=registros-web`;
+                
+                navigate(rutaDestino);
             }
-            
-            // NO cambiar estado aquí - solo se cambia cuando admin presiona "Registrar"
-            // El estado se mantendrá como estaba originalmente hasta completar la inscripción
-            
+            // Actualizar el estado local del registro a PROCESADO si corresponde
+            if (registro.estado === 'PENDIENTE') {
+                // Simular cambio de estado localmente para el contador
+                setRegistros(prev => prev.map(r => r.id === registro.id ? { ...r, estado: 'PROCESADO' } : r));
+                setStats(prev => ({
+                    ...prev,
+                    pendientes: prev.pendientes > 0 ? prev.pendientes - 1 : 0,
+                    procesados: prev.procesados + 1
+                }));
+            }
             const mensajeSegunEstado = {
                 'PENDIENTE': 'Registro cargado para completar inscripción',
                 'PROCESADO': 'Registro cargado para revisar y completar inscripción presencial',
                 'ANULADO': 'Registro reactivado para completar inscripción'
             };
-            
             setAlerta({
                 text: mensajeSegunEstado[registro.estado] || 'Registro cargado para gestionar',
                 variant: 'success'
             });
-            
         } catch (error) {
             console.error('Error al procesar registro:', error);
             setAlerta({
@@ -158,6 +176,13 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
         );
     }
 
+    // Actualizar el estado visual en la lista si el registro fue procesado localmente
+    const registrosVisuales = registrosFiltrados.map(r => {
+        // Si el registro fue procesado localmente, reflejar el cambio visual
+        const registroLocal = registros.find(reg => reg.id === r.id);
+        return registroLocal ? { ...r, estado: registroLocal.estado } : r;
+    });
+
     return (
         <div className="gestor-registros-web">
             <div className="gestor-modal-container">
@@ -216,14 +241,14 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
 
                     {/* Tercera fila: Lista de registros */}
                     <div className="registros-container">
-                        {registrosFiltrados.length === 0 ? (
+                        {registrosVisuales.length === 0 ? (
                             <div className="sin-registros">
                                 <h3>📭 No hay registros web {filtro === 'TODOS' ? '' : filtro.toLowerCase()}</h3>
                                 <p>Los registros aparecerán aquí cuando los usuarios completen el formulario web.</p>
                             </div>
                         ) : (
                             <div className="registros-lista">
-                                {registrosFiltrados.map((registro) => {
+                                {registrosVisuales.map((registro) => {
                                     // Debug: verificar datos del registro
                                     console.log('Registro datos:', registro.datos.nombre, registro.datos.apellido, registro.datos.dni);
                                     return (
@@ -415,6 +440,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado }) => {
 GestorRegistrosWeb.propTypes = {
     onClose: PropTypes.func.isRequired,
     onRegistroSeleccionado: PropTypes.func, // Función para manejar cuando se selecciona un registro
+    isAdmin: PropTypes.bool, // Indica si el usuario actual es administrador
 };
 
 export default GestorRegistrosWeb;

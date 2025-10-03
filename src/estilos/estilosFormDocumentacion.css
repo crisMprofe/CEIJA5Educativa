@@ -342,6 +342,20 @@ input[type="file"].small-select::file-selector-button {
   white-space: nowrap;
 }
 
+/* Estilos específicos para archivos existentes */
+.archivo-existente {
+  background: #fff3cd !important;
+  color: #856404 !important;
+  border: 1px solid #ffeaa7 !important;
+}
+
+/* Estilos específicos para archivos nuevos */
+.archivo-nuevo {
+  background: #d1ecf1 !important;
+  color: #0c5460 !important;
+  border: 1px solid #b8daff !important;
+}
+
 .btn-ver {
   background: #007bff;
   color: white;

@@ -114,55 +114,23 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
 
     const handleAccion = async (accion, estudiante) => {
         try {
-            // Solo enviar modalidadId si está definido y es válido
-            let url = `http://localhost:5000/consultar-estudiantes-dni/${estudiante.dni}`;
-            if (typeof modalidadId === 'number' && !isNaN(modalidadId)) {
-                url += `?modalidadId=${modalidadId}`;
-            }
-            const response = await fetch(url);
-            let data;
-            try {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    data = await response.json();
-                } else {
-                    const text = await response.text();
-                    console.error('Respuesta no JSON:', text);
-                    setError('Error de conexión o ruta incorrecta');
-                    return;
-                }
-            } catch (err) {
-                console.error('Error al parsear respuesta:', err);
-                setError('Error al procesar respuesta del servidor');
-                return;
-            }
-            if (data.success) {
-                console.log('Datos completos del estudiante:', data);
-                console.log('🟦 Documentacion recibida:', data.documentacion);
-                console.log('🟦 Foto recibida:', data.estudiante?.foto);
+            // Usar el servicio centralizado para obtener datos completos del estudiante
+            const data = await serviceInscripcion.getEstudiantePorDNI(estudiante.dni);
+            if (data && data.success) {
+                // Estructura igual a la consulta por DNI
                 const estudianteCompleto = {
                     ...data.estudiante,
-                    calle: data.domicilio?.calle || '',
-                    numero: data.domicilio?.numero || '',
-                    barrio: data.domicilio?.barrio || '',
-                    localidad: data.domicilio?.localidad || '',
-                    provincia: data.domicilio?.provincia || '',
-                    modalidad: data.inscripcion?.modalidad || '',
-                    planAnio: data.inscripcion?.plan || '',
-                    modulo: data.inscripcion?.modulo || '',
-                    estadoInscripcion: data.inscripcion?.estado || '',
-                    fechaInscripcion: data.inscripcion?.fechaInscripcion || '',
-                    idInscripcion: data.inscripcion?.idInscripcion || null,
+                    domicilio: data.domicilio || {},
+                    inscripcion: data.inscripcion || {},
                     documentacion: data.documentacion || [],
-                    email: data.estudiante?.email || ''
                 };
                 onAccion(accion, estudianteCompleto);
             } else {
-                console.error('Error al obtener datos completos:', data.message);
+                setError(data?.message || 'Error de conexión o ruta incorrecta');
                 onAccion(accion, estudiante); // Fallback con datos básicos
             }
         } catch {
-            // No usar variable 'error' para evitar warning
+            setError('Error al procesar respuesta del servidor');
             onAccion(accion, estudiante); // Fallback con datos básicos
         }
     };

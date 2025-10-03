@@ -182,7 +182,7 @@ const GestionCRUDContenido = ({
                     modalidadFiltrada={modalidadFiltrada}
                     onAccion={onAccion}
                     onClose={onClose}
-                    onVolver={handleVolverAOpciones}
+                    onVolver={() => setVistaActual('opciones')}
                 />
             );
         }

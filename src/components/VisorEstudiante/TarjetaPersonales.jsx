@@ -15,15 +15,38 @@ const TarjetaPersonales = ({
     const isString = typeof fotoSrc === 'string';
 
     return (
-        <div className="tarjeta tarjeta-personales" style={{ height: '520px' }}>
-            <div className="tarjeta-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="tarjeta tarjeta-personales" style={{ height: '520px', overflow: 'visible' }}>
+            <div className="tarjeta-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                     <h3>Datos Personales</h3>
                     <span style={{ fontWeight: 'bold', color: '#1976d2', fontSize: '1.1em' }}>ID: {estudiante.id}</span>
                 </div>
-                {!isConsulta && !isEliminacion && (
-                    <button onClick={() => setEditMode(prev => ({ ...prev, personales: true }))}>✏️</button>
-                )}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                    {/* FOTO DEL ESTUDIANTE ARRIBA DERECHA */}
+                    <div className="foto-container" style={{ textAlign: 'right', marginBottom: 0, position: 'relative' }}>
+                        {isString ? (
+                            <img
+                                src={
+                                    fotoSrc.startsWith('http')
+                                        ? fotoSrc
+                                        : `http://localhost:5000${fotoSrc}`
+                                }
+                                alt={`Foto de ${formData.nombre || estudiante.nombre} ${formData.apellido || estudiante.apellido}`}
+                                style={{ width: '64px', height: '64px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', objectFit: 'cover' }}
+                            />
+                        ) : (
+                            <img
+                                src="/img/default-avatar.png"
+                                alt="Foto del estudiante"
+                                style={{ width: '64px', height: '64px', borderRadius: '50%' }}
+                            />
+                        )}
+                    </div>
+                    {/* Botón editar */}
+                    {!isConsulta && !isEliminacion && (
+                        <button onClick={() => setEditMode(prev => ({ ...prev, personales: true }))}>✏️</button>
+                    )}
+                </div>
             </div>
             <div className="tarjeta-contenido">
                 <div className="dato-item">
@@ -99,53 +122,7 @@ const TarjetaPersonales = ({
                         <span>{estudiante.paisEmision}</span>
                     )}
                 </div>
-                {/* FOTO DEL ESTUDIANTE */}
-                <div className="foto-container" style={{ textAlign: 'center', marginBottom: '1rem', position: 'relative' }}>
-                    {editMode.personales ? (
-                        <>
-                            <img
-                                src={formData.fotoPreview
-                                    ? formData.fotoPreview
-                                    : (isString
-                                        ? (fotoSrc.startsWith('http')
-                                            ? fotoSrc
-                                            : `http://localhost:5000${fotoSrc}`)
-                                        : '/img/default-avatar.png')
-                                }
-                                alt={`Foto de ${formData.nombre || estudiante.nombre} ${formData.apellido || estudiante.apellido}`}
-                                style={{ width: '120px', height: '120px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
-                            />
-                            <input
-                                type="file"
-                                id="input-cambiar-foto"
-                                accept="image/*"
-                                style={{ display: 'none' }}
-                                onChange={e => handleInputChange('foto', e.target.files[0])}
-                            />
-                            <label htmlFor="input-cambiar-foto" style={{ position: 'absolute', right: '10px', top: '10px', cursor: 'pointer', background: '#fff', borderRadius: '50%', padding: '6px', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }} title="Cambiar foto">
-                                <span role="img" aria-label="Cambiar foto" style={{ fontSize: '1.5em' }}>🖼️</span>
-                            </label>
-                        </>
-                    ) : (
-                        isString ? (
-                            <img
-                                src={
-                                    fotoSrc.startsWith('http')
-                                        ? fotoSrc
-                                        : `http://localhost:5000${fotoSrc}`
-                                }
-                                alt={`Foto de ${formData.nombre || estudiante.nombre} ${formData.apellido || estudiante.apellido}`}
-                                style={{ maxWidth: '120px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
-                            />
-                        ) : (
-                            <img
-                                src="/img/default-avatar.png"
-                                alt="Foto del estudiante"
-                                style={{ width: '120px', height: '120px', borderRadius: '50%' }}
-                            />
-                        )
-                    )}
-                </div>
+                {/* Foto y edición solo en header ahora */}
                {/*} {editMode.personales && (
                     <div className="visor-acciones">
                         <button className="btn-guardar-seccion" onClick={handleGuardarLocal}>Guardar</button>

@@ -40,6 +40,12 @@ export const Domicilio = ({ esAdmin = false }) => {
                 if (data.success && data.data) {
                     setProvincias(data.data);
                     console.log(`✅ ${data.data.length} provincias cargadas`);
+                    
+                    // Si tenemos provincia pre-seleccionada desde registro pendiente, cargar localidades
+                    if (values.provincia && values.provincia !== '') {
+                        console.log('🏘️ Provincia pre-seleccionada desde registro pendiente:', values.provincia);
+                        // Las localidades se cargarán automáticamente por el useEffect de provincia
+                    }
                 } else {
                     setError('Error cargando provincias');
                     console.error('❌ Error en respuesta de provincias:', data);
@@ -53,7 +59,23 @@ export const Domicilio = ({ esAdmin = false }) => {
         };
 
         cargarProvincias();
-    }, []);
+    }, [values.provincia]);    
+    
+    // Efecto especial para manejar valores pre-cargados desde registros pendientes
+    useEffect(() => {
+        // Solo ejecutar si tenemos localidades cargadas y un valor de localidad desde registro pendiente
+        if (localidades.length > 0 && values.localidad && values.localidad !== '') {
+            console.log('🏘️ Localidad pre-seleccionada desde registro pendiente:', values.localidad);
+            // Los barrios se cargarán automáticamente por el useEffect de localidad
+        }
+    }, [localidades, values.localidad]);
+    
+    // Efecto especial para manejar barrios pre-cargados
+    useEffect(() => {
+        if (barrios.length > 0 && values.barrio && values.barrio !== '') {
+            console.log('🏠 Barrio pre-seleccionado desde registro pendiente:', values.barrio);
+        }
+    }, [barrios, values.barrio]);
 
     // Cargar localidades cuando cambia la provincia
     useEffect(() => {
@@ -87,10 +109,14 @@ export const Domicilio = ({ esAdmin = false }) => {
         };
 
         cargarLocalidades();
-        // Reset campos dependientes
-        setFieldValue('localidad', '');
-        setFieldValue('barrio', '');
-    }, [values.provincia, setFieldValue]);
+        // Reset campos dependientes solo si no vienen de registro pendiente
+        if (!values.localidad || values.localidad === '') {
+            setFieldValue('localidad', '');
+        }
+        if (!values.barrio || values.barrio === '') {
+            setFieldValue('barrio', '');
+        }
+    }, [values.provincia, values.localidad, values.barrio, setFieldValue]);
 
     // Cargar barrios cuando cambia la localidad
     useEffect(() => {
@@ -124,9 +150,11 @@ export const Domicilio = ({ esAdmin = false }) => {
         };
 
         cargarBarrios();
-        // Reset barrio
-        setFieldValue('barrio', '');
-    }, [values.localidad, setFieldValue]);
+        // Reset barrio solo si no viene de registro pendiente
+        if (!values.barrio || values.barrio === '') {
+            setFieldValue('barrio', '');
+        }
+    }, [values.localidad, values.barrio, setFieldValue]);
 
     const handleSelectChange = (e) => {
         const { name, value } = e.target;

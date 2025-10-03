@@ -14,12 +14,16 @@ const NavMain = () => {
 
     return (
         <nav className="nav-main">
+            <div className="nav-header">
+                <h1 className="sistema-titulo">SISTEMA DE GESTIÓN DE ESTUDIANTES</h1>
+                <p className="sistema-subtitulo">Inscripción de Estudiantes - CEIJA 5</p>
+            </div>
             <div className="nav-links">
                 <NavLink to="/" className="nav-link">Inicio</NavLink>
-                <NavLink to="/dashboard" className="nav-link">Panel-Administracion CEIJA5</NavLink>
+                <NavLink to="/dashboard" className="nav-link">Panel-Administracion</NavLink>
             </div>
             <div className="nav-user">
-                <span className="user-name">Bienvenido, {user.nombre}</span>
+                <span className="user-name">{user.nombre.charAt(0).toUpperCase() + user.nombre.slice(1)}, {user.rol}</span>
                 <button
                     className="logout-button"
                     onClick={() => {

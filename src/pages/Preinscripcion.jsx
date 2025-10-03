@@ -12,6 +12,24 @@ import { Logo } from '../components/Logo';
 import RegistroEstudiante from './RegistroEstd';
 import ListaEstudiantes from './ListaEstudiantes';
 
+// Helper function para obtener modalidadId basado en nombre de modalidad
+const obtenerModalidadId = (modalidadNombre) => {
+    if (!modalidadNombre) return null;
+    
+    const modalidadUpper = modalidadNombre.toUpperCase();
+    
+    // Mapeo basado en los valores comunes en la base de datos
+    const mapeoModalidades = {
+        'PRESENCIAL': 1,
+        'SEMIPRESENCIAL': 2,
+        'A DISTANCIA': 3,
+        'DISTANCIA': 3, // Alias
+        'VIRTUAL': 3 // Alias
+    };
+    
+    return mapeoModalidades[modalidadUpper] || null;
+};
+
 const Preinscripcion = ({ isAdmin }) => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -20,6 +38,7 @@ const Preinscripcion = ({ isAdmin }) => {
     const completarParam = searchParams.get('completar'); // Nuevo: DNI para completar registro pendiente
     const completarWebParam = searchParams.get('completarWeb'); // Nuevo: ID del registro web a completar
     const datosWebParam = searchParams.get('datosWeb'); // Nuevo: Datos completos del registro web
+    const datosCompletosParam = searchParams.get('datosCompletos'); // Nuevo: Datos completos del registro pendiente
     const webParam = searchParams.get('web'); // Detectar si viene desde web
     const origenParam = searchParams.get('origen'); // Nuevo: Origen de navegación (registros-web, registros-pendientes)
     const [accion, setAccion] = useState(null);
@@ -27,6 +46,9 @@ const Preinscripcion = ({ isAdmin }) => {
     
     // Parsear datos del registro web si existen
     const datosRegistroWeb = datosWebParam ? JSON.parse(decodeURIComponent(datosWebParam)) : null;
+    
+    // Parsear datos completos del registro pendiente si existen
+    const datosRegistroPendiente = datosCompletosParam ? JSON.parse(decodeURIComponent(datosCompletosParam)) : null;
 
     // DEBUG: Verifica que modalidadSeleccionada tenga valor
     // Puedes quitar este log luego de depurar
@@ -40,14 +62,28 @@ const Preinscripcion = ({ isAdmin }) => {
         if (completarParam) {
             console.log('🚀 Iniciando modo completar registro para DNI:', completarParam);
             setAccion('Registrar'); // Establecer acción automáticamente
-        } else if (completarWebParam) {
+        } else if (completarWebParam && datosRegistroWeb) {
             console.log('🚀 Iniciando modo completar registro web para ID:', completarWebParam);
+            console.log('🌐 Datos completos del registro web:', datosRegistroWeb);
+            
+            // Guardar datos del registro web en sessionStorage para que useGestionDocumentacion los use
+            const datosParaSessionStorage = {
+                id: completarWebParam,
+                datos: datosRegistroWeb.datos || datosRegistroWeb,
+                archivos: datosRegistroWeb.archivos || {},
+                timestamp: datosRegistroWeb.timestamp,
+                estado: datosRegistroWeb.estado
+            };
+            
+            sessionStorage.setItem('datosRegistroWeb', JSON.stringify(datosParaSessionStorage));
+            console.log('💾 Datos del registro web guardados en sessionStorage:', datosParaSessionStorage);
+            
             setAccion('Registrar'); // Establecer acción automáticamente
         } else if (webParam === 'true') {
             console.log('🌐 Acceso desde web, iniciando registro directo');
             setAccion('Registrar'); // Ir directo al formulario de registro
         }
-    }, [completarParam, completarWebParam, webParam]);
+    }, [completarParam, completarWebParam, webParam, datosRegistroWeb]);
 
     // Si modalidadSeleccionada es null o undefined, muestra un mensaje y no renderiza nada más
     if (!modalidadSeleccionada) {
@@ -97,7 +133,31 @@ const Preinscripcion = ({ isAdmin }) => {
             );
         }
 
-        // Header normal para administradores
+        // Si es administrador (viene del LayoutPrivate), mostrar header simplificado
+        // solo con botones de modalidad, sin duplicar logo ni título
+        if (isAdmin) {
+            return (
+                <div className="header-inscripcion admin-simplified">
+                    {/* Solo botones de modalidad para admin */}
+                    <div className="header-modalidad-selector">
+                        <button
+                            className={`boton-principal-pill${modalidadSeleccionada === 'Presencial' ? ' selected' : ''}`}
+                            onClick={() => handleModalidadChange('Presencial')}
+                        >
+                            Presencial
+                        </button>
+                        <button
+                            className={`boton-principal-pill${modalidadSeleccionada === 'Semipresencial' ? ' selected' : ''}`}
+                            onClick={() => handleModalidadChange('Semipresencial')}
+                        >
+                            Semipresencial
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Header normal para estudiantes (ruta directa /preinscripcion-estd)
         return (
             <div className="header-inscripcion mejorado">
                 <div className="header-inscripcion-row">
@@ -154,6 +214,7 @@ const Preinscripcion = ({ isAdmin }) => {
                 return (
                     <ListaEstudiantes
                         modalidad={modalidadSeleccionada}
+                        modalidadId={modalidadSeleccionada === 'Presencial' ? 1 : modalidadSeleccionada === 'Semipresencial' ? 2 : ''}
                         onClose={() => setAccion(null)}
                     />
                 );
@@ -164,6 +225,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         onClose={() => setAccion(null)}
                         vistaInicial="opciones"
                         modalidad={modalidadSeleccionada}
+                        modalidadId={obtenerModalidadId(modalidadSeleccionada)}
                     />
                 );
             case 'Modificar':
@@ -173,6 +235,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         onClose={() => setAccion(null)}
                         vistaInicial="opcionesModificar"
                         modalidad={modalidadSeleccionada}
+                        modalidadId={obtenerModalidadId(modalidadSeleccionada)}
                     />
                 );
             case 'ModificarPorDNI':
@@ -183,6 +246,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         vistaInicial="busquedaDNI"
                         esModificacion={true}
                         modalidad={modalidadSeleccionada}
+                        modalidadId={obtenerModalidadId(modalidadSeleccionada)}
                     />
                 );
             case 'ModificarLista':
@@ -193,6 +257,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         vistaInicial="listaModificar"
                         esModificacion={true}
                         modalidad={modalidadSeleccionada}
+                        modalidadId={obtenerModalidadId(modalidadSeleccionada)}
                     />
                 );
             case 'Eliminar':
@@ -216,6 +281,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         onClose={() => setAccion(null)}
                         vistaInicial="opcionesEliminar"
                         modalidad={modalidadSeleccionada}
+                        modalidadId={obtenerModalidadId(modalidadSeleccionada)}
                     />
                 );
             case 'EliminarLista':
@@ -225,6 +291,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         onClose={() => setAccion(null)}
                         vistaInicial="listaEliminar"
                         modalidad={modalidadSeleccionada}
+                        modalidadId={obtenerModalidadId(modalidadSeleccionada)}
                     />
                 );
             case 'Registrar':
@@ -232,7 +299,8 @@ const Preinscripcion = ({ isAdmin }) => {
                     return ( 
                     <RegistroEstudiante
                         modalidad={modalidadSeleccionada}
-                     onClose={() => setAccion(null)}/>
+                        isAdmin={isAdmin}
+                        onClose={() => setAccion(null)}/>
 
                     );
                        
@@ -247,6 +315,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         completarRegistro={completarParam} // Nuevo: pasar DNI para completar
                         completarRegistroWeb={completarWebParam} // Nuevo: pasar ID del registro web
                         datosRegistroWeb={datosRegistroWeb} // Nuevo: pasar datos completos del registro web
+                        datosRegistroPendiente={datosRegistroPendiente} // Nuevo: pasar datos completos del registro pendiente
                         onClose={() => {
                             // Navegación contextual basada en el origen
                             if (origenParam === 'registros-web') {

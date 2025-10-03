@@ -126,19 +126,81 @@ const registrosWebService = {
         }
     },
 
-    // Procesar un registro web (convertir a registro completo)
-    procesarRegistroWeb: async (id) => {
+    // Obtener un registro web específico por ID
+    obtenerRegistroWebPorId: async (id) => {
         try {
-            // Primero actualizar el estado a "PROCESADO"
-            await registrosWebService.actualizarRegistroWeb(id, {
-                estado: 'PROCESADO',
-                observaciones: `Procesado y convertido a registro completo el ${new Date().toLocaleDateString('es-AR')}`
+            console.log(`🔍 Buscando registro web ID: ${id}`);
+            const registros = await registrosWebService.obtenerRegistrosWeb();
+            const registro = registros.find(r => r.id === id);
+            
+            if (!registro) {
+                throw new Error(`Registro web con ID ${id} no encontrado`);
+            }
+            
+            console.log(`✅ Registro web encontrado:`, registro.datos.nombre, registro.datos.apellido);
+            return registro;
+        } catch (error) {
+            console.error('❌ Error al obtener registro web por ID:', error);
+            throw error;
+        }
+    },
+
+    // Procesar un registro web (convertir a registro completo en BD)
+    procesarRegistroWeb: async (id, datosFormulario, documentos) => {
+        try {
+            console.log(`🔄 Procesando registro web ID: ${id}`);
+            
+            // Llamar endpoint de procesamiento (enviar a BD)
+            const response = await fetch(`${API_BASE_URL}/registros-web/${id}/procesar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    datosFormulario,
+                    documentos
+                })
             });
 
-            console.log(`✅ Registro web ${id} marcado como procesado`);
-            return { success: true, message: 'Registro procesado exitosamente' };
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+            }
+
+            const resultado = await response.json();
+            console.log(`✅ Registro web procesado y guardado en BD:`, resultado);
+            return resultado;
         } catch (error) {
-            console.error('Error al procesar registro web:', error);
+            console.error('❌ Error al procesar registro web:', error);
+            throw error;
+        }
+    },
+
+    // Mover registro web a pendientes
+    moverRegistroWebAPendientes: async (id, motivoPendiente) => {
+        try {
+            console.log(`📋 Moviendo registro web ${id} a pendientes`);
+            
+            const response = await fetch(`${API_BASE_URL}/registros-web/${id}/mover-pendiente`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    motivoPendiente
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+            }
+
+            const resultado = await response.json();
+            console.log(`✅ Registro web movido a pendientes:`, resultado);
+            return resultado;
+        } catch (error) {
+            console.error('❌ Error al mover registro web a pendientes:', error);
             throw error;
         }
     }

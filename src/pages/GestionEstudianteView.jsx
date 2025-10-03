@@ -1,12 +1,10 @@
 import PropTypes from 'prop-types';
 import RegistroEstd from './RegistroEstd';
-import AlertaMens from '../components/AlertaMens';
 import '../estilos/estilosInscripcion.css';
 
 const GestionEstudianteView = ({
     onClose,
     onBack, // Nuevo prop para navegación hacia atrás
-    alert,
     setAlert,
     previews,
     files, // Agregar files como prop
@@ -28,15 +26,12 @@ const GestionEstudianteView = ({
         <div className={`formulario-inscripcion-${isAdmin ? 'adm' : 'est'}`}>
             {/* Botones manejados directamente por RegistroEstd - No duplicar aquí */}
             
-            {alert.text && <AlertaMens text={alert.text} variant={alert.variant} />}
-
             <RegistroEstd
                 modalidad={values.modalidad}
                 previews={previews}
                 files={files} // Pasar files como prop
                 handleFileChange={handleFileChange}
                 handleChange={handleChange}
-                alert={alert}
                 setAlert={setAlert}
                 accion={accion}
                 handleSubmit={handleSubmit}
@@ -60,7 +55,6 @@ GestionEstudianteView.propTypes = {
     onClose: PropTypes.func,
     onBack: PropTypes.func, // Función para navegación hacia atrás
     navigate: PropTypes.func,
-    alert: PropTypes.object.isRequired,
     setAlert: PropTypes.func.isRequired,
     previews: PropTypes.object.isRequired,
     files: PropTypes.object, // Agregar files como prop

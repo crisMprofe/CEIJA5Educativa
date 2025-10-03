@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [registrosPendientes, setRegistrosPendientes] = useState([]); // Estado para los registros
   const [showGestorRegistrosWeb, setShowGestorRegistrosWeb] = useState(false); // Estado para gestor de registros web
 
+
   // Manejar navegación contextual desde formularios
   useEffect(() => {
     if (location.state?.openRegistrosWeb) {
@@ -362,6 +363,7 @@ const handleCompletarRegistro = (registro) => {
         <GestorRegistrosWeb 
           onClose={handleCloseGestorRegistrosWeb}
           onRegistroSeleccionado={handleCompletarRegistroWeb}
+          isAdmin={true}
           key={showGestorRegistrosWeb} // Forzar re-render cuando se abre
         />
       )}

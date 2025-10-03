@@ -7,7 +7,6 @@ import FormDocumentacion from '../components/FormDocumentacion';
 import VerificadorRegistroPendiente from '../components/VerificadorRegistroPendiente';
 import { DatosPersonales } from '../components/DatosPersonales';
 import { Domicilio } from '../components/Domicilio';
-import AlertaMens from '../components/AlertaMens';
 import PropTypes from 'prop-types';
 import '../estilos/estilosInscripcion.css';
 import '../estilos/botones.css';
@@ -16,12 +15,12 @@ import '../estilos/FormularioMejorado.css';
 import EstadoInscripcion from '../components/EstadoInscripcion';
 import BotonCargando from '../components/BotonCargando';
 
+
 const RegistroEstd = ({
     previews,
     handleFileChange,
     handleChange,
     handleSubmit,
-    alert,
     setAlert,
     isSubmitting,
     accion,
@@ -47,20 +46,29 @@ const RegistroEstd = ({
     const handleRegistroCompleto = (registroData) => {
         console.log('🔄 Completando registro pendiente:', registroData);
         setShowVerificador(false);
-        
-        // Pre-llenar el formulario con los datos del registro pendiente
+        // Pre-llenar TODOS los campos del formulario con los datos del registro pendiente/web
         if (registroData) {
+            // Datos personales
             setFieldValue('dni', registroData.dni || '');
             setFieldValue('nombre', registroData.nombre || '');
             setFieldValue('apellido', registroData.apellido || '');
             setFieldValue('modalidad', registroData.modalidad || '');
-            if (registroData.modalidadId) {
-                setFieldValue('modalidadId', registroData.modalidadId);
-            }
+            setFieldValue('modalidadId', registroData.modalidadId || '');
+            setFieldValue('tipoDocumento', registroData.tipoDocumento || 'DNI');
+            setFieldValue('cuil', registroData.cuil || '');
+            setFieldValue('email', registroData.email || '');
+            setFieldValue('telefono', registroData.telefono || '');
+            setFieldValue('fechaNacimiento', registroData.fechaNacimiento || '');
+            setFieldValue('paisEmision', registroData.paisEmision || '');
+            // Domicilio
+            setFieldValue('calle', registroData.calle || '');
+            setFieldValue('numero', registroData.numero || '');
+            setFieldValue('provincia', registroData.provincia || '');
+            setFieldValue('localidad', registroData.localidad || '');
+            setFieldValue('barrio', registroData.barrio || '');
         }
-        
         setAlert({ 
-            text: '📝 Formulario cargado con datos del registro pendiente. Complete la documentación para finalizar la inscripción.', 
+            text: '📝 Formulario cargado con todos los datos del registro pendiente. Complete la documentación para finalizar la inscripción.', 
             variant: 'info' 
         });
     };
@@ -75,25 +83,23 @@ const RegistroEstd = ({
         return values.planAnio !== '' && values.modalidad !== '';
     }, [values.planAnio, values.modalidad]);
 
-    // Función para proceder al registro desde el modal de documentación
+    // Función para cerrar el modal de documentación (solo cerrar, no procesar)
     const handleProceedToRegister = () => {
-        closeModal(); // Cerrar el modal primero
-        // Validar estado de inscripción antes de proceder
-        if (!values.idEstadoInscripcion) {
-            setAlert({ text: 'Debe seleccionar un estado de inscripción.', variant: 'error' });
-            return;
-        }
-        // Proceder con el registro
-        handleSubmit(values, { setSubmitting: () => {} });
+        closeModal(); // Solo cerrar el modal, el registro se hará con el botón "Registrar"
     };
 
-    const customHandleSubmit = (e) => {
+    const customHandleSubmit = async (e) => {
         e.preventDefault();
         if (!values.idEstadoInscripcion) {
             setAlert({ text: 'Debe seleccionar un estado de inscripción.', variant: 'error' });
             return;
         }
-        handleSubmit(values, { setSubmitting: () => {} });
+
+        // Usar el handleSubmit del hook que maneja todo el flujo correctamente
+        await handleSubmit(values, { 
+            setSubmitting: () => {}, 
+            resetForm: () => {} 
+        }, accion, isAdmin, isWebUser, completarRegistro, values.modalidad, null);
     };
 
     return (
@@ -191,7 +197,6 @@ const RegistroEstd = ({
                         />
                     )}
                 </div>
-            {alert.text && <AlertaMens text={alert.text} variant={alert.variant} />}
         </Form>
     );
 };
@@ -201,7 +206,6 @@ RegistroEstd.propTypes = {
     handleFileChange: PropTypes.func.isRequired,
     handleChange: PropTypes.func.isRequired,
     handleSubmit: PropTypes.func.isRequired,
-    alert: PropTypes.object.isRequired,
     setAlert: PropTypes.func.isRequired,
     values: PropTypes.object.isRequired,
     setFieldValue: PropTypes.func.isRequired,

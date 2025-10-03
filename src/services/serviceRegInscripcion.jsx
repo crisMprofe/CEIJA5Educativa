@@ -71,8 +71,30 @@ const createWebPendiente = async (formDataToSend) => {
     }
 };
 
+// Registrar registro pendiente del administrador
+const createRegistroPendiente = async (formDataToSend) => {
+    try {
+        console.log('📋 [createRegistroPendiente] Enviando registro pendiente del admin...');
+        const response = await axiosInstance.post('/registros-pendientes', formDataToSend);
+        console.log('📋 [createRegistroPendiente] Respuesta recibida:', response);
+        if (import.meta.env.DEV) {
+            console.log('📋 [createRegistroPendiente] response.data:', response.data);
+        }
+        return response.data;
+    } catch (error) {
+        console.error('📋 [createRegistroPendiente] Error capturado:', error);
+        const msg = FormatError(error);
+        if (import.meta.env.DEV) {
+            console.error('📋 [createRegistroPendiente] Error formateado:', msg);
+            console.error('📋 [createRegistroPendiente] error.response?.data:', error.response?.data);
+        }
+        throw new Error(msg);
+    }
+};
+
 export default {
     createWebInscription,       
     createEstd,
     createWebPendiente,
+    createRegistroPendiente,
 }
