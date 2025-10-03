@@ -64,6 +64,33 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET: Obtener un registro pendiente específico por DNI
+router.get('/:dni', async (req, res) => {
+    try {
+        await ensureFileExists();
+        const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
+        const registros = JSON.parse(data);
+        
+        const registro = registros.find(r => r.dni === req.params.dni);
+        
+        if (!registro) {
+            return res.status(404).json({ 
+                error: 'Registro no encontrado',
+                message: `No se encontró un registro con DNI ${req.params.dni}` 
+            });
+        }
+        
+        console.log(`📋 Obteniendo registro pendiente para DNI: ${req.params.dni}`);
+        res.json(registro);
+    } catch (error) {
+        console.error('Error al obtener registro pendiente:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener el registro pendiente',
+            message: error.message 
+        });
+    }
+});
+
 // POST: Crear un nuevo registro pendiente
 router.post('/', upload.any(), async (req, res) => {
     try {
