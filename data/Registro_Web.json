@@ -45,30 +45,30 @@
     "motivoPendiente": "⚠️ Documentación incompleta (0/6) para Semipresencial - Registro quedará PENDIENTE. Faltan: Documentos varios"
   },
   {
-    "id": "1759461966416",
-    "timestamp": "2025-10-03T03:26:06.416Z",
-    "fechaRegistro": "3/10/2025",
-    "horaRegistro": "12:26:06",
+    "id": "1759631633163",
+    "timestamp": "2025-10-05T02:33:53.164Z",
+    "fechaRegistro": "4/10/2025",
+    "horaRegistro": "11:33:53",
     "tipo": "WEB_REGISTRATION",
     "estado": "PENDIENTE",
     "datos": {
-      "nombre": "Analía",
-      "apellido": "Borelli",
-      "dni": "36230230",
-      "cuil": "20-36230230-8",
+      "nombre": "Narella",
+      "apellido": "Caliva",
+      "dni": "45785412",
+      "cuil": "20-45785412-1",
       "email": "crisbmaia50@gmail.com",
-      "telefono": "03518945612",
-      "fechaNacimiento": "1993-08-06",
+      "telefono": "03514568923",
+      "fechaNacimiento": "2005-12-06",
       "tipoDocumento": "DNI",
       "paisEmision": "Argentina",
-      "calle": "Jose Marti",
-      "numero": "631",
-      "barrio": "11",
+      "calle": "9 de Julio ",
+      "numero": "789",
+      "barrio": "3",
       "localidad": "108",
       "provincia": "5",
       "modalidad": "Presencial",
       "modalidadId": "1",
-      "planAnio": "2",
+      "planAnio": "3",
       "modulos": "",
       "idModulo": [
         "",
@@ -79,55 +79,12 @@
       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
     },
     "archivos": {
-      "foto": "/archivosDocWeb/Analía_Borelli_36230230_foto.jpg",
-      "archivo_dni": "/archivosDocWeb/Analía_Borelli_36230230_archivo_dni.pdf",
-      "archivo_cuil": "/archivosDocWeb/Analía_Borelli_36230230_archivo_cuil.pdf",
-      "archivo_fichaMedica": "/archivosDocWeb/Analía_Borelli_36230230_archivo_fichaMedica.pdf",
-      "archivo_partidaNacimiento": "/archivosDocWeb/Analía_Borelli_36230230_archivo_partidaNacimiento.pdf",
-      "archivo_solicitudPase": "/archivosDocWeb/Analía_Borelli_36230230_archivo_solicitudPase.pdf"
+      "foto": "/archivosDocWeb/Narella_Caliva_45785412_foto.png",
+      "archivo_dni": "/archivosDocWeb/Narella_Caliva_45785412_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocWeb/Narella_Caliva_45785412_archivo_cuil.pdf",
+      "archivo_fichaMedica": "/archivosDocWeb/Narella_Caliva_45785412_archivo_fichaMedica.pdf",
+      "archivo_solicitudPase": "/archivosDocWeb/Narella_Caliva_45785412_archivo_solicitudPase.pdf"
     },
-    "observaciones": "Registro web realizado el 3/10/2025 a las 12:26:06"
-  },
-  {
-    "id": "1759462311092",
-    "timestamp": "2025-10-03T03:31:51.092Z",
-    "fechaRegistro": "3/10/2025",
-    "horaRegistro": "12:31:51",
-    "tipo": "WEB_REGISTRATION",
-    "estado": "PENDIENTE",
-    "datos": {
-      "nombre": "Marcos",
-      "apellido": "Campigotto",
-      "dni": "43125587",
-      "cuil": "20-43125587-2",
-      "email": "crisbmaia50@gmail.com",
-      "telefono": "03543645123",
-      "fechaNacimiento": "2000-08-06",
-      "tipoDocumento": "DNI",
-      "paisEmision": "Argentina",
-      "calle": "Las Anémonas",
-      "numero": "456",
-      "barrio": "22",
-      "localidad": "108",
-      "provincia": "5",
-      "modalidad": "Presencial",
-      "modalidadId": "1",
-      "planAnio": "2",
-      "modulos": "",
-      "idModulo": [
-        "",
-        ""
-      ],
-      "usuario": "usuario_web",
-      "ipAddress": "::1",
-      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
-    },
-    "archivos": {
-      "foto": "/archivosDocWeb/Marcos_Campigotto_43125587_foto.jpg",
-      "archivo_dni": "/archivosDocWeb/Marcos_Campigotto_43125587_archivo_dni.pdf",
-      "archivo_cuil": "/archivosDocWeb/Marcos_Campigotto_43125587_archivo_cuil.pdf",
-      "archivo_fichaMedica": "/archivosDocWeb/Marcos_Campigotto_43125587_archivo_fichaMedica.pdf"
-    },
-    "observaciones": "Registro web realizado el 3/10/2025 a las 12:31:51"
+    "observaciones": "Registro web realizado el 4/10/2025 a las 11:33:53"
   }
 ]

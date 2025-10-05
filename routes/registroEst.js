@@ -95,9 +95,16 @@ router.post('/registrar', upload.any(), async (req, res) => {
       return res.status(400).json({ message: 'Datos de domicilio incompletos.' });
     }
 
-    const idProvincia  = await buscarOInsertarProvincia(db, provincia);
-    const idLocalidad  = await buscarOInsertarLocalidad(db, localidad, idProvincia);
-    const idBarrio     = await buscarOInsertarBarrio(db, barrio, idLocalidad);
+    const provinciaResult = await buscarOInsertarProvincia(db, provincia);
+    const idProvincia     = provinciaResult.id; // Extraer el ID del objeto retornado
+    
+    const localidadResult = await buscarOInsertarLocalidad(db, localidad, idProvincia);
+    const idLocalidad     = localidadResult.id; // Extraer el ID del objeto retornado
+    
+    const barrioResult    = await buscarOInsertarBarrio(db, barrio, idLocalidad);
+    const idBarrio        = barrioResult.id; // Extraer el ID del objeto retornado
+
+    console.log('🏘️ [DEBUG] IDs para domicilio:', { idProvincia, idLocalidad, idBarrio });
 
     const [domicilioRes] = await db.query(
       'INSERT INTO domicilios (calle, numero, idBarrio, idLocalidad, idProvincia) VALUES (?,?,?,?,?)',
@@ -241,7 +248,40 @@ router.post('/registrar', upload.any(), async (req, res) => {
     }
 
 
-    // ─── 8) OK ─────────────────────────────────────────────
+    // ─── 8) Eliminar registro pendiente si existe ─────────
+    try {
+      const fs = require('fs').promises;
+      const registrosPendientesPath = path.join(__dirname, '../data/Registros_Pendientes.json');
+      
+      // Verificar si el archivo existe
+      try {
+        await fs.access(registrosPendientesPath);
+        
+        // Leer el archivo
+        const data = await fs.readFile(registrosPendientesPath, 'utf8');
+        const registrosPendientes = JSON.parse(data);
+        
+        // Buscar y eliminar el registro con el mismo DNI
+        const registrosFiltrados = registrosPendientes.filter(registro => registro.dni !== dni);
+        
+        // Si se eliminó algún registro, actualizar el archivo
+        if (registrosFiltrados.length < registrosPendientes.length) {
+          await fs.writeFile(registrosPendientesPath, JSON.stringify(registrosFiltrados, null, 2));
+          console.log(`🗑️ Registro pendiente eliminado automáticamente para DNI: ${dni}`);
+        }
+        
+      } catch (fileError) {
+        // Si el archivo no existe, no hay problema
+        if (fileError.code !== 'ENOENT') {
+          console.error('Error al procesar registros pendientes:', fileError);
+        }
+      }
+    } catch (cleanupError) {
+      console.error('Error en limpieza de registros pendientes:', cleanupError);
+      // No interrumpir el flujo principal por este error
+    }
+
+    // ─── 9) OK ─────────────────────────────────────────────
     res.status(201).json({
       success: true,
       message: 'Estudiante e inscripción creados con éxito.',
@@ -334,6 +374,44 @@ router.post('/registrar-web-pendiente', upload.any(), async (req, res) => {
   } catch (error) {
     console.error('Error en /registrar-web-pendiente:', error);
     res.status(500).json({ message: 'Error interno: ' + error.message });
+  }
+});
+
+// ────────────────────────────────────────────────────────────
+//  🔍 Verificar si un estudiante ya está registrado
+// ────────────────────────────────────────────────────────────
+router.get('/verificar/:dni', async (req, res) => {
+  try {
+    const { dni } = req.params;
+    
+    if (!dni) {
+      return res.status(400).json({ 
+        registrado: false, 
+        message: 'DNI requerido' 
+      });
+    }
+
+    const query = `
+      SELECT COUNT(*) as count 
+      FROM estudiantes 
+      WHERE documento = ?
+    `;
+    
+    const [rows] = await db.promise().query(query, [dni]);
+    const estaRegistrado = rows[0].count > 0;
+
+    res.json({ 
+      registrado: estaRegistrado,
+      dni: dni,
+      message: estaRegistrado ? 'Estudiante encontrado en la base de datos' : 'Estudiante no registrado'
+    });
+
+  } catch (error) {
+    console.error('Error verificando estudiante:', error);
+    res.status(500).json({ 
+      registrado: false, 
+      message: 'Error interno: ' + error.message 
+    });
   }
 });
 

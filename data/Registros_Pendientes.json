@@ -1,24 +1,107 @@
 [
   {
-    "dni": "41203210",
-    "timestamp": "2025-10-03T00:35:54.476Z",
-    "fechaRegistro": "2/10/2025",
-    "horaRegistro": "09:35:54",
+    "dni": "36256478",
+    "timestamp": "2025-10-04T03:06:40.064Z",
+    "fechaRegistro": "4/10/2025",
+    "horaRegistro": "12:06:40",
     "tipo": "REGISTRO_PENDIENTE",
     "estado": "PENDIENTE",
     "datos": {
-      "nombre": "Esteban",
-      "apellido": "Capdevilla",
-      "dni": "41203210",
-      "cuil": "20-41203210-2",
+      "nombre": "Walter",
+      "apellido": "Asef",
+      "dni": "36256478",
+      "cuil": "20-36256478-1",
       "email": "crisbmaia50@gmail.com",
-      "telefono": "03514578956",
-      "fechaNacimiento": "1998-06-02",
+      "telefono": "65478123",
+      "fechaNacimiento": "1993-03-26",
+      "tipoDocumento": "DNI",
+      "paisEmision": "Argentina",
+      "calle": "Sucre",
+      "numero": "435",
+      "barrio": "11",
+      "localidad": "108",
+      "provincia": "5",
+      "codigoPostal": "",
+      "modalidad": "Semipresencial",
+      "modalidadId": "2",
+      "planAnio": "4",
+      "modulos": "",
+      "idModulo": [
+        "1",
+        ""
+      ],
+      "administrador": "admin",
+      "motivoPendiente": "⚠️ Documentación incompleta (2/6) para  - Registro quedará PENDIENTE. Faltan: 📄 CUIL, 🏥 Ficha Médica CUS, 📜 Partida de Nacimiento, 📊 Analítico Parcial (o alternativamente: 📝 Solicitud de Pase)"
+    },
+    "archivos": {
+      "foto": "/archivosDocumentacion/Walter_Asef_36256478_foto.png",
+      "archivo_dni": "/archivosDocumentacion/Walter_Asef_36256478_archivo_dni.pdf"
+    },
+    "observaciones": "Registro pendiente creado el 4/10/2025 a las 12:06:40",
+    "fechaActualizacion": "2025-10-04T04:28:08.771Z"
+  },
+  {
+    "dni": "33326321",
+    "timestamp": "2025-10-04T10:54:49.227Z",
+    "fechaRegistro": "4/10/2025",
+    "horaRegistro": "07:54:49",
+    "tipo": "REGISTRO_PENDIENTE",
+    "estado": "PENDIENTE",
+    "datos": {
+      "nombre": "Gonzalo",
+      "apellido": "Bonsac",
+      "dni": "33326321",
+      "cuil": "20-33326321-2",
+      "email": "crisbmaia50@gmail.com",
+      "telefono": "03515647859",
+      "fechaNacimiento": "1990-12-06",
       "tipoDocumento": "DNI",
       "paisEmision": "Argentina",
       "calle": "9 de Julio ",
-      "numero": "546",
+      "numero": "632",
       "barrio": "25",
+      "localidad": "108",
+      "provincia": "5",
+      "codigoPostal": "",
+      "modalidad": "Presencial",
+      "modalidadId": "1",
+      "planAnio": "2",
+      "modulos": "",
+      "idModulo": [
+        "",
+        ""
+      ],
+      "administrador": "admin",
+      "motivoPendiente": "⚠️ Documentación incompleta (4/6) para  - Registro quedará PENDIENTE. Faltan: 🏥 Ficha Médica CUS, 📜 Partida de Nacimiento"
+    },
+    "archivos": {
+      "foto": "/archivosDocumentacion/Gonzalo_Bonsac_33326321_foto.png",
+      "archivo_dni": "/archivosDocumentacion/Gonzalo_Bonsac_33326321_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocumentacion/Gonzalo_Bonsac_33326321_archivo_cuil.pdf",
+      "archivo_analiticoParcial": "/archivosDocumentacion/Gonzalo_Bonsac_33326321_archivo_analiticoParcial.pdf"
+    },
+    "observaciones": "Registro pendiente creado el 4/10/2025 a las 07:54:49"
+  },
+  {
+    "dni": "41205205",
+    "timestamp": "2025-10-05T01:41:31.921Z",
+    "fechaRegistro": "4/10/2025",
+    "horaRegistro": "10:41:31",
+    "tipo": "REGISTRO_PENDIENTE",
+    "estado": "PENDIENTE",
+    "datos": {
+      "nombre": "Lorena",
+      "apellido": "Bisconti",
+      "dni": "41205205",
+      "cuil": "20-41205205-7",
+      "email": "crisbmaia50@gmail.com",
+      "telefono": "03514512312",
+      "fechaNacimiento": "2002-04-15",
+      "tipoDocumento": "DNI",
+      "paisEmision": "Argentina",
+      "calle": "Sucre",
+      "numero": "1022",
+      "barrio": "11",
       "localidad": "108",
       "provincia": "5",
       "codigoPostal": "",
@@ -34,58 +117,11 @@
       "motivoPendiente": "⚠️ Documentación incompleta (4/6) para  - Registro quedará PENDIENTE. Faltan: 📜 Partida de Nacimiento, 📊 Analítico Parcial (o alternativamente: 📝 Solicitud de Pase)"
     },
     "archivos": {
-      "foto": "/archivosDocumentacion/Esteban_Capdevilla_41203210_foto.png",
-      "archivo_dni": "/archivosDocumentacion/Esteban_Capdevilla_41203210_archivo_dni.pdf",
-      "archivo_cuil": "/archivosDocumentacion/Esteban_Capdevilla_41203210_archivo_cuil.pdf",
-      "archivo_fichaMedica": "/archivosDocumentacion/Esteban_Capdevilla_41203210_archivo_fichaMedica.pdf"
+      "foto": "/archivosDocumentacion/Lorena_Bisconti_41205205_foto.png",
+      "archivo_dni": "/archivosDocumentacion/Lorena_Bisconti_41205205_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocumentacion/Lorena_Bisconti_41205205_archivo_cuil.pdf",
+      "archivo_fichaMedica": "/archivosDocumentacion/Lorena_Bisconti_41205205_archivo_fichaMedica.pdf"
     },
-    "observaciones": "Registro pendiente creado el 2/10/2025 a las 09:35:54"
-  },
-  {
-    "dni": "36256145",
-    "timestamp": "2025-10-03T03:35:18.132Z",
-    "fechaRegistro": "3/10/2025",
-    "horaRegistro": "12:35:18",
-    "tipo": "REGISTRO_WEB_PENDIENTE",
-    "estado": "PENDIENTE",
-    "origenWeb": true,
-    "idRegistroWebOriginal": "1759280299913",
-    "datos": {
-      "nombre": "Nicolas",
-      "apellido": "Gutierrez",
-      "dni": "36256145",
-      "cuil": "20-36256145-1",
-      "email": "crisbmaia50@gmail.com",
-      "telefono": "03514556323",
-      "fechaNacimiento": "1993-06-03",
-      "tipoDocumento": "DNI",
-      "paisEmision": "Argentina",
-      "calle": "Jose Marti",
-      "numero": "752",
-      "barrio": "11",
-      "localidad": "108",
-      "provincia": "5",
-      "modalidad": "Semipresencial",
-      "modalidadId": "2",
-      "planAnio": "4",
-      "modulos": "",
-      "idModulo": [
-        "1",
-        ""
-      ],
-      "usuario": "usuario_web",
-      "ipAddress": "::1",
-      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
-      "motivoPendiente": "⚠️ Documentación incompleta (0/6) para Semipresencial - Registro quedará PENDIENTE. Faltan: Documentos varios",
-      "administrador": "admin_web"
-    },
-    "archivos": {
-      "foto": "/archivosDocWeb/Nicolas_Gutierrez_36256145_foto.jpg",
-      "archivo_dni": "/archivosDocWeb/Nicolas_Gutierrez_36256145_archivo_dni.pdf",
-      "archivo_cuil": "/archivosDocWeb/Nicolas_Gutierrez_36256145_archivo_cuil.pdf",
-      "archivo_fichaMedica": "/archivosDocWeb/Nicolas_Gutierrez_36256145_archivo_fichaMedica.pdf",
-      "archivo_analiticoParcial": "/archivosDocWeb/Nicolas_Gutierrez_36256145_archivo_analiticoParcial.pdf"
-    },
-    "observaciones": "Movido desde registro web a pendientes el 3/10/2025 - ⚠️ Documentación incompleta (0/6) para Semipresencial - Registro quedará PENDIENTE. Faltan: Documentos varios"
+    "observaciones": "Registro pendiente creado el 4/10/2025 a las 10:41:31"
   }
 ]

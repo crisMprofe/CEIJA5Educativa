@@ -297,4 +297,76 @@ router.get('/stats', async (req, res) => {
     }
 });
 
+// PUT: Actualizar un registro pendiente específico
+router.put('/:dni', upload.any(), async (req, res) => {
+    try {
+        const { dni } = req.params;
+        const datosActualizados = req.body;
+        
+        console.log(`🔄 Actualizando registro pendiente para DNI: ${dni}`);
+        
+        await ensureFileExists();
+        
+        // Leer registros existentes
+        const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
+        let registros = JSON.parse(data);
+        
+        // Buscar el registro a actualizar
+        const indiceRegistro = registros.findIndex(r => r.dni === dni);
+        
+        if (indiceRegistro === -1) {
+            return res.status(404).json({
+                success: false,
+                message: `Registro pendiente con DNI ${dni} no encontrado`
+            });
+        }
+        
+        // Procesar archivos si hay
+        const archivosActualizados = {};
+        if (req.files && req.files.length > 0) {
+            console.log(`📎 Procesando ${req.files.length} archivos actualizados`);
+            req.files.forEach(file => {
+                archivosActualizados[file.fieldname] = `/archivosDocumentacion/${file.filename}`;
+            });
+        }
+        
+        // Actualizar el registro
+        const registroExistente = registros[indiceRegistro];
+        registros[indiceRegistro] = {
+            ...registroExistente,
+            datos: {
+                ...registroExistente.datos,
+                ...datosActualizados.datos || datosActualizados
+            },
+            archivos: {
+                ...registroExistente.archivos,
+                ...archivosActualizados
+            },
+            timestamp: new Date().toISOString(),
+            fechaActualizacion: new Date().toLocaleDateString('es-AR'),
+            horaActualizacion: new Date().toLocaleTimeString('es-AR'),
+            observaciones: `Registro actualizado el ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR')}`
+        };
+        
+        // Guardar cambios
+        await fs.writeFile(REGISTROS_PENDIENTES_PATH, JSON.stringify(registros, null, 2));
+        
+        console.log(`✅ Registro pendiente ${dni} actualizado exitosamente`);
+        
+        res.json({
+            success: true,
+            message: 'Registro pendiente actualizado exitosamente',
+            registro: registros[indiceRegistro]
+        });
+        
+    } catch (error) {
+        console.error('Error al actualizar registro pendiente:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

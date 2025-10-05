@@ -383,6 +383,38 @@ router.post('/:id/procesar', async (req, res) => {
         // Guardar cambios en el JSON
         await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify(registros, null, 2));
         
+        // 8) Eliminar registro pendiente si existe
+        try {
+            const registrosPendientesPath = path.join(__dirname, '../data/Registros_Pendientes.json');
+            
+            // Verificar si el archivo existe
+            try {
+                await fs.access(registrosPendientesPath);
+                
+                // Leer el archivo
+                const dataPendientes = await fs.readFile(registrosPendientesPath, 'utf8');
+                const registrosPendientes = JSON.parse(dataPendientes);
+                
+                // Buscar y eliminar el registro con el mismo DNI
+                const registrosFiltrados = registrosPendientes.filter(regPendiente => regPendiente.dni !== dniEstudiante);
+                
+                // Si se eliminó algún registro, actualizar el archivo
+                if (registrosFiltrados.length < registrosPendientes.length) {
+                    await fs.writeFile(registrosPendientesPath, JSON.stringify(registrosFiltrados, null, 2));
+                    console.log(`🗑️ Registro pendiente eliminado automáticamente para DNI: ${dniEstudiante}`);
+                }
+                
+            } catch (fileError) {
+                // Si el archivo no existe, no hay problema
+                if (fileError.code !== 'ENOENT') {
+                    console.error('Error al procesar registros pendientes:', fileError);
+                }
+            }
+        } catch (cleanupError) {
+            console.error('Error en limpieza de registros pendientes:', cleanupError);
+            // No interrumpir el flujo principal por este error
+        }
+        
         console.log(`✅ Registro web ${id} procesado y guardado en BD - ID Estudiante: ${idEstudiante}, ID Inscripción: ${idInscripcion}`);
         
         res.json({

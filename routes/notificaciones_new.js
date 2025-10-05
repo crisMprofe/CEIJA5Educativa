@@ -446,6 +446,51 @@ router.post('/completar-registro', async (req, res) => {
     }
 });
 
+// POST: Marcar registro como completado desde el frontend
+router.post('/marcar-completado', async (req, res) => {
+    try {
+        const { dni } = req.body;
+        
+        if (!dni) {
+            return res.status(400).json({
+                success: false,
+                message: 'DNI requerido'
+            });
+        }
+        
+        console.log(`✅ Marcando registro como completado desde frontend - DNI: ${dni}`);
+        
+        // Eliminar del archivo de registros pendientes
+        const registroEliminado = await registrosPendientesService.eliminarRegistro(dni);
+        
+        res.json({
+            success: true,
+            message: `Registro de ${registroEliminado.datos?.nombre || 'estudiante'} marcado como completado exitosamente`,
+            registroCompletado: {
+                dni: registroEliminado.dni,
+                nombre: registroEliminado.datos?.nombre || '',
+                apellido: registroEliminado.datos?.apellido || ''
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error al marcar registro como completado:', error);
+        
+        if (error.message.includes('no encontrado')) {
+            res.status(404).json({
+                success: false,
+                message: 'Registro no encontrado'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    }
+});
+
 // GET: Probar configuración de email
 router.get('/test-config', async (req, res) => {
     try {
