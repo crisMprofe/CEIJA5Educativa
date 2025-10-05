@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import '../estilos/Modal.css';
 import { useUserContext } from "../context/useUserContext";
+import { useAlerts } from '../hooks/useAlerts';
 import BotonCargando from '../components/BotonCargando';
 import AlertaMens from '../components/AlertaMens';
 import { useForm } from "react-hook-form";
@@ -14,17 +15,29 @@ import { loginValidationSchema } from '../validaciones/ValidacionSchemaYup';
 const LoginButton = ({ onClose, onRegisterClick }) => {
     const { register, handleSubmit, formState: { errors } } = useForm({ resolver: yupResolver(loginValidationSchema) });
     const [loading, setLoading] = useState(false);
-    const [alerta, setAlerta] = useState({ variant: "", text: "" });
+    const { 
+        alerts, 
+        modal, 
+        showSuccess, 
+        showError,
+        removeAlert,
+        closeModal 
+    } = useAlerts();
     const { setUser } = useUserContext();
     const navigate = useNavigate();
 
+    // Funciones de alerta now provided by useAlerts hook
     const mostrarAlerta = (text, variant) => {
-        /*console.log(`Alerta: ${text}, Variant: ${variant}`); // Verifica los valores*/
-        setAlerta({ text, variant });
-        setTimeout(() => {
-            /*console.log('Ocultando alerta'); // Debug log*/
-            setAlerta({ text: '', variant: '' });
-        }, 5000); // Oculta la alerta después de 5s
+        switch (variant) {
+            case 'success':
+                showSuccess(text);
+                break;
+            case 'error':
+                showError(text);
+                break;
+            default:
+                showSuccess(text);
+        }
     };
 
     const onSubmit = async (data) => {
@@ -68,8 +81,14 @@ const LoginButton = ({ onClose, onRegisterClick }) => {
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="login-box">
-                    {/* Mostrar la alerta si hay un mensaje */}
-                    {alerta.text && <AlertaMens text={alerta.text} variant={alerta.variant} />}
+                    {/* Sistema de alertas unificado */}
+                    <AlertaMens
+                        mode="floating"
+                        alerts={alerts}
+                        modal={modal}
+                        onCloseAlert={removeAlert}
+                        onCloseModal={closeModal}
+                    />
                     <button onClick={(e) => { e.preventDefault(); onClose(); }} className="back-button">✖</button>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <Input label="Email" placeholder="Email" registro={{ ...register("email") }} error={errors.email?.message} />

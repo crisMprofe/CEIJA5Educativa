@@ -12,7 +12,7 @@ import VolverButton from '../components/VolverButton'; // Importa el componente 
 import PropTypes from 'prop-types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import AlertaMens from '../components/AlertaMens';
+import { useAlerts } from '../hooks/useAlerts';
 import GraficoInscriptos from '../components/GraficoInscriptos';
 
 const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
@@ -27,7 +27,10 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
   const [modoBusqueda, setModoBusqueda] = useState(false); // Si está en modo búsqueda
   const [estadosInscripcion, setEstadosInscripcion] = useState([]);
   const [estadoFiltro, setEstadoFiltro] = useState(''); // id del estado seleccionado
-  const [pdfError, setPdfError] = useState(''); // Nuevo estado para error PDF
+  const { 
+      showSuccess, 
+      showError
+  } = useAlerts();
   const [mostrarGrafico, setMostrarGrafico] = useState(false); // Estado para mostrar gráfico
   const timeoutRef = useRef(null);
   const limit = 10; // Cantidad de estudiantes por página
@@ -249,8 +252,7 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
 
   const handleExportPDF = () => {
     if (!estudiantesFiltrados || estudiantesFiltrados.length === 0) {
-        setPdfError('No hay estudiantes para exportar.');
-        setTimeout(() => setPdfError(''), 4000); // Limpia el mensaje después de 4 segundos
+        showError('No hay estudiantes para exportar.');
         return;
     }
     const doc = new jsPDF();
@@ -288,10 +290,9 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
             headStyles: { fillColor: [22, 160, 133] }
         });
         doc.save(`Listado_estudiantes_${estadoFiltro || 'todos'}_${modalidad || 'todas'}.pdf`);
-        setPdfError('');
+        showSuccess('📄 PDF generado y descargado');
     } catch {
-        setPdfError('No se pudo generar el PDF. Verifica que jspdf-autotable esté instalado.');
-        setTimeout(() => setPdfError(''), 4000); // Limpia el mensaje después de 4 segundos
+        showError('No se pudo generar el PDF. Verifica que jspdf-autotable esté instalado.');
     }
   };
 
@@ -492,15 +493,7 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
         </div>
       )}
 
-      {/* Mostrar alerta PDF si existe */}
-      {pdfError && (
-        <AlertaMens
-          text={pdfError}
-          variant="error"
-          duration={4000}
-          onClose={() => setPdfError('')}
-        />
-      )}
+
 
       {/* Mostrar tabla SIEMPRE, aunque esté vacía */}
       <div className="tabla-container">

@@ -5,9 +5,7 @@ import '../estilos/estilosInscripcion.css';
 const GestionEstudianteView = ({
     onClose,
     onBack, // Nuevo prop para navegación hacia atrás
-    setAlert,
     previews,
-    files, // Agregar files como prop
     handleFileChange,
     handleChange,
     accion,
@@ -29,10 +27,8 @@ const GestionEstudianteView = ({
             <RegistroEstd
                 modalidad={values.modalidad}
                 previews={previews}
-                files={files} // Pasar files como prop
                 handleFileChange={handleFileChange}
                 handleChange={handleChange}
-                setAlert={setAlert}
                 accion={accion}
                 handleSubmit={handleSubmit}
                 setFieldValue={setFieldValue}
@@ -55,9 +51,7 @@ GestionEstudianteView.propTypes = {
     onClose: PropTypes.func,
     onBack: PropTypes.func, // Función para navegación hacia atrás
     navigate: PropTypes.func,
-    setAlert: PropTypes.func.isRequired,
     previews: PropTypes.object.isRequired,
-    files: PropTypes.object, // Agregar files como prop
     handleFileChange: PropTypes.func.isRequired,
     handleChange: PropTypes.func.isRequired,
     accion: PropTypes.string.isRequired,

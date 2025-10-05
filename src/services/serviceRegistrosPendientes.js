@@ -81,6 +81,7 @@ const registrosPendientesService = {
     eliminarRegistroPendiente: async (dni) => {
         try {
             console.log(`🗑️ Eliminando registro pendiente: ${dni}`);
+
             const response = await fetch(`${API_BASE_URL}/registros-pendientes/${dni}`, {
                 method: 'DELETE',
                 headers: {
@@ -139,6 +140,55 @@ const registrosPendientesService = {
             return { success: true, message: 'Registro procesado exitosamente' };
         } catch (error) {
             console.error('Error al procesar registro pendiente:', error);
+            throw error;
+        }
+    },
+
+    // Completar un registro pendiente (enviarlo a la BD)
+    completarRegistro: async (formData) => {
+        try {
+            console.log('✅ Enviando registro completo a la base de datos...');
+            const response = await fetch(`${API_BASE_URL}/registro-estudiante`, {
+                method: 'POST',
+                body: formData, // FormData se envía sin Content-Type header
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+            }
+
+            const resultado = await response.json();
+            console.log('✅ Registro completado y guardado en BD exitosamente');
+            return resultado;
+        } catch (error) {
+            console.error('Error al completar registro:', error);
+            throw error;
+        }
+    },
+
+    // Enviar notificación por email
+    enviarNotificacion: async (dni) => {
+        try {
+            console.log(`📧 Enviando notificación por email para DNI: ${dni}`);
+            const response = await fetch(`${API_BASE_URL}/notificaciones/enviar-individual`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ dni }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+            }
+
+            const resultado = await response.json();
+            console.log('✅ Notificación enviada exitosamente');
+            return resultado;
+        } catch (error) {
+            console.error('Error al enviar notificación:', error);
             throw error;
         }
     }

@@ -86,7 +86,7 @@ export const useSubmitHandler = (setAlert, files, previews, resetArchivos, build
         return response;
     };
 
-    const handleResponse = async (response, values, files, previews, accion, isWebUser, completarWebParam, resetForm, resetArchivos, modalidad, isAdmin) => {
+    const handleResponse = async (response, values, files, previews, accion, isWebUser, completarWebParam, resetForm, resetArchivos, modalidad, isAdmin, errorBD = false) => {
         if (!response?.message) {
             setAlert({ text: 'El formulario se envió, pero no hubo respuesta.', variant: 'warning' });
             return;
@@ -100,31 +100,62 @@ export const useSubmitHandler = (setAlert, files, previews, resetArchivos, build
         const estadoDocumentacion = obtenerEstadoDocumentacion(files, previews);
         const hayDocumentosCompletos = estadoDocumentacion.completo;
         
-        if (accion === "Registrar" && !hayDocumentosCompletos && isAdmin) {
+        if (accion === "Registrar" && (!hayDocumentosCompletos || errorBD) && isAdmin) {
             // Caso especial: registro de admin sin documentación o incompleto → enviar a Registros_Pendientes.json
             try {
-                console.log('📋 Enviando registro pendiente al backend:', values);
+                console.log('📋 [DEBUG] Enviando registro pendiente al backend...');
+                console.log('📋 [DEBUG] Values:', values);
+                console.log('📋 [DEBUG] Files:', files);
+                console.log('📋 [DEBUG] Estado documentación:', estadoDocumentacion);
                 
                 // Crear FormData específico para registros pendientes
                 const formDataPendiente = buildFormData(values, files, estadoDocumentacion, true);
-                formDataPendiente.append('motivoPendiente', estadoDocumentacion.mensaje);
-                formDataPendiente.append('tipoRegistro', estadoDocumentacion.completo ? 'DOCUMENTACION_INCOMPLETA' : 'SIN_DOCUMENTACION');
+                
+                // Determinar motivo del registro pendiente
+                let motivoPendiente;
+                if (errorBD) {
+                    motivoPendiente = `Error en base de datos: ${response.errorOriginal || 'Error de integridad de datos'}`;
+                } else {
+                    motivoPendiente = estadoDocumentacion.mensaje;
+                }
+                
+                formDataPendiente.append('motivoPendiente', motivoPendiente);
+                formDataPendiente.append('tipoRegistro', errorBD ? 'ERROR_BD' : (estadoDocumentacion.completo ? 'DOCUMENTACION_INCOMPLETA' : 'SIN_DOCUMENTACION'));
+                
+                console.log('📋 [DEBUG] FormData pendiente construido');
+                
+                // Log del contenido del FormData
+                console.log('📋 [DEBUG] Contenido FormData:');
+                for (let [key, value] of formDataPendiente.entries()) {
+                    console.log(`   ${key}: ${value}`);
+                }
                 
                 // Enviar al backend para guardar en Registros_Pendientes.json
+                console.log('📋 [DEBUG] Llamando serviceRegInscripcion.createRegistroPendiente...');
                 const responsePendiente = await serviceRegInscripcion.createRegistroPendiente(formDataPendiente);
                 
+                console.log('✅ [DEBUG] Respuesta del backend:', responsePendiente);
+                
+                const mensajeAlerta = errorBD 
+                    ? `📋 Error en BD - Registro guardado como pendiente: ${response.errorOriginal}`
+                    : `📋 Registro guardado como pendiente: ${estadoDocumentacion.mensaje}`;
+                    
                 setAlert({ 
-                    text: `📋 Registro guardado como pendiente: ${estadoDocumentacion.mensaje}`, 
+                    text: mensajeAlerta, 
                     variant: 'warning' 
                 });
                 
-                console.log('✅ Registro pendiente guardado en backend:', responsePendiente);
+                console.log('✅ Registro pendiente guardado exitosamente en backend');
                 
             } catch (error) {
-                console.error('❌ Error al guardar registro pendiente en backend:', error);
+                console.error('❌ [DEBUG] Error completo al guardar registro pendiente:', error);
+                console.error('❌ [DEBUG] error.response:', error.response);
+                console.error('❌ [DEBUG] error.response?.data:', error.response?.data);
+                console.error('❌ [DEBUG] error.message:', error.message);
                 
                 // Fallback: guardar en localStorage como respaldo
                 try {
+                    console.log('⚠️ [DEBUG] Intentando fallback a localStorage...');
                     await guardarRegistroSinDocumentacion({
                         ...values,
                         modalidad,
@@ -132,13 +163,14 @@ export const useSubmitHandler = (setAlert, files, previews, resetArchivos, build
                     }, estadoDocumentacion);
                     
                     setAlert({ 
-                        text: `⚠️ Guardado localmente: ${estadoDocumentacion.mensaje}`, 
+                        text: `⚠️ Error del servidor, guardado localmente: ${estadoDocumentacion.mensaje}`, 
                         variant: 'warning' 
                     });
+                    console.log('✅ [DEBUG] Fallback localStorage exitoso');
                 } catch (localError) {
-                    console.error('❌ Error en fallback local:', localError);
+                    console.error('❌ [DEBUG] Error en fallback local:', localError);
                     setAlert({ 
-                        text: 'Error al guardar registro pendiente', 
+                        text: `❌ Error completo: ${error.message}. No se pudo guardar el registro.`, 
                         variant: 'error' 
                     });
                 }
@@ -172,9 +204,19 @@ export const useSubmitHandler = (setAlert, files, previews, resetArchivos, build
                 mensajeExito = 'Registro realizado con éxito, recuerda finalizar la inscripción de manera presencial para iniciar tus estudios';
             }
             
-            // Si se completó un registro pendiente, eliminar de localStorage
+            // Si se completó un registro pendiente, eliminar de localStorage y del backend
             if (esRegistroPendienteCompletado) {
                 eliminarRegistroPendiente(values.dni);
+                
+                // También notificar al backend para eliminar del archivo JSON
+                try {
+                    await serviceRegInscripcion.marcarRegistroCompletado(values.dni);
+                    console.log(`🎉 Registro pendiente eliminado del backend para DNI ${values.dni}`);
+                } catch (error) {
+                    console.error('Error al eliminar registro pendiente del backend:', error);
+                    // No detener el flujo, el registro ya se completó exitosamente
+                }
+                
                 mensajeExito += ' ✅ Registro pendiente completado exitosamente.';
                 console.log(`🎉 Registro pendiente completado para DNI ${values.dni}`);
             }
@@ -231,22 +273,61 @@ export const useSubmitHandler = (setAlert, files, previews, resetArchivos, build
             const detalleDocumentacion = buildDetalleDocumentacion();
             const formDataToSend = buildFormData(values, files, detalleDocumentacion, isAdmin);
 
-            // Enviar request
-            const response = await sendRequest(formDataToSend, accion, isAdmin, values);
+            let response;
+            let errorBD = false;
 
-            // Debug logging para usuarios web
-            if (!isAdmin) {
-                console.log('🌐 Respuesta para usuario web:', response);
-                console.log('🌐 ¿Tiene message?', !!response?.message);
-                console.log('🌐 Message content:', response?.message);
+            // Intentar enviar request - si es admin y falla la BD, ir a pendientes
+            try {
+                response = await sendRequest(formDataToSend, accion, isAdmin, values);
+                console.log('✅ [DEBUG] Request exitoso, procesando respuesta...');
+                
+                // Debug logging para usuarios web
+                if (!isAdmin) {
+                    console.log('🌐 [DEBUG] Respuesta para usuario web:', response);
+                    console.log('🌐 [DEBUG] ¿Tiene message?', !!response?.message);
+                    console.log('🌐 [DEBUG] Message content:', response?.message);
+                }
+
+            } catch (requestError) {
+                console.error('❌ [DEBUG] Error en sendRequest:', requestError);
+                
+                // Si es admin y hay error de BD, marcamos para enviar a pendientes
+                if (isAdmin && accion === "Registrar") {
+                    console.log('⚠️ [DEBUG] Error en BD para admin, enviando a registros pendientes...');
+                    errorBD = true;
+                    
+                    // Crear respuesta ficticia para que no falle el flujo
+                    response = {
+                        message: 'Error en BD - enviado a registros pendientes',
+                        errorBD: true,
+                        errorOriginal: requestError.response?.data?.message || requestError.message
+                    };
+                } else {
+                    // Para otros casos, propagar el error
+                    throw requestError;
+                }
             }
 
-            // Manejar respuesta
-            await handleResponse(response, values, files, previews, accion, isWebUser, completarWebParam, resetForm, resetArchivos, modalidad, isAdmin);
+            // Manejar respuesta (incluye lógica para casos de error de BD)
+            await handleResponse(response, values, files, previews, accion, isWebUser, completarWebParam, resetForm, resetArchivos, modalidad, isAdmin, errorBD);
 
         } catch (error) {
-            const mensajeError = error.response?.data?.message || 'Ocurrió un error al enviar los datos.';
-            setAlert({ text: mensajeError, variant: 'error' });
+            console.error('❌ [DEBUG] Error completo en handleSubmit:', error);
+            console.error('❌ [DEBUG] error.response:', error.response);
+            console.error('❌ [DEBUG] error.response?.data:', error.response?.data);
+            console.error('❌ [DEBUG] error.message:', error.message);
+            console.error('❌ [DEBUG] error.stack:', error.stack);
+            
+            let mensajeError = 'Ocurrió un error al enviar los datos.';
+            
+            if (error.response?.data?.message) {
+                mensajeError = error.response.data.message;
+            } else if (error.message) {
+                mensajeError = error.message;
+            }
+            
+            console.error('❌ [DEBUG] Mensaje final de error:', mensajeError);
+            setAlert({ text: `❌ Error: ${mensajeError}`, variant: 'error' });
         } finally {
             setTimeout(() => setAlert({ text: '', variant: '' }), 10000);
             setSubmitting(false);

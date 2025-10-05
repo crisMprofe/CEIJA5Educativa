@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { DocumentacionNameToId } from '../utils/DocumentacionMap';
+import { useAlerts } from './useAlerts';
 
 const maxFileSize = 600 * 1024; // 600 KB
 
 export default function useGestionDocumentacion() {
     const [files, setFiles] = useState({});
     const [previews, setPreviews] = useState({});
-    const [alert, setAlert] = useState({ text: '', type: '', show: false });
+    const { showError } = useAlerts();
 
     // Cargar archivos existentes desde sessionStorage al montar el componente
     useEffect(() => {
@@ -114,8 +115,7 @@ export default function useGestionDocumentacion() {
         
         if (file) {
             if (file.size > maxFileSize) {
-                setAlert({ text: 'El archivo es demasiado grande. Máximo permitido: 600 KB.', type: 'error', show: true });
-                setTimeout(() => setAlert({ text: '', type: '', show: false }), 5000);
+                showError('El archivo es demasiado grande. Máximo permitido: 600 KB.');
                 return;
             }
 
@@ -192,8 +192,6 @@ export default function useGestionDocumentacion() {
         setFiles,
         previews,
         setPreviews,
-        alert,
-        setAlert,
         handleFileChange,
         buildDetalleDocumentacion,
         resetArchivos,

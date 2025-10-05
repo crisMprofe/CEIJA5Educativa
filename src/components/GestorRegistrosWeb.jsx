@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import registrosWebService from '../services/serviceRegistrosWeb';
-import AlertaMens from './AlertaMens';
+import { useAlerts } from '../hooks/useAlerts';
 import BotonCargando from './BotonCargando';
 import CloseButton from './CloseButton';
 import FormatError from '../utils/MensajeError';
@@ -10,11 +10,14 @@ import '../estilos/RegistrosPendientes.css';
 
 const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }) => {
     const navigate = useNavigate();
+    const {
+        showSuccess, 
+        showError
+    } = useAlerts();
     const [registros, setRegistros] = useState([]);
     const [stats, setStats] = useState({ total: 0, pendientes: 0, procesados: 0, anulados: 0 });
     const [loading, setLoading] = useState(true);
     const [procesando, setProcesando] = useState('');
-    const [alerta, setAlerta] = useState({ text: '', variant: '' });
     const [filtro, setFiltro] = useState('TODOS'); // TODOS, PENDIENTE, PROCESADO, ANULADO
     const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
     const [registroAEliminar, setRegistroAEliminar] = useState(null);
@@ -22,8 +25,12 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
 
     // Cargar registros web al montar el componente
     useEffect(() => {
-        cargarRegistrosWeb();
-        cargarEstadisticas();
+        const inicializar = async () => {
+            await cargarRegistrosWeb();
+            await cargarEstadisticas();
+        };
+        inicializar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const cargarRegistrosWeb = async () => {
@@ -33,10 +40,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
             setRegistros(data);
         } catch (error) {
             console.error('Error al cargar registros web:', error);
-            setAlerta({
-                text: 'Error al cargar los registros web: ' + error.message,
-                variant: 'error'
-            });
+            showError('Error al cargar los registros web: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -82,20 +86,14 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
                 }));
             }
             const mensajeSegunEstado = {
-                'PENDIENTE': 'Registro cargado para completar inscripción',
-                'PROCESADO': 'Registro cargado para revisar y completar inscripción presencial',
-                'ANULADO': 'Registro reactivado para completar inscripción'
+                'PENDIENTE': '✅ Registro cargado para completar inscripción',
+                'PROCESADO': '🔍 Registro cargado para revisar y completar inscripción presencial',
+                'ANULADO': '🔄 Registro reactivado para completar inscripción'
             };
-            setAlerta({
-                text: mensajeSegunEstado[registro.estado] || 'Registro cargado para gestionar',
-                variant: 'success'
-            });
+            showSuccess(mensajeSegunEstado[registro.estado] || '📋 Registro cargado para gestionar');
         } catch (error) {
             console.error('Error al procesar registro:', error);
-            setAlerta({
-                text: 'Error al procesar el registro: ' + error.message,
-                variant: 'error'
-            });
+            showError('❌ Error al procesar el registro: ' + error.message);
         } finally {
             setProcesando('');
         }
@@ -116,18 +114,12 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
 
         try {
             await registrosWebService.eliminarRegistroWeb(registroAEliminar.id);
-            setAlerta({
-                text: `Registro de ${registroAEliminar.datos.apellido}, ${registroAEliminar.datos.nombre} eliminado exitosamente`,
-                variant: 'success'
-            });
+            showSuccess(`🗑️ Registro de ${registroAEliminar.datos.apellido}, ${registroAEliminar.datos.nombre} eliminado`);
             cargarRegistrosWeb();
             cargarEstadisticas();
         } catch (error) {
             console.error('Error al eliminar registro:', error);
-            setAlerta({
-                text: FormatError(error),
-                variant: 'error'
-            });
+            showError('❌ Error al eliminar registro: ' + FormatError(error));
         } finally {
             setEliminando(false);
             setRegistroAEliminar(null);
@@ -385,14 +377,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
                         )}
                     </div>
 
-                    {/* Alertas */}
-                    {alerta.text && (
-                        <AlertaMens 
-                            text={alerta.text} 
-                            variant={alerta.variant}
-                            onClose={() => setAlerta({ text: '', variant: '' })}
-                        />
-                    )}
+
 
                     {/* Modal de confirmación para eliminar */}
                     {mostrarConfirmacion && registroAEliminar && (

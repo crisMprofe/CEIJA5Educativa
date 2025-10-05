@@ -29,7 +29,7 @@ const AlertSystem = ({ alerts, modal, onCloseAlert, onCloseModal }) => {
     const getAlertTitle = (type) => {
         switch (type) {
             case 'success':
-                return 'Éxito';
+                return '';
             case 'error':
                 return 'Error';
             case 'warning':

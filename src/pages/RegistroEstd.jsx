@@ -14,6 +14,7 @@ import '../estilos/RegistroEstd.css';
 import '../estilos/FormularioMejorado.css';
 import EstadoInscripcion from '../components/EstadoInscripcion';
 import BotonCargando from '../components/BotonCargando';
+import { useAlerts } from '../hooks/useAlerts';
 
 
 const RegistroEstd = ({
@@ -21,7 +22,6 @@ const RegistroEstd = ({
     handleFileChange,
     handleChange,
     handleSubmit,
-    setAlert,
     isSubmitting,
     accion,
     values,
@@ -37,6 +37,7 @@ const RegistroEstd = ({
     const [formData, setFormData] = useState({});
     // Estados para manejo de registros pendientes - No mostrar si se está completando un registro desde URL
     const [showVerificador, setShowVerificador] = useState(!completarRegistro);
+    const { showError } = useAlerts();
 
     const closeModal = () => {
         setIsModalOpen(false);
@@ -67,10 +68,7 @@ const RegistroEstd = ({
             setFieldValue('localidad', registroData.localidad || '');
             setFieldValue('barrio', registroData.barrio || '');
         }
-        setAlert({ 
-            text: '📝 Formulario cargado con todos los datos del registro pendiente. Complete la documentación para finalizar la inscripción.', 
-            variant: 'info' 
-        });
+        // Registro completado silenciosamente, sin mensaje molesto
     };
 
     const handleSinRegistro = () => {
@@ -91,7 +89,7 @@ const RegistroEstd = ({
     const customHandleSubmit = async (e) => {
         e.preventDefault();
         if (!values.idEstadoInscripcion) {
-            setAlert({ text: 'Debe seleccionar un estado de inscripción.', variant: 'error' });
+            showError('Debe seleccionar un estado de inscripción.');
             return;
         }
 
@@ -206,7 +204,6 @@ RegistroEstd.propTypes = {
     handleFileChange: PropTypes.func.isRequired,
     handleChange: PropTypes.func.isRequired,
     handleSubmit: PropTypes.func.isRequired,
-    setAlert: PropTypes.func.isRequired,
     values: PropTypes.object.isRequired,
     setFieldValue: PropTypes.func.isRequired,
     accion: PropTypes.string,

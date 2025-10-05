@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUserContext } from '../context/useUserContext';
 // import PropTypes from 'prop-types';
+import { useAlerts } from '../hooks/useAlerts';
 import AlertaMens from './AlertaMens';
 import GestionCRUDContenido from './GestionCRUDContenido';
 // import BusquedaDNI from './BusquedaDNI';
@@ -10,9 +11,41 @@ import '../estilos/gestionCRUD.css';
 
 const GestionCRUD = ({ isAdmin, onClose, vistaInicial = 'opciones', esModificacion = false, soloListar = false, modalidad, modalidadId }) => {
     const { user } = useUserContext();
+    const { 
+        alerts, 
+        modal, 
+        showSuccess, 
+        showError, 
+        showWarning, 
+        showInfo,
+        removeAlert,
+        closeModal 
+    } = useAlerts();
     const [vistaActual, setVistaActual] = useState(vistaInicial); // Usar vistaInicial como estado inicial
     const [estudiante, setEstudiante] = useState(null);
-    const [alert, setAlert] = useState({ text: '', variant: '' });
+    
+    // Función helper para mantener compatibilidad con componente hijo
+    const setAlert = ({ text, variant }) => {
+        switch (variant) {
+            case 'success':
+                showSuccess(text);
+                break;
+            case 'error':
+                showError(text);
+                break;
+            case 'warning':
+                showWarning(text);
+                break;
+            case 'info':
+                showInfo(text);
+                break;
+            default:
+                showInfo(text);
+        }
+    };
+    
+    // Estado mock para compatibilidad (ya no se usa directamente)
+    const alert = { text: '', variant: '' };
     const [vistaAnterior, setVistaAnterior] = useState(null); // Para rastrear la vista anterior
     const [refreshKey, setRefreshKey] = useState(0); // Para forzar recarga de la lista
     // Inicializar modoModificacion basado en prop esModificacion o vista inicial
@@ -24,28 +57,20 @@ const GestionCRUD = ({ isAdmin, onClose, vistaInicial = 'opciones', esModificaci
         vistaInicial === 'opcionesEliminar' || vistaInicial === 'busquedaDNIEliminar' || vistaInicial === 'listaEliminar'
     );
 
-    // Ocultar automáticamente el mensaje flotante después de 4 segundos
-    useEffect(() => {
-        if (alert.text) {
-            const timer = setTimeout(() => {
-                setAlert({ text: '', variant: '' });
-            }, 4000);
-            return () => clearTimeout(timer);
-        }
-    }, [alert.text]);
+    // Las alertas se manejan automáticamente con useAlerts hook
 
 
 
     return (
         <div className="gestion-crud-container">
-            {alert.text && (
-                <AlertaMens 
-                    text={alert.text} 
-                    variant={alert.variant}
-                    duration={4000}
-                    onClose={() => setAlert({ text: '', variant: '' })}
-                />
-            )}
+            {/* Sistema de alertas unificado */}
+            <AlertaMens
+                mode="floating"
+                alerts={alerts}
+                modal={modal}
+                onCloseAlert={removeAlert}
+                onCloseModal={closeModal}
+            />
             <GestionCRUDContenido
                 isAdmin={isAdmin}
                 onClose={onClose}

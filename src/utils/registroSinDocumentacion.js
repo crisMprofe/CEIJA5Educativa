@@ -165,11 +165,12 @@ export const obtenerDocumentosRequeridos = (modalidad, planAnio, modulos) => {
         }
     }
     
-    console.log(`📋 [VALIDACIÓN] ${modalidad} - ${criterioInfo}`);
-    console.log(`📋 [VALIDACIÓN] Documentos requeridos (${documentosRequeridos.length}):`, documentosRequeridos);
-    if (documentosAlternativos) {
-        console.log(`🔄 [ALTERNATIVAS] ${documentosAlternativos.descripcion}`);
-    }
+    // Logs comentados para evitar spam - solo activar para debugging
+    // console.log(`📋 [VALIDACIÓN] ${modalidad} - ${criterioInfo}`);
+    // console.log(`📋 [VALIDACIÓN] Documentos requeridos (${documentosRequeridos.length}):`, documentosRequeridos);
+    // if (documentosAlternativos) {
+    //     console.log(`🔄 [ALTERNATIVAS] ${documentosAlternativos.descripcion}`);
+    // }
     
     return {
         documentos: documentosRequeridos,

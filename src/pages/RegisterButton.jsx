@@ -8,21 +8,34 @@ import serviceUsuario from '../services/serviceUsuario';
 import { useNavigate } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup'; 
 import { userValidationSchema } from '../validaciones/ValidacionSchemaYup';
+import { useAlerts } from '../hooks/useAlerts';
 import AlertaMens from '../components/AlertaMens';
 
 const RegisterButton = ({ onClose }) => {
     const { register, handleSubmit, formState: { errors } } = useForm({ resolver: yupResolver(userValidationSchema) });
-    const [alerta, setAlerta] = useState({text:"", variant:""})
+    const { 
+        alerts, 
+        modal, 
+        showSuccess, 
+        showError,
+        removeAlert,
+        closeModal 
+    } = useAlerts();
     const [loading,setLoading] = useState(false)
     const navigate = useNavigate(); // Para redirigir
 
     const mostrarAlerta = (text, variant) => {
         console.log(`Alerta: ${text}, Variant: ${variant}`); // Verifica los valores
-        setAlerta({ text, variant });
-        setTimeout(() => {
-            console.log('Ocultando alerta'); // Debug log
-            setAlerta({ text: '', variant: '' });
-        }, 10000); // Oculta la alerta después de 5s
+        switch (variant) {
+            case 'success':
+                showSuccess(text);
+                break;
+            case 'error':
+                showError(text);
+                break;
+            default:
+                showSuccess(text);
+        }
     }
     const onSubmit = async (data) => {
         console.log("Datos enviados:", data);
@@ -51,8 +64,14 @@ const RegisterButton = ({ onClose }) => {
         <div className="modal-overlay">
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="register-box">
-                  {/* Mostrar la alerta si hay un mensaje */}
-                  {alerta.text && <AlertaMens text={alerta.text} variant={alerta.variant} />}
+                  {/* Sistema de alertas unificado */}
+                  <AlertaMens
+                      mode="floating"
+                      alerts={alerts}
+                      modal={modal}
+                      onCloseAlert={removeAlert}
+                      onCloseModal={closeModal}
+                  />
                   <button onClick={(e) => { e.preventDefault(); onClose(); }} className="back-button">✖</button>
                 <form onSubmit={handleSubmit(onSubmit)}>
                      <Input label="Nombre" placeholder="Nombre" registro={{...register("nombre")}} error={errors.nombre?.message}/>

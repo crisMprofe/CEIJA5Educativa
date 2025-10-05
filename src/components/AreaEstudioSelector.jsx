@@ -58,7 +58,7 @@ const AreaEstudioSelector = ({ idModulo, modalidadId }) => {
             {loading ? (
                 <BotonCargando loading={loading} /> // Muestra un spinner o mensaje de carga
             ) : error ? (
-                <AlertaMens mensaje={error} /> // Muestra un mensaje de error
+                <AlertaMens text={error} variant="error" /> // Muestra un mensaje de error
             ) : (
                 <select id="areaEstudio" value={idAreaEstudio || ""} onChange={handleAreaEstudioChange}>
                     <option value="">Seleccionar Área de Estudio</option>

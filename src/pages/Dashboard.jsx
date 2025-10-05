@@ -4,6 +4,7 @@ import { useUserContext } from '../context/useUserContext';
 /*import { NavLink } from 'react-router-dom';*/
 import Modalidad from '../components/Modalidad';
 import BotonCargando from '../components/BotonCargando';
+import { useAlerts } from '../hooks/useAlerts';
 import AlertaMens from '../components/AlertaMens';
 import ModalRegistrosPendientes from '../components/ModalRegistrosPendientes';
 import GestorRegistrosWeb from '../components/GestorRegistrosWeb';
@@ -17,7 +18,15 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [alert, setAlert] = useState({ text: '', variant: '' }); // Estado para AlertaMens
+  const { 
+      alerts, 
+      modal, 
+      showSuccess, 
+      showError, 
+      showInfo,
+      removeAlert,
+      closeModal 
+  } = useAlerts();
   const [showModalRegistros, setShowModalRegistros] = useState(false); // Estado para modal de registros
   const [registrosPendientes, setRegistrosPendientes] = useState([]); // Estado para los registros
   const [showGestorRegistrosWeb, setShowGestorRegistrosWeb] = useState(false); // Estado para gestor de registros web
@@ -36,6 +45,7 @@ const Dashboard = () => {
       // Limpiar el estado para evitar que se vuelva a abrir
       navigate('/dashboard', { replace: true });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, navigate]);
 
   if (!user) {
@@ -79,10 +89,7 @@ const handleRegistrosSinDocumentacion = async () => {
     const cantidad = registros.length;
     
     if (cantidad === 0) {
-      setAlert({ 
-        text: 'No hay registros pendientes (sin documentación o incompletos).', 
-        variant: 'info' 
-      });
+      showInfo('No hay registros pendientes (sin documentación o incompletos).');
       return;
     }
     
@@ -93,10 +100,7 @@ const handleRegistrosSinDocumentacion = async () => {
   } catch (error) {
     console.error('Error al gestionar registros pendientes:', error);
     const mensajeError = MensajeError(error);
-    setAlert({ 
-      text: `❌ Error: ${mensajeError}`, 
-      variant: 'error' 
-    });
+    showError(`❌ Error: ${mensajeError}`);
   }
 };
 
@@ -130,10 +134,7 @@ const handleCompletarRegistroWeb = (registroCompleto) => {
     handleCloseGestorRegistrosWeb();
     
     // Mostrar mensaje informativo
-    setAlert({ 
-      text: `📝 Completando registro web de ${datosRegistro.nombre} ${datosRegistro.apellido} (DNI: ${datosRegistro.dni})...`, 
-      variant: 'info' 
-    });
+    showInfo(`📝 Completando registro web de ${datosRegistro.nombre} ${datosRegistro.apellido} (DNI: ${datosRegistro.dni})...`);
     
     // Navegar al formulario de inscripción con los datos pre-cargados
     if (user.rol === 'admDirector') {
@@ -229,10 +230,7 @@ const handleCompletarRegistroWeb = (registroCompleto) => {
   } catch (error) {
     console.error('Error al completar registro web:', error);
     const mensajeError = MensajeError(error);
-    setAlert({ 
-      text: `❌ Error: ${mensajeError}`, 
-      variant: 'error' 
-    });
+    showError(`❌ Error: ${mensajeError}`);
   }
 };
 
@@ -241,24 +239,15 @@ const handleDescargarFromModal = async () => {
   try {
     const exito = descargarRegistrosJSON();
     if (exito) {
-      setAlert({ 
-        text: `✅ Archivo descargado exitosamente con ${registrosPendientes.length} registros pendientes.`, 
-        variant: 'success' 
-      });
+      showSuccess(`📄 Archivo descargado con ${registrosPendientes.length} registros pendientes.`);
       handleCloseModalRegistros();
     } else {
-      setAlert({ 
-        text: 'Error al descargar el archivo JSON. Inténtelo nuevamente.', 
-        variant: 'error' 
-      });
+      showError('Error al descargar el archivo JSON. Inténtelo nuevamente.');
     }
   } catch (error) {
     console.error('Error al descargar archivo:', error);
     const mensajeError = MensajeError(error);
-    setAlert({ 
-      text: `❌ Error: ${mensajeError}`, 
-      variant: 'error' 
-    });
+    showError(`❌ Error: ${mensajeError}`);
   }
 };
 
@@ -271,10 +260,7 @@ const handleCompletarRegistro = (registro) => {
     handleCloseModalRegistros();
     
     // Mostrar mensaje informativo
-    setAlert({ 
-      text: `📝 Completando registro de ${registro.nombre} ${registro.apellido} (DNI: ${registro.dni})...`, 
-      variant: 'info' 
-    });
+    showInfo(`📝 Completando registro de ${registro.nombre} ${registro.apellido} (DNI: ${registro.dni})...`);
     
     // Navegar al formulario de inscripción con el DNI pre-cargado
     if (user.rol === 'admDirector') {
@@ -294,10 +280,7 @@ const handleCompletarRegistro = (registro) => {
   } catch (error) {
     console.error('Error al completar registro:', error);
     const mensajeError = MensajeError(error);
-    setAlert({ 
-      text: `❌ Error: ${mensajeError}`, 
-      variant: 'error' 
-    });
+    showError(`❌ Error: ${mensajeError}`);
   }
 };  // Renderizar botones según el rol
   return (
@@ -338,15 +321,14 @@ const handleCompletarRegistro = (registro) => {
         />
       )}
       
-      {/* Componente de alertas */}
-      {alert.text && (
-        <AlertaMens 
-          text={alert.text} 
-          variant={alert.variant} 
-          onClose={() => setAlert({ text: '', variant: '' })}
-          duration={5000} 
-        />
-      )}
+      {/* Sistema de alertas unificado */}
+      <AlertaMens
+          mode="floating"
+          alerts={alerts}
+          modal={modal}
+          onCloseAlert={removeAlert}
+          onCloseModal={closeModal}
+      />
 
       {/* Modal para mostrar registros pendientes */}
       {showModalRegistros && (

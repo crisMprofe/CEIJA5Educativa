@@ -75,18 +75,56 @@ const createWebPendiente = async (formDataToSend) => {
 const createRegistroPendiente = async (formDataToSend) => {
     try {
         console.log('📋 [createRegistroPendiente] Enviando registro pendiente del admin...');
+        console.log('📋 [createRegistroPendiente] URL objetivo:', '/registros-pendientes');
+        console.log('📋 [createRegistroPendiente] FormData:', formDataToSend);
+        
+        // Log detallado del FormData
+        if (formDataToSend instanceof FormData) {
+            console.log('📋 [createRegistroPendiente] Contenido del FormData:');
+            for (let [key, value] of formDataToSend.entries()) {
+                console.log(`   ${key}: ${value}`);
+            }
+        }
+        
         const response = await axiosInstance.post('/registros-pendientes', formDataToSend);
-        console.log('📋 [createRegistroPendiente] Respuesta recibida:', response);
+        console.log('📋 [createRegistroPendiente] Respuesta recibida exitosamente:', response);
+        console.log('📋 [createRegistroPendiente] Status:', response.status);
+        console.log('📋 [createRegistroPendiente] Headers:', response.headers);
+        
         if (import.meta.env.DEV) {
             console.log('📋 [createRegistroPendiente] response.data:', response.data);
         }
         return response.data;
     } catch (error) {
         console.error('📋 [createRegistroPendiente] Error capturado:', error);
+        console.error('📋 [createRegistroPendiente] error.response:', error.response);
+        console.error('📋 [createRegistroPendiente] error.response?.status:', error.response?.status);
+        console.error('📋 [createRegistroPendiente] error.response?.data:', error.response?.data);
+        console.error('📋 [createRegistroPendiente] error.message:', error.message);
+        
+        const msg = FormatError(error);
+        console.error('📋 [createRegistroPendiente] Error formateado:', msg);
+        throw new Error(msg);
+    }
+};
+
+// Marcar registro como completado (eliminar de registros pendientes)
+const marcarRegistroCompletado = async (dni) => {
+    try {
+        console.log(`✅ [marcarRegistroCompletado] Marcando registro como completado para DNI: ${dni}`);
+        const response = await axiosInstance.post('/notificaciones/marcar-completado', { dni });
+        console.log('✅ [marcarRegistroCompletado] Respuesta recibida:', response);
+        
+        if (import.meta.env.DEV) {
+            console.log('✅ [marcarRegistroCompletado] response.data:', response.data);
+        }
+        return response.data;
+    } catch (error) {
+        console.error('✅ [marcarRegistroCompletado] Error capturado:', error);
         const msg = FormatError(error);
         if (import.meta.env.DEV) {
-            console.error('📋 [createRegistroPendiente] Error formateado:', msg);
-            console.error('📋 [createRegistroPendiente] error.response?.data:', error.response?.data);
+            console.error('✅ [marcarRegistroCompletado] Error formateado:', msg);
+            console.error('✅ [marcarRegistroCompletado] error.response?.data:', error.response?.data);
         }
         throw new Error(msg);
     }
@@ -97,4 +135,5 @@ export default {
     createEstd,
     createWebPendiente,
     createRegistroPendiente,
+    marcarRegistroCompletado,
 }

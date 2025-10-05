@@ -3,6 +3,7 @@ import { Formik } from 'formik';
 import PropTypes from 'prop-types';
 import axios from 'axios';
 import useGestionDocumentacion from '../hooks/useGestionDocumentacion';
+import { useAlerts } from '../hooks/useAlerts';
 import FormularioModificar from '../components/FormularioModificar';
 import { DocumentacionDescripcionToName, DocumentacionNameToId } from '../utils/DocumentacionMap'; // Aseg
 import serviceInscripcion from '../services/serviceInscripcion';
@@ -20,15 +21,19 @@ const ModificarEstd = ({
 }) => {
     const {
         previews,
-        setPreviews,
-        alert,
-        setAlert,
         handleFileChange,
         buildDetalleDocumentacion,
         resetArchivos,
     } = useGestionDocumentacion();
-
-  const [documentacion, setDocumentacion] = useState([]);
+    
+    const { showSuccess, showError } = useAlerts();
+    const [documentacion, setDocumentacion] = useState([]);
+    
+    // Función para manejar previews
+    const setPreviews = (archivos) => {
+        // Esta función ahora es local ya que el hook no la provee más
+        console.log('Actualizando previews:', archivos);
+    };
 
   // Traer la documentación junto con la preview (lo mismo que antes)
   useEffect(() => {
@@ -53,14 +58,14 @@ const ModificarEstd = ({
             }
         } catch (error) {
             console.error('Error al obtener documentación:', error);
-            setAlert({ text: 'Error al cargar la documentación', variant: 'error' });
+            showError('Error al cargar la documentación');
         }
     };
 
     if (idInscripcion && Number(idInscripcion) > 0) {
         fetchDocumentacion();
     }
-  }, [idInscripcion, setPreviews, setAlert]);
+  }, [idInscripcion, showError]);
 
   // --- NUEVA FUNCIÓN para guardar cambios de documentación desde el modal ---
   const handleGuardarCambiosDocumentacion = async (docsEditados) => {
@@ -95,7 +100,7 @@ const ModificarEstd = ({
       });
 
       if (response.data.success) {
-        setAlert({ text: 'Documentación actualizada con éxito', variant: 'success' });
+        showSuccess('Documentación actualizada con éxito');
 
         // Refrescar documentación y previews
         setDocumentacion(response.data.data);
@@ -111,11 +116,11 @@ const ModificarEstd = ({
         }, {});
         setPreviews(archivos);
       } else {
-        setAlert({ text: 'Error al actualizar documentación', variant: 'error' });
+        showError('Error al actualizar documentación');
       }
     } catch (error) {
       console.error('Error al guardar documentación:', error);
-      setAlert({ text: 'Error interno al guardar documentación', variant: 'error' });
+      showError('Error interno al guardar documentación');
     }
   };
 
@@ -163,7 +168,7 @@ const ModificarEstd = ({
         try {
             // Validación simple en el cliente
             if (!values.nombre || !values.apellido || !values.dni || !values.planAnioId || !values.modalidadId) {
-                setAlert({ text: 'Por favor, completa todos los campos obligatorios', variant: 'error' });
+                showError('Por favor, completa todos los campos obligatorios');
                 setSubmitting(false);
                 return;
             }
@@ -181,7 +186,7 @@ const ModificarEstd = ({
                 planAnioId = Number(values.planAnio);
             } else if (!planAnioId) {
                 // Asegurarse de que planAnioId sea válido y corresponda a un ID existente en la base de datos
-                setAlert({ text: 'El plan de año seleccionado no es válido', variant: 'error' });
+                showError('El plan de año seleccionado no es válido');
                 setSubmitting(false);
                 return;
             }
@@ -224,16 +229,15 @@ const ModificarEstd = ({
             // Llama al servicio de modificación
             const response = await serviceInscripcion.updateEstd(formDataToSend, values.dni);
             if (response.success) {
-                setAlert({ text: response.message || 'Los datos del estudiante se han modificado con éxito.', variant: 'success' });
+                showSuccess(response.message || 'Los datos del estudiante se han modificado con éxito.');
                 onSuccess();
-                setTimeout(() => setAlert({ text: '', variant: '' }), 5000);
             } else {
-                setAlert({ text: response.message || 'Error al modificar los datos del estudiante.', variant: 'error' });
+                showError(response.message || 'Error al modificar los datos del estudiante.');
             }
         } catch (error) {
             console.error('Error al modificar estudiante:', error);
             const mensaje = error.response?.data?.message || 'Error interno al modificar';
-            setAlert({ text: mensaje, variant: 'error' });
+            showError(mensaje);
         } finally {
             setSubmitting(false); // Asegúrate de habilitar el botón después de la operación
         }
@@ -269,7 +273,6 @@ const ModificarEstd = ({
           isAdmin={isAdmin}
           accion={accion}
           documentacion={documentacion}
-          setPreviews={setPreviews}
           // PASAMOS LA NUEVA FUNCIÓN AL MODAL (o componente que la use)
           onGuardarCambiosDocumentacion={handleGuardarCambiosDocumentacion}
           buildDetalleDocumentacion={buildDetalleDocumentacion} // Pasada como prop

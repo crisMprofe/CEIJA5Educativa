@@ -77,18 +77,6 @@ const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWe
                         onBack={onBack}
                         navigate={navigate}
                         previews={previews}
-                        setAlert={(alertData) => {
-                            // Usar el sistema de alertas principal (AlertSystem)
-                            if (alertData.variant === 'success') {
-                                showSuccess(alertData.text);
-                            } else if (alertData.variant === 'error') {
-                                showError(alertData.text);
-                            } else if (alertData.variant === 'warning') {
-                                showWarning(alertData.text);
-                            } else {
-                                showInfo(alertData.text);
-                            }
-                        }}
                         accion={accion}
                         isAdmin={isAdmin}
                         isWebUser={isWebUser}
