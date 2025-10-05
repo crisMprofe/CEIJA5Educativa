@@ -36,8 +36,6 @@ const getEstudianteCompletoByDni = async (dni, modalidadId, setAlert) => {
     try {
         // Agrega modalidadId como query param
         const { data } = await axiosInstance.get(`/consultar-estudiantes-dni/${dni}?modalidadId=${modalidadId}`);
-        console.log('Respuesta completa del servicio:', data);
-        console.log('Documentación recibida:', data.documentacion);
         return data;
     } catch (error) {
         const message = FormatError(error);

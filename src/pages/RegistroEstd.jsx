@@ -14,7 +14,8 @@ import '../estilos/RegistroEstd.css';
 import '../estilos/FormularioMejorado.css';
 import EstadoInscripcion from '../components/EstadoInscripcion';
 import BotonCargando from '../components/BotonCargando';
-import { useAlerts } from '../hooks/useAlerts';
+import { useContext } from 'react';
+import { AlertContext } from '../context/alertContextDefinition';
 
 
 const RegistroEstd = ({
@@ -37,7 +38,7 @@ const RegistroEstd = ({
     const [formData, setFormData] = useState({});
     // Estados para manejo de registros pendientes - No mostrar si se está completando un registro desde URL
     const [showVerificador, setShowVerificador] = useState(!completarRegistro);
-    const { showError } = useAlerts();
+    const { showError } = useContext(AlertContext);
 
     const closeModal = () => {
         setIsModalOpen(false);

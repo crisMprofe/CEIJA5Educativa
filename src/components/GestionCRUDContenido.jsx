@@ -9,6 +9,8 @@ import VistaVisor from './VistaVisor';
 import VistaEliminar from './VistaEliminar';
 import serviceInscripcion from '../services/serviceInscripcion';
 import { construirEstudianteCompleto } from '../utils/utilsEstudiante';
+import { useContext } from 'react';
+import { AlertContext } from '../context/AlertContext';
 import {
     handleEstudianteEncontrado,
     handleEstudianteEncontradoParaModificar,
@@ -18,7 +20,6 @@ import {
     handleVolverABusquedaDNI,
     handleVolverDesdeVisor,
     handleCerrarVisorAOpciones,
-    
 } from '../utils/handlersCrud';
 
 import PropTypes from 'prop-types';
@@ -35,8 +36,6 @@ const GestionCRUDContenido = ({
     setVistaActual,
     estudiante,
     setEstudiante,
-    alert,
-    setAlert,
     vistaAnterior,
     setVistaAnterior,
     refreshKey,
@@ -45,9 +44,8 @@ const GestionCRUDContenido = ({
     setModoModificacion,
     modoEliminacion
 }) => {
-    // Acceso a alert para evitar advertencia de variable no usada
-    // eslint-disable-next-line no-unused-vars
-    const _alert = alert;
+    // Usar el sistema unificado de alertas
+    const { showSuccess, showError } = useContext(AlertContext);
     // Usar modalidadId recibido por props si existe, si no, derivar de modalidad
     const modalidadIdFinal = typeof modalidadId !== 'undefined' && modalidadId !== null ? modalidadId : (modalidad !== undefined && modalidad !== null && modalidad !== '' && !isNaN(Number(modalidad)) ? Number(modalidad) : undefined);
     const modalidadFiltrada = user?.rol === 'admDirector' ? undefined : modalidad;
@@ -102,7 +100,7 @@ const GestionCRUDContenido = ({
                             setVistaAnterior,
                             vistaActual,
                             setVistaActual,
-                            setAlert
+                            showError
                         )
                         : (resultado) => handleEstudianteEncontrado(
                             resultado,
@@ -113,7 +111,7 @@ const GestionCRUDContenido = ({
                         )
                     }
                     onClose={onClose}
-                    onVolver={vistaInicial === 'busquedaDNI' && !modoModificacion ? null : () => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante, setAlert)}
+                    onVolver={vistaInicial === 'busquedaDNI' && !modoModificacion ? null : () => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante)}
                     esConsultaDirecta={vistaInicial === 'busquedaDNI' && !modoModificacion}
                     modoModificacion={modoModificacion}
                 />
@@ -214,11 +212,11 @@ const GestionCRUDContenido = ({
                             setEstudiante(estudianteCompleto);
                             setVistaActual('confirmarEliminacion');
                         } else {
-                            setAlert({ text: resultado?.error || 'Error al buscar estudiante', variant: 'error' });
+                            showError(resultado?.error || 'Error al buscar estudiante');
                         }
                     }}
-                    onClose={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante, setAlert)}
-                    onVolver={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante, setAlert)}
+                    onClose={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
+                    onVolver={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
                     modoEliminacion={true}
                 />
             );
@@ -237,8 +235,8 @@ const GestionCRUDContenido = ({
                             setVistaActual('confirmarEliminacion');
                         }
                     }}
-                    onClose={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante, setAlert)}
-                    onVolver={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante, setAlert)}
+                    onClose={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
+                    onVolver={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
                 />
             );
         case 'registro':
@@ -246,7 +244,7 @@ const GestionCRUDContenido = ({
                 <VistaRegistro 
                     modalidad={estudiante?.modalidad || 'Presencial'}
                     isAdmin={isAdmin}
-                    onClose={handleVolverAOpciones}
+                    onClose={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
                 />
             );
         case 'modificar':
@@ -258,7 +256,7 @@ const GestionCRUDContenido = ({
                     onSuccess={() => {
                         setRefreshKey(prev => prev + 1);
                         setVistaActual('lista');
-                        setAlert({ text: 'Estudiante modificado exitosamente.', variant: 'success' });
+                        showSuccess('Estudiante modificado exitosamente.');
                     }}
                 />
             );
@@ -275,7 +273,7 @@ const GestionCRUDContenido = ({
 
             const handleModificar = async (datosActualizados, seccion) => {
                 if (!datosActualizados.dni) {
-                    setAlert({ text: 'El DNI es obligatorio para modificar.', variant: 'error' });
+                    showError('El DNI es obligatorio para modificar.');
                     return;
                 }
                 
@@ -316,19 +314,19 @@ const GestionCRUDContenido = ({
                     
                     // Validaciones antes de enviar
                     if (!estudianteCompleto.modalidadId) {
-                        setAlert({ text: 'Selecciona una modalidad válida.', variant: 'error' });
+                        showError('Selecciona una modalidad válida.');
                         return;
                     }
                     if (!estudianteCompleto.planAnioId) {
-                        setAlert({ text: 'Selecciona un plan válido.', variant: 'error' });
+                        showError('Selecciona un plan válido.');
                         return;
                     }
                     if (!estudianteCompleto.modulosId) {
-                        setAlert({ text: 'Selecciona un módulo válido.', variant: 'error' });
+                        showError('Selecciona un módulo válido.');
                         return;
                     }
                     if (!estudianteCompleto.estadoInscripcionId) {
-                        setAlert({ text: 'Selecciona un estado de inscripción válido.', variant: 'error' });
+                        showError('Selecciona un estado de inscripción válido.');
                         return;
                     }
                     
@@ -352,33 +350,33 @@ const GestionCRUDContenido = ({
                     
                     // Validaciones específicas para domicilio
                     if (!estudianteCompleto.provincia || estudianteCompleto.provincia.trim() === '') {
-                        setAlert({ text: 'La provincia es obligatoria.', variant: 'error' });
+                        showError('La provincia es obligatoria.');
                         return;
                     }
                     if (!estudianteCompleto.localidad || estudianteCompleto.localidad.trim() === '') {
-                        setAlert({ text: 'La localidad es obligatoria.', variant: 'error' });
+                        showError('La localidad es obligatoria.');
                         return;
                     }
                     if (!estudianteCompleto.barrio || estudianteCompleto.barrio.trim() === '') {
-                        setAlert({ text: 'El barrio es obligatorio.', variant: 'error' });
+                        showError('El barrio es obligatorio.');
                         return;
                     }
                     
                     // Validar que los IDs académicos estén presentes
                     if (!estudianteCompleto.planAnioId) {
-                        setAlert({ text: 'El plan de año es obligatorio para modificar.', variant: 'error' });
+                        showError('El plan de año es obligatorio para modificar.');
                         return;
                     }
                     if (!estudianteCompleto.modalidadId) {
-                        setAlert({ text: 'La modalidad es obligatoria para modificar.', variant: 'error' });
+                        showError('La modalidad es obligatoria para modificar.');
                         return;
                     }
                     if (!estudianteCompleto.modulosId) {
-                        setAlert({ text: 'El módulo es obligatorio para modificar.', variant: 'error' });
+                        showError('El módulo es obligatorio para modificar.');
                         return;
                     }
                     if (!estudianteCompleto.estadoInscripcionId) {
-                        setAlert({ text: 'El estado de inscripción es obligatorio para modificar.', variant: 'error' });
+                        showError('El estado de inscripción es obligatorio para modificar.');
                         return;
                     }
                     
@@ -388,7 +386,7 @@ const GestionCRUDContenido = ({
                     try {
                         JSON.parse(datosActualizados.detalleDocumentacion);
                     } catch {
-                        setAlert({ text: 'Error en el formato de la documentación.', variant: 'error' });
+                        showError('Error en el formato de la documentación.');
                         return;
                     }
                     const formData = new FormData();
@@ -418,37 +416,26 @@ const GestionCRUDContenido = ({
                     if (response.success) {
                         // Actualizar solo los campos modificados en el estado local
                         setEstudiante(prevEstudiante => ({ ...prevEstudiante, ...datosActualizados }));
-                        setAlert({ text: 'Datos actualizados correctamente', variant: 'success' });
+                        showSuccess('Datos actualizados correctamente');
                     } else {
-                        setAlert({ text: response.message || 'Error al actualizar', variant: 'error' });
+                        showError(response.message || 'Error al actualizar');
                     }
                 } catch (error) {
                     console.error("❌ Error al modificar estudiante:", error.message);
-                    setAlert({ text: 'Error al guardar los cambios. Verifica que todos los campos estén completos.', variant: 'error' });
+                    showError('Error al guardar los cambios. Verifica que todos los campos estén completos.');
                 }
             };
             return (
                 <VistaVisor 
                     estudiante={estudiante}
                     onClose={modoModificacion
-                        ? () => handleVolverAOpciones(
-                            modoModificacion,
-                            modoEliminacion,
-                            setVistaActual,
-                            setEstudiante,
-                            setAlert
-                        )
-                        : () => handleCerrarVisorAOpciones(
-                            setVistaActual,
-                            setEstudiante,
-                            setAlert,
-                            setModoModificacion
-                        )
+                        ? () => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante)
+                        : () => handleCerrarVisorAOpciones(setVistaActual, setEstudiante, setModoModificacion)
                     }
                     onVolver={() => handleVolverDesdeVisor(
                         vistaAnterior,
-                        () => handleVolverABusquedaDNI(setVistaActual, setEstudiante, setAlert, setVistaAnterior),
-                        () => handleVolverALista(setVistaActual, setEstudiante, setAlert)
+                        () => handleVolverABusquedaDNI(setVistaActual, setEstudiante, setVistaAnterior),
+                        () => handleVolverALista(setVistaActual, setEstudiante)
                     )}
                     onModificar={handleModificar}
                     isConsulta={esConsulta}
@@ -486,20 +473,8 @@ const GestionCRUDContenido = ({
                         },
                         documentacion: estudiante?.documentacion || []
                     }}
-                    onClose={() => handleVolverAOpciones(
-                        modoModificacion,
-                        modoEliminacion,
-                        setVistaActual,
-                        setEstudiante,
-                        setAlert
-                    )}
-                    onVolver={() => handleVolverAOpciones(
-                        modoModificacion,
-                        modoEliminacion,
-                        setVistaActual,
-                        setEstudiante,
-                        setAlert
-                    )}
+                    onClose={() => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante)}
+                    onVolver={() => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante)}
                     onEliminar={async (tipoEliminacion) => {
                         try {
                             let response;
@@ -512,18 +487,18 @@ const GestionCRUDContenido = ({
                                 mensaje = 'Estudiante desactivado exitosamente. El estudiante ya no aparecerá en las listas de consulta';
                             }
                             if (response.error) {
-                                setAlert({ text: response.error, variant: 'error' });
+                                showError(response.error);
                             } else if (response.success || !response.error) {
-                                setAlert({ text: mensaje, variant: 'success' });
+                                showSuccess(mensaje);
                                 setRefreshKey(prev => prev + 1);
                                 setTimeout(() => {
-                                    handleVolverALista(setVistaActual, setEstudiante, setAlert);
+                                    handleVolverALista(setVistaActual, setEstudiante);
                                 }, 2000);
                             } else {
-                                setAlert({ text: 'Ocurrió un error inesperado durante la eliminación', variant: 'error' });
+                                showError('Ocurrió un error inesperado durante la eliminación');
                             }
                         } catch {
-                            setAlert({ text: 'Error al procesar la eliminación del estudiante', variant: 'error' });
+                            showError('Error al procesar la eliminación del estudiante');
                         }
                     }}
                 />
@@ -550,8 +525,6 @@ GestionCRUDContenido.propTypes = {
   setVistaActual: PropTypes.func.isRequired,
   estudiante: PropTypes.object,
   setEstudiante: PropTypes.func.isRequired,
-  alert: PropTypes.object,
-  setAlert: PropTypes.func.isRequired,
   vistaAnterior: PropTypes.string,
   setVistaAnterior: PropTypes.func,
   refreshKey: PropTypes.number,

@@ -5,7 +5,6 @@ import useGestionDocumentacion from '../hooks/useGestionDocumentacion';
 import { useInitialValues } from '../hooks/useInitialValues';
 import { useRegistroWebData } from '../hooks/useRegistroWebData';
 import { useSubmitHandler } from '../hooks/useSubmitHandler';
-import { useGlobalAlerts } from '../hooks/useGlobalAlerts';
 import GestionEstudianteView from './GestionEstudianteView';
 
 const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWebUser, onClose, onBack, datosRegistroPendiente }) => {
@@ -23,30 +22,17 @@ const GestionEstudiante = ({ modalidad, accion, isAdmin, completarRegistro, isWe
     const { completarWebParam, datosRegistroWeb } = useRegistroWebData(modalidad);
     const initialValues = useInitialValues(modalidad, completarRegistro, datosRegistroWeb, datosRegistroPendiente);
     const { handleSubmit: handleSubmitForm } = useSubmitHandler(
-        (alertData) => {
-            // Usar el sistema de alertas principal (AlertSystem) en lugar de docAlert
-            if (alertData.variant === 'success') {
-                showSuccess(alertData.text);
-            } else if (alertData.variant === 'error') {
-                showError(alertData.text);
-            } else if (alertData.variant === 'warning') {
-                showWarning(alertData.text);
-            } else {
-                showInfo(alertData.text);
-            }
-        }, 
         files, 
         previews, 
         resetArchivos, 
         buildDetalleDocumentacion
     );
 
-    // Hooks adicionales para mejor funcionalidad
-    const { showError, showSuccess, showWarning, showInfo } = useGlobalAlerts();
+    // Hook para formulario de estudiante
 
     // Wrapper para el handleSubmit que incluye los parámetros específicos del componente
     const handleSubmit = async (values, formikBag) => {
-        // El useSubmitHandler ya maneja todos los mensajes a través de la función setAlert que pasamos
+        // El useSubmitHandler ya maneja todos los mensajes a través del sistema unificado de alertas
         await handleSubmitForm(
             values, 
             formikBag, 

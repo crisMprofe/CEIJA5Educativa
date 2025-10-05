@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import registrosWebService from '../services/serviceRegistrosWeb';
+import serviceRegistrosWeb from '../services/serviceRegistrosWeb';
+import { calcularEstadoDocumentacionWeb } from '../utils/calcularEstadoDocumentacionWeb';
 import { useAlerts } from '../hooks/useAlerts';
 import BotonCargando from './BotonCargando';
 import CloseButton from './CloseButton';
@@ -36,7 +37,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
     const cargarRegistrosWeb = async () => {
         try {
             setLoading(true);
-            const data = await registrosWebService.obtenerRegistrosWeb();
+            const data = await serviceRegistrosWeb.obtenerRegistrosWeb();
             setRegistros(data);
         } catch (error) {
             console.error('Error al cargar registros web:', error);
@@ -48,7 +49,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
 
     const cargarEstadisticas = async () => {
         try {
-            const estadisticas = await registrosWebService.obtenerEstadisticas();
+            const estadisticas = await serviceRegistrosWeb.obtenerEstadisticas();
             setStats(estadisticas);
         } catch (error) {
             console.error('Error al cargar estadísticas:', error);
@@ -113,7 +114,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
         setMostrarConfirmacion(false);
 
         try {
-            await registrosWebService.eliminarRegistroWeb(registroAEliminar.id);
+            await serviceRegistrosWeb.eliminarRegistroWeb(registroAEliminar.id);
             showSuccess(`🗑️ Registro de ${registroAEliminar.datos.apellido}, ${registroAEliminar.datos.nombre} eliminado`);
             cargarRegistrosWeb();
             cargarEstadisticas();
@@ -241,8 +242,8 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
                         ) : (
                             <div className="registros-lista">
                                 {registrosVisuales.map((registro) => {
-                                    // Debug: verificar datos del registro
-                                    console.log('Registro datos:', registro.datos.nombre, registro.datos.apellido, registro.datos.dni);
+                                    // Calcular estado real de documentación
+                                    const estadoDocReal = calcularEstadoDocumentacionWeb(registro);
                                     return (
                                         <div key={registro.id} className="registro-item">
                                         <div className="registro-header">
@@ -312,11 +313,16 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
                                                 <div className="registro-info">
                                                     <small>Fecha: {formatearFecha(registro.timestamp)}</small>
                                                 </div>
-                                                {registro.observaciones && (
-                                                    <div className="registro-info">
-                                                        <strong>Observaciones:</strong> {registro.observaciones}
-                                                    </div>
-                                                )}
+                                                {/* Mostrar estado real de documentación calculado en tiempo real */}
+                                                <div className="registro-info">
+                                                    <strong>Estado de Documentación:</strong> 
+                                                    <span style={{ 
+                                                        color: estadoDocReal.esCompleto ? '#4caf50' : '#ff9800',
+                                                        marginLeft: '5px'
+                                                    }}>
+                                                        {estadoDocReal.mensaje}
+                                                    </span>
+                                                </div>
                                             </div>
 
                                             <div className="registro-acciones">

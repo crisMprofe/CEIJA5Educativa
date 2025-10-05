@@ -157,18 +157,7 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
                     />
                 </div>
             )}
-            {(() => {
-                console.log('🔍 Verificando condición para mostrar módulo:', {
-                    modalidadId,
-                    modalidadIdTipo: typeof modalidadId,
-                    modalidadIdEs2: modalidadId === 2,
-                    value,
-                    valueTipo: typeof value,
-                    valueEsValido: !!value,
-                    condicionCompleta: modalidadId === 2 && value
-                });
-                return modalidadId === 2 && value;
-            })() && (
+            {modalidadId === 2 && value && (
                 <div className="form-group">
                     <label htmlFor="modulo"><strong>📚 Módulo:</strong></label>
                     {loading ? (

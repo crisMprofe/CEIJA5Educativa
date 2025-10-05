@@ -1,17 +1,19 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import useGestionDocumentacion from '../../hooks/useGestionDocumentacion';
+import { AlertContext } from '../../context/AlertContext';
 
 const TarjetaDocumentacion = ({ estudiante, editMode, setEditMode, isConsulta, isEliminacion, onGuardar, onCancelar }) => {
     // Log visual para depuración
     console.log('🟢 Documentación recibida en TarjetaDocumentacion:', estudiante.documentacion);
     const [archivosSubidos, setArchivosSubidos] = useState({});
+    
+    // Usar el sistema unificado de alertas
+    const { showSuccess, showWarning } = useContext(AlertContext);
 
     const {
         files,
         previews,
-        alert,
-        setAlert,
         handleFileChange,
         buildDetalleDocumentacion,
         resetArchivos,
@@ -51,7 +53,6 @@ useEffect(() => {
 
     return (
         <div className="tarjeta tarjeta-documentacion">
-            {alert.text && <div className={`alerta alerta-${alert.variant}`}>{alert.text}</div>}
             <div className="tarjeta-header">
                 <h3>Documentación Presentada</h3>
                 {!isConsulta && !isEliminacion && (
@@ -131,9 +132,8 @@ useEffect(() => {
                             if (typeof onGuardar === 'function') {
                                 onGuardar({ detalleDocumentacion: detalle, archivos: files });
                             }
-                            setAlert({ text: '¡Documentación modificada con éxito!', variant: 'success' });
+                            showSuccess('¡Documentación modificada con éxito!');
                             setEditMode(false);
-                            setTimeout(() => setAlert({ text: '', variant: '' }), 2500);
                         }}
                     >
                         Guardar cambios
@@ -144,8 +144,7 @@ useEffect(() => {
                             resetArchivos();
                             if (typeof onCancelar === 'function') onCancelar();
                             setEditMode(false);
-                            setAlert({ text: 'Modificación cancelada.', variant: 'warning' });
-                            setTimeout(() => setAlert({ text: '', variant: '' }), 2000);
+                            showWarning('Modificación cancelada.');
                         }}
                     >
                         Cancelar

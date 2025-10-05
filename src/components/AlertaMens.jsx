@@ -93,14 +93,16 @@ function AlertaMens({
     }
 
     // Modo floating - alertas flotantes en la esquina
-    if (mode === 'floating' || (alerts && alerts.length > 0)) {
+    if (mode === 'floating') {
+
         return (
             <>
                 {/* Alertas Flotantes */}
                 {alerts && alerts.length > 0 && (
                     <div className="alert-overlay">
-                        {alerts.map((alert, index) => (
-                            <div key={index} className={`alert-container ${alert.type}`}>
+
+                        {alerts.map((alert) => (
+                            <div key={alert.id} className={`alert-container ${alert.type}`}>
                                 <div className="alert-header">
                                     <span className="alert-icon">{getAlertIcon(alert.type)}</span>
                                     <h4 className="alert-title">{getAlertTitle(alert.type)}</h4>
@@ -109,7 +111,7 @@ function AlertaMens({
                                 {alert.type !== 'loading' && (
                                     <button 
                                         className="alert-close"
-                                        onClick={() => onCloseAlert && onCloseAlert(index)}
+                                        onClick={() => onCloseAlert && onCloseAlert(alert.id)}
                                         aria-label="Cerrar alerta"
                                     >
                                         ×
@@ -174,7 +176,7 @@ AlertaMens.propTypes = {
     modal: PropTypes.shape({
         show: PropTypes.bool.isRequired,
         message: PropTypes.string.isRequired,
-        onConfirm: PropTypes.func.isRequired,
+        onConfirm: PropTypes.func,
         onCancel: PropTypes.func
     }),
     onCloseAlert: PropTypes.func,

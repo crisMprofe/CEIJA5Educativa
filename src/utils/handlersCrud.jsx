@@ -10,14 +10,14 @@ export function handleEstudianteEncontrado(resultado, setEstudiante, setVistaAnt
     }
 }
 
-export function handleEstudianteEncontradoParaModificar(resultado, setEstudiante, setVistaAnterior, vistaActual, setVistaActual, setAlert) {
+export function handleEstudianteEncontradoParaModificar(resultado, setEstudiante, setVistaAnterior, vistaActual, setVistaActual, showError) {
     if (resultado?.success && resultado.estudiante) {
         const estudianteCompleto = construirEstudianteCompleto(resultado);
         setEstudiante(estudianteCompleto);
         setVistaAnterior(vistaActual);
         setVistaActual('visor');
     } else {
-        setAlert({ text: resultado?.error || 'No se encontró un estudiante con ese DNI', variant: 'error' });
+        showError(resultado?.error || 'No se encontró un estudiante con ese DNI');
     }
 }
 
@@ -62,7 +62,7 @@ export function handleModificarDesdeVisor(estudiante, setEstudiante, setVistaAct
     setVistaActual('editor');
 }
 
-export function handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante, setAlert) {
+export function handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante) {
     if (modoModificacion) {
         setVistaActual('opcionesModificar');
     } else if (modoEliminacion) {
@@ -71,19 +71,16 @@ export function handleVolverAOpciones(modoModificacion, modoEliminacion, setVist
         setVistaActual('opciones');
     }
     setEstudiante(null);
-    setAlert({ text: '', variant: '' });
 }
 
-export function handleVolverALista(setVistaActual, setEstudiante, setAlert) {
+export function handleVolverALista(setVistaActual, setEstudiante) {
     setVistaActual('lista');
     setEstudiante(null);
-    setAlert({ text: '', variant: '' });
 }
 
-export function handleVolverABusquedaDNI(setVistaActual, setEstudiante, setAlert, setVistaAnterior) {
+export function handleVolverABusquedaDNI(setVistaActual, setEstudiante, setVistaAnterior) {
     setVistaActual('busquedaDNI');
     setEstudiante(null);
-    setAlert({ text: '', variant: '' });
     setVistaAnterior(null);
 }
 
@@ -95,15 +92,14 @@ export function handleVolverDesdeVisor(vistaAnterior, handleVolverABusquedaDNI, 
     }
 }
 
-export function handleCerrarVisorAOpciones(setVistaActual, setEstudiante, setAlert, setModoModificacion) {
+export function handleCerrarVisorAOpciones(setVistaActual, setEstudiante, setModoModificacion) {
     setVistaActual('opciones');
     setEstudiante(null);
-    setAlert({ text: '', variant: '' });
     setModoModificacion(false);
 }
 
-export function handleExito(setAlert, setModoModificacion, handleVolverAOpciones) {
-    setAlert({ text: 'Operación realizada con éxito', variant: 'success' });
+export function handleExito(showSuccess, setModoModificacion, handleVolverAOpciones) {
+    showSuccess('Operación realizada con éxito');
     setTimeout(() => {
         setModoModificacion(false);
         handleVolverAOpciones();

@@ -7,8 +7,7 @@ import {
 import serviceRegInscripcion from '../services/serviceRegInscripcion';
 import serviceInscripcion from '../services/serviceInscripcion';
 import serviceRegistrosWeb from '../services/serviceRegistrosWeb';
-import { useContext } from 'react';
-import { AlertContext } from '../context/alertContextDefinition';
+import { useAlerts } from './useAlerts';
 import { calcularEstadoDocumentacionWeb } from '../utils/calcularEstadoDocumentacionWeb';
 
 /**
@@ -19,7 +18,7 @@ import { calcularEstadoDocumentacionWeb } from '../utils/calcularEstadoDocumenta
  * @param {Function} buildDetalleDocumentacion - Función para construir detalle de documentación
  */
 export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDocumentacion) => {
-    const { showSuccess, showError, showWarning } = useContext(AlertContext);
+    const { showSuccess, showError, showWarning } = useAlerts();
     
     const validateRequiredFields = (values) => {
         const camposObligatorios = [
@@ -168,41 +167,27 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
                     showError(`❌ Error completo: ${error.message}. No se pudo guardar el registro.`);
                 }
             }
-        } else if (accion === "Registrar" && !hayDocumentosCompletos && !isAdmin && !isWebUser) {
-            // Caso usuario no-web sin documentación → guardar local
+        } else if (accion === "Registrar" && !hayDocumentosCompletos && !isAdmin) {
+            // Caso usuario web sin documentación → guardar local
             try {
                 await guardarRegistroSinDocumentacion({
                     ...values,
                     modalidad,
-                    mensaje: response?.message || 'Registro incompleto'
+                    mensaje: response?.message || 'Registro web incompleto'
                 }, estadoDocumentacion);
                 
                 showWarning(estadoDocumentacion.mensaje);
             } catch (error) {
-                console.error('Error al guardar registro local:', error);
+                console.error('Error al guardar registro web local:', error);
                 showWarning(estadoDocumentacion.mensaje);
             }
         } else {
-            // Caso normal: con documentación completa O usuario web (independiente de documentación)
+            // Caso normal: con documentación completa
             let mensajeExito = response.message;
             
             // Si es usuario web, personalizar mensaje de éxito
             if (isWebUser) {
-                mensajeExito = '✅ ¡Registro realizado con éxito! Recuerda finalizar la inscripción de manera presencial para iniciar tus estudios.';
-                
-                // Para usuarios web, también guardar localmente si no tienen documentos completos
-                if (!hayDocumentosCompletos) {
-                    try {
-                        await guardarRegistroSinDocumentacion({
-                            ...values,
-                            modalidad,
-                            mensaje: response?.message || 'Registro web guardado'
-                        }, estadoDocumentacion);
-                        console.log('📝 Registro web también guardado localmente');
-                    } catch (error) {
-                        console.warn('Advertencia: no se pudo guardar localmente:', error);
-                    }
-                }
+                mensajeExito = 'Registro realizado con éxito, recuerda finalizar la inscripción de manera presencial para iniciar tus estudios';
             }
             
             // Si se completó un registro pendiente, eliminar de localStorage y del backend
@@ -234,8 +219,6 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
                 }
             }
             
-            console.log('🎉 [DEBUG] Mostrando mensaje de éxito:', mensajeExito);
-            console.log('🎉 [DEBUG] isWebUser:', isWebUser);
             showSuccess(mensajeExito);
         }
         
@@ -284,7 +267,9 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
                 
                 // Debug logging para usuarios web
                 if (!isAdmin) {
-                    console.log('🌐 [DEBUG] Respuesta para usuario web recibida correctamente');
+                    console.log('🌐 [DEBUG] Respuesta para usuario web:', response);
+                    console.log('🌐 [DEBUG] ¿Tiene message?', !!response?.message);
+                    console.log('🌐 [DEBUG] Message content:', response?.message);
                 }
 
             } catch (requestError) {

@@ -20,10 +20,21 @@ const ValidadorDni = () => {
                 try {
                     const modalidadId = values.modalidadId || values.modalidad_id || values.modalidad;
                     const res = await serviceDatos.getEstudianteCompletoByDni(values.dni, modalidadId);
-                     if (!cancelado && res && !res.error && res.idEstudiante) {
-                        setFieldError('dni', 'El DNI ya está registrado en el sistema.');
+                    
+                    if (!cancelado) {
+                        if (res.error) {
+                            // Si hay error, probablemente significa que el DNI no existe (disponible)
+                            setFieldError('dni', undefined);
+                        } else if (res.estudiante && res.estudiante.id) {
+                            // Si se encuentra el estudiante, el DNI ya está registrado
+                            setFieldError('dni', `El DNI ya está registrado para: ${res.estudiante.nombre} ${res.estudiante.apellido}`);
+                        } else {
+                            // Caso no esperado
+                            setFieldError('dni', undefined);
+                        }
                     }
                 } catch (e) {
+                    // Solo mostrar error de verificación para errores reales de servidor
                     setFieldError('dni', 'Error al verificar el DNI.');
                     console.error('Error al verificar el DNI:', e);
                 } finally {

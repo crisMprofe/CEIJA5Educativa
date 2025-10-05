@@ -8,10 +8,7 @@ import '../estilos/ModalAgregarBarrio.css';
 export const Domicilio = ({ esAdmin = false }) => {
     const { values, setFieldValue } = useFormikContext();
     
-    console.log('🏠 [Domicilio] Renderizando - esAdmin:', esAdmin);
-    
     // Estados para selects dinámicos (TODOS los usuarios los ven)
-    console.log('🌍 [Domicilio] Cargando selects dinámicos para:', esAdmin ? 'Administrador' : 'Usuario Web');
     
     const [provincias, setProvincias] = useState([]);
     const [localidades, setLocalidades] = useState([]);
@@ -31,24 +28,18 @@ export const Domicilio = ({ esAdmin = false }) => {
             try {
                 setLoading(true);
                 setError('');
-                console.log('🌍 Cargando provincias...');
-                
                 const response = await fetch(`${API_BASE}/provincias`);
                 const data = await response.json();
-                console.log('📍 Provincias recibidas:', data);
                 
                 if (data.success && data.data) {
                     setProvincias(data.data);
-                    console.log(`✅ ${data.data.length} provincias cargadas`);
                     
                     // Si tenemos provincia pre-seleccionada desde registro pendiente, cargar localidades
                     if (values.provincia && values.provincia !== '') {
-                        console.log('🏘️ Provincia pre-seleccionada desde registro pendiente:', values.provincia);
                         // Las localidades se cargarán automáticamente por el useEffect de provincia
                     }
                 } else {
                     setError('Error cargando provincias');
-                    console.error('❌ Error en respuesta de provincias:', data);
                 }
             } catch (error) {
                 setError('Error de conexión con provincias');
@@ -63,19 +54,10 @@ export const Domicilio = ({ esAdmin = false }) => {
     
     // Efecto especial para manejar valores pre-cargados desde registros pendientes
     useEffect(() => {
-        // Solo ejecutar si tenemos localidades cargadas y un valor de localidad desde registro pendiente
-        if (localidades.length > 0 && values.localidad && values.localidad !== '') {
-            console.log('🏘️ Localidad pre-seleccionada desde registro pendiente:', values.localidad);
-            // Los barrios se cargarán automáticamente por el useEffect de localidad
-        }
+        // Los barrios se cargarán automáticamente cuando sea necesario
     }, [localidades, values.localidad]);
     
-    // Efecto especial para manejar barrios pre-cargados
-    useEffect(() => {
-        if (barrios.length > 0 && values.barrio && values.barrio !== '') {
-            console.log('🏠 Barrio pre-seleccionado desde registro pendiente:', values.barrio);
-        }
-    }, [barrios, values.barrio]);
+    // Los barrios se manejan automáticamente cuando se cargan
 
     // Cargar localidades cuando cambia la provincia
     useEffect(() => {
@@ -87,18 +69,14 @@ export const Domicilio = ({ esAdmin = false }) => {
 
             try {
                 setLoading(true);
-                console.log('🏘️ Cargando localidades para provincia:', values.provincia);
                 
                 const response = await fetch(`${API_BASE}/localidades/${values.provincia}`);
                 const data = await response.json();
-                console.log('🏘️ Localidades recibidas:', data);
                 
                 if (data.success && data.data) {
                     setLocalidades(data.data);
-                    console.log(`✅ ${data.data.length} localidades cargadas`);
                 } else {
                     setError('Error cargando localidades');
-                    console.error('❌ Error en localidades:', data);
                 }
             } catch (error) {
                 setError('Error de conexión con localidades');
@@ -128,15 +106,12 @@ export const Domicilio = ({ esAdmin = false }) => {
 
             try {
                 setLoading(true);
-                console.log('🏠 Cargando barrios para localidad:', values.localidad);
                 
                 const response = await fetch(`${API_BASE}/barrios/${values.localidad}`);
                 const data = await response.json();
-                console.log('🏠 Barrios recibidos:', data);
                 
                 if (data.success && data.data) {
                     setBarrios(data.data);
-                    console.log(`✅ ${data.data.length} barrios cargados`);
                 } else {
                     setError('Error cargando barrios');
                     console.error('❌ Error en barrios:', data);
@@ -158,7 +133,6 @@ export const Domicilio = ({ esAdmin = false }) => {
 
     const handleSelectChange = (e) => {
         const { name, value } = e.target;
-        console.log(`🔄 Cambiando ${name} a:`, value);
         setFieldValue(name, value);
     };
 
