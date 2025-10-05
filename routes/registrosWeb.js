@@ -525,7 +525,7 @@ router.get('/stats', async (req, res) => {
         const stats = {
             total: registros.length,
             pendientes: registros.filter(r => r.estado === 'PENDIENTE').length,
-            procesados: registros.filter(r => r.estado === 'PROCESADO').length,
+            procesados: registros.filter(r => r.estado === 'PROCESADO' || r.estado === 'MOVIDO_A_PENDIENTES').length,
             anulados: registros.filter(r => r.estado === 'ANULADO').length,
             movidosAPendientes: registros.filter(r => r.estado === 'MOVIDO_A_PENDIENTES').length,
             ultimoRegistro: registros.length > 0 ? registros[registros.length - 1].timestamp : null

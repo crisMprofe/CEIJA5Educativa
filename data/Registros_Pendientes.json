@@ -83,45 +83,50 @@
     "observaciones": "Registro pendiente creado el 4/10/2025 a las 07:54:49"
   },
   {
-    "dni": "41205205",
-    "timestamp": "2025-10-05T01:41:31.921Z",
-    "fechaRegistro": "4/10/2025",
-    "horaRegistro": "10:41:31",
-    "tipo": "REGISTRO_PENDIENTE",
+    "dni": "45785412",
+    "timestamp": "2025-10-05T03:27:46.714Z",
+    "fechaRegistro": "5/10/2025",
+    "horaRegistro": "12:27:46",
+    "tipo": "REGISTRO_WEB_PENDIENTE",
     "estado": "PENDIENTE",
+    "origenWeb": true,
+    "idRegistroWebOriginal": "1759631633163",
     "datos": {
-      "nombre": "Lorena",
-      "apellido": "Bisconti",
-      "dni": "41205205",
-      "cuil": "20-41205205-7",
+      "nombre": "Narella",
+      "apellido": "Caliva",
+      "dni": "45785412",
+      "cuil": "20-45785412-1",
       "email": "crisbmaia50@gmail.com",
-      "telefono": "03514512312",
-      "fechaNacimiento": "2002-04-15",
+      "telefono": "03514568923",
+      "fechaNacimiento": "2005-12-06",
       "tipoDocumento": "DNI",
       "paisEmision": "Argentina",
-      "calle": "Sucre",
-      "numero": "1022",
-      "barrio": "11",
+      "calle": "9 de Julio ",
+      "numero": "789",
+      "barrio": "3",
       "localidad": "108",
       "provincia": "5",
-      "codigoPostal": "",
-      "modalidad": "Semipresencial",
-      "modalidadId": "2",
-      "planAnio": "5",
+      "modalidad": "Presencial",
+      "modalidadId": "1",
+      "planAnio": "3",
       "modulos": "",
       "idModulo": [
-        "4",
+        "",
         ""
       ],
-      "administrador": "admin",
-      "motivoPendiente": "⚠️ Documentación incompleta (4/6) para  - Registro quedará PENDIENTE. Faltan: 📜 Partida de Nacimiento, 📊 Analítico Parcial (o alternativamente: 📝 Solicitud de Pase)"
+      "usuario": "usuario_web",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "motivoPendiente": "⚠️ Documentación incompleta (0/6) para Presencial - Registro quedará PENDIENTE. Faltan: Documentos varios",
+      "administrador": "admin_web"
     },
     "archivos": {
-      "foto": "/archivosDocumentacion/Lorena_Bisconti_41205205_foto.png",
-      "archivo_dni": "/archivosDocumentacion/Lorena_Bisconti_41205205_archivo_dni.pdf",
-      "archivo_cuil": "/archivosDocumentacion/Lorena_Bisconti_41205205_archivo_cuil.pdf",
-      "archivo_fichaMedica": "/archivosDocumentacion/Lorena_Bisconti_41205205_archivo_fichaMedica.pdf"
+      "foto": "/archivosDocWeb/Narella_Caliva_45785412_foto.png",
+      "archivo_dni": "/archivosDocWeb/Narella_Caliva_45785412_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocWeb/Narella_Caliva_45785412_archivo_cuil.pdf",
+      "archivo_fichaMedica": "/archivosDocWeb/Narella_Caliva_45785412_archivo_fichaMedica.pdf",
+      "archivo_solicitudPase": "/archivosDocWeb/Narella_Caliva_45785412_archivo_solicitudPase.pdf"
     },
-    "observaciones": "Registro pendiente creado el 4/10/2025 a las 10:41:31"
+    "observaciones": "Movido desde registro web a pendientes el 5/10/2025 - ⚠️ Documentación incompleta (0/6) para Presencial - Registro quedará PENDIENTE. Faltan: Documentos varios"
   }
 ]
