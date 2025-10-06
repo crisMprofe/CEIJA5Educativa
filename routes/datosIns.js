@@ -47,7 +47,12 @@ router.get('/inscripciones/:idEstudiante', async (req, res) => {
 router.get('/:dni', async (req, res) => {
     try {
         const { dni } = req.params;
-        const modalidadId = Number(req.query.modalidadId); // <-- recibe modalidadId
+        const modalidadId = req.query.modalidadId ? Number(req.query.modalidadId) : null; // <-- recibe modalidadId
+        
+        // Validar que modalidadId sea un número válido si se proporciona
+        if (req.query.modalidadId && (isNaN(modalidadId) || modalidadId <= 0)) {
+            return res.status(400).json({ success: false, message: 'modalidadId debe ser un número válido mayor que 0.' });
+        }
 
         // Consulta para obtener los datos del estudiante (incluyendo email y estado activo)
         const [estudianteResult] = await db.query('SELECT * FROM estudiantes WHERE dni = ? AND activo = 1', [dni]);
@@ -93,7 +98,7 @@ router.get('/:dni', async (req, res) => {
         `;
         const queryParams = [estudiante.id];
 
-        if (modalidadId) {
+        if (modalidadId && modalidadId > 0) {
             inscripcionQuery += ' AND inscripciones.idModalidad = ?';
             queryParams.push(modalidadId);
         }
@@ -120,6 +125,8 @@ router.get('/:dni', async (req, res) => {
             console.log('[DOCS] Tipos de documentación:', tiposDoc);
 
             // Traer la documentación entregada
+            console.log(`[DOCS DEBUG] Buscando documentación para idInscripcion: ${inscripcion.idInscripcion}, estudiante: ${estudiante.nombre} ${estudiante.apellido}, DNI: ${estudiante.dni}`);
+            
             const [documentacionResult] = await db.query(`
                 SELECT
                     d.idDocumentaciones,
@@ -136,10 +143,19 @@ router.get('/:dni', async (req, res) => {
             // Mapear entregados por idDocumentaciones
             const entregadosMap = {};
             documentacionResult.forEach(doc => {
+                // Verificar si el nombre del archivo coincide con el estudiante buscado
+                if (doc.archivoDocumentacion) {
+                    const archivoNombre = doc.archivoDocumentacion.split('/').pop();
+                    const expectedPrefix = `${estudiante.nombre}_${estudiante.apellido}_${estudiante.dni}`;
+                    if (!archivoNombre.includes(estudiante.dni)) {
+                        console.log(`[DOCS MISMATCH] ⚠️  Archivo no coincide - Estudiante: ${estudiante.nombre} ${estudiante.apellido} (${estudiante.dni}), Archivo: ${archivoNombre}`);
+                    }
+                }
+                
                 entregadosMap[doc.idDocumentaciones] = {
                     ...doc,
                     archivoDocumentacion: doc.archivoDocumentacion
-                        ? (doc.archivoDocumentacion.startsWith('/archivosDocumentacion/') ? `http://localhost:5000${doc.archivoDocumentacion}` : doc.archivoDocumentacion)
+                        ? (doc.archivoDocumentacion.startsWith('/') ? `http://localhost:5000${doc.archivoDocumentacion}` : doc.archivoDocumentacion)
                         : null
                 };
             });

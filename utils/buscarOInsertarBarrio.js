@@ -14,10 +14,14 @@ module.exports = async function buscarOInsertarBarrio(db, nombreBarrio, idLocali
         return barrio;
     }
     
+    // Extraer el ID numérico si viene como objeto
+    const idLocalidadNum = typeof idLocalidad === 'object' && idLocalidad.id ? idLocalidad.id : idLocalidad;
+    console.log('🔢 [buscarOInsertarBarrio] ID Localidad procesado:', idLocalidadNum);
+    
     // Buscar por nombre y localidad (para compatibilidad con registros existentes)
     const [barrioResult] = await db.query(
         'SELECT id FROM barrios WHERE nombre = ? AND idLocalidad = ?',
-        [nombreBarrio, idLocalidad]
+        [nombreBarrio, idLocalidadNum]
     );
     if (barrioResult.length > 0) {
         const barrio = { id: barrioResult[0].id };
@@ -26,7 +30,7 @@ module.exports = async function buscarOInsertarBarrio(db, nombreBarrio, idLocali
     } else {
         const [newBarrio] = await db.query(
             'INSERT INTO barrios (nombre, idLocalidad) VALUES (?, ?)',
-            [nombreBarrio, idLocalidad]
+            [nombreBarrio, idLocalidadNum]
         );
         const barrio = { id: newBarrio.insertId };
         console.log('✨ [buscarOInsertarBarrio] Barrio creado:', barrio);

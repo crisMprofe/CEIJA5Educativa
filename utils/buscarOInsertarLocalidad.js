@@ -14,10 +14,14 @@ module.exports = async function buscarOInsertarLocalidad(db, nombreLocalidad, id
         return localidad;
     }
     
+    // Extraer el ID numérico si viene como objeto
+    const idProvinciaNum = typeof idProvincia === 'object' && idProvincia.id ? idProvincia.id : idProvincia;
+    console.log('🔢 [buscarOInsertarLocalidad] ID Provincia procesado:', idProvinciaNum);
+    
     // Buscar por nombre y provincia (para compatibilidad con registros existentes)
     const [localidadResult] = await db.query(
         'SELECT id FROM localidades WHERE nombre = ? AND idProvincia = ?',
-        [nombreLocalidad, idProvincia]
+        [nombreLocalidad, idProvinciaNum]
     );
     if (localidadResult.length > 0) {
         const localidad = { id: localidadResult[0].id };
@@ -26,7 +30,7 @@ module.exports = async function buscarOInsertarLocalidad(db, nombreLocalidad, id
     } else {
         const [newLocalidad] = await db.query(
             'INSERT INTO localidades (nombre, idProvincia) VALUES (?, ?)',
-            [nombreLocalidad, idProvincia]
+            [nombreLocalidad, idProvinciaNum]
         );
         const localidad = { id: newLocalidad.insertId };
         console.log('✨ [buscarOInsertarLocalidad] Localidad creada:', localidad);

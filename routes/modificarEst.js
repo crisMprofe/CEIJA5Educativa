@@ -12,7 +12,7 @@ const fs     = require('fs');
 const multer = require('multer');
 
 // ─── carpeta y multer ─────────────────────────────────────
-const UPLOAD_DIR = path.join(__dirname, '../archivosDocumentacion');
+const UPLOAD_DIR = path.join(__dirname, '../archivosDocumento');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, {recursive:true});
 
 const storage = multer.diskStorage({
@@ -50,7 +50,7 @@ router.put('/:dni', upload.any(), async (req, res) => {
 
     // ─── localizar estudiante & domicilio ─────────────────
     const [[est]] = await conn.query(
-      'SELECT id, idDomicilio FROM estudiantes WHERE dni = ?',
+      'SELECT id, idDomicilio, nombre, apellido FROM estudiantes WHERE dni = ?',
       [dni]
     );
     if (!est) {
@@ -59,35 +59,89 @@ router.put('/:dni', upload.any(), async (req, res) => {
     }
     const idEst        = est.id;
     const idDomicilio  = est.idDomicilio;
+    
+    console.log(`🔍 [ESTUDIANTE LOCALIZADO] ID: ${idEst}, DNI: ${dni}, Nombre: ${est.nombre} ${est.apellido}`);
 
     // ─── provincia / localidad / barrio ───────────────────
     // ─── provincia / localidad / barrio ───────────────────
 
 // Solo actualizar domicilio si alguno de sus campos viene en el body:
- // ─── Actualizar domicilio solo si hay cambios ───────────────────────
-if (req.body.calle || req.body.numero || req.body.barrio || req.body.localidad || req.body.provincia) {
+ // ─── ACTUALIZACIÓN DEL DOMICILIO ──────────────────────────────
+// Solo procesar domicilio si realmente se enviaron cambios de domicilio
+const camposDomicilio = ['calle', 'numero', 'barrio', 'localidad', 'provincia'];
+const tieneCAmbiosDomicilio = camposDomicilio.some(campo => req.body[campo] && req.body[campo].toString().trim());
+
+console.log('🏠 [DOMICILIO] Verificando cambios:', {
+  camposEnviados: camposDomicilio.filter(campo => req.body[campo]),
+  tieneCAmbiosDomicilio
+});
+
+if (tieneCAmbiosDomicilio) {
   if (!req.body.provincia || typeof req.body.provincia !== 'string' || !req.body.provincia.trim()) {
     throw new Error('Falta el campo provincia o es inválido');
   }
 
-  const idProvincia = await buscarOInsertarProvincia(conn, req.body.provincia);
+  const provinciaResult = await buscarOInsertarProvincia(conn, req.body.provincia);
+  const idProvincia = parseInt(provinciaResult.id || provinciaResult, 10);
 
   if (!req.body.localidad || !req.body.localidad.trim()) {
     throw new Error('Falta el campo localidad o es inválido');
   }
-  const idLocalidad = await buscarOInsertarLocalidad(conn, req.body.localidad, idProvincia);
+  const localidadResult = await buscarOInsertarLocalidad(conn, req.body.localidad, provinciaResult);
+  const idLocalidad = parseInt(localidadResult.id || localidadResult, 10);
 
   if (!req.body.barrio || !req.body.barrio.trim()) {
     throw new Error('Falta el campo barrio o es inválido');
   }
-  const idBarrio = await buscarOInsertarBarrio(conn, req.body.barrio, idLocalidad);
+  const barrioResult = await buscarOInsertarBarrio(conn, req.body.barrio, localidadResult);
+  const idBarrio = parseInt(barrioResult.id || barrioResult, 10);
 
-  await conn.query(
-    `UPDATE domicilios
-       SET calle=?, numero=?, idBarrio=?, idLocalidad=?, idProvincia=?
-     WHERE id=?`,
-    [req.body.calle, req.body.numero, idBarrio, idLocalidad, idProvincia, idDomicilio]
+  console.log('🏠 [DOMICILIO] IDs extraídos:', { idProvincia, idLocalidad, idBarrio });
+  console.log('🔍 [DOMICILIO] Tipos:', { 
+    idProvincia: typeof idProvincia, 
+    idLocalidad: typeof idLocalidad, 
+    idBarrio: typeof idBarrio 
+  });
+  console.log('🔍 [DOMICILIO] Valores exactos:', {
+    idProvincia: JSON.stringify(idProvincia),
+    idLocalidad: JSON.stringify(idLocalidad), 
+    idBarrio: JSON.stringify(idBarrio)
+  });
+
+  // Validar que todos los IDs sean números válidos
+  if (isNaN(idProvincia) || isNaN(idLocalidad) || isNaN(idBarrio)) {
+    throw new Error(`IDs inválidos - Provincia: ${idProvincia}, Localidad: ${idLocalidad}, Barrio: ${idBarrio}`);
+  }
+
+  // Verificar si realmente necesita actualizar el domicilio
+  const [domicilioActual] = await conn.query('SELECT * FROM domicilios WHERE id = ?', [idDomicilio]);
+  const domicilio = domicilioActual[0];
+  
+  const necesitaActualizacion = (
+    domicilio.calle !== req.body.calle ||
+    domicilio.numero != req.body.numero ||
+    domicilio.idBarrio !== idBarrio ||
+    domicilio.idLocalidad !== idLocalidad ||
+    domicilio.idProvincia !== idProvincia
   );
+  
+  console.log('🏠 [DOMICILIO] Comparación:', {
+    actual: domicilio,
+    nuevo: { calle: req.body.calle, numero: req.body.numero, idBarrio, idLocalidad, idProvincia },
+    necesitaActualizacion
+  });
+
+  if (necesitaActualizacion) {
+    console.log('🔄 [DOMICILIO] Actualizando domicilio...');
+    await conn.query(
+      `UPDATE domicilios
+         SET calle=?, numero=?, idBarrio=?, idLocalidad=?, idProvincia=?
+       WHERE id=?`,
+      [req.body.calle, req.body.numero, idBarrio, idLocalidad, idProvincia, idDomicilio]
+    );
+  } else {
+    console.log('⏭️  [DOMICILIO] No necesita actualización, saltando...');
+  }
 }
 
 
@@ -149,14 +203,30 @@ if (req.body.calle || req.body.numero || req.body.barrio || req.body.localidad |
       updateInscripcionQuery += `, fechaInscripcion=?`;
       updateInscripcionParams.push(req.body.fechaInscripcion);
     }
-    updateInscripcionQuery += ` WHERE idEstudiante=? AND idModalidad=?`;
-    updateInscripcionParams.push(idEst, req.body.modalidadId);
-    const resultInscripcion = await conn.query(updateInscripcionQuery, updateInscripcionParams);
+    updateInscripcionQuery += ` WHERE idEstudiante=?`;
+    updateInscripcionParams.push(idEst);
+    
+    console.log('🔄 Actualizando inscripción con query:', updateInscripcionQuery);
+    console.log('📋 Parámetros completos:', updateInscripcionParams);
+    console.log('🎯 Datos específicos - estadoInscripcionId:', req.body.estadoInscripcionId, 'tipo:', typeof req.body.estadoInscripcionId);
+    console.log('👤 idEstudiante:', idEst);
+    
+    const [resultInscripcion] = await conn.query(updateInscripcionQuery, updateInscripcionParams);
+    console.log('✅ Resultado actualización inscripción:', resultInscripcion.affectedRows, 'filas afectadas');
+    console.log('🔍 Cambios detectados en la consulta:', resultInscripcion.changedRows);
+    
     if (resultInscripcion.affectedRows === 0) {
-      console.error('No se pudo actualizar la inscripción. Verifica los datos enviados.');
+      console.error('❌ No se pudo actualizar la inscripción. Verifica los datos enviados.');
       await conn.rollback();
       return res.status(400).json({ success: false, message: 'No se pudo actualizar la inscripción.' });
     }
+    
+    // Verificar el estado actual después de la actualización
+    const [[verificacion]] = await conn.query(
+      'SELECT idEstadoInscripcion FROM inscripciones WHERE idEstudiante = ?',
+      [idEst]
+    );
+    console.log(`✨ [VERIFICACIÓN POST-UPDATE] Estado actual en BD: ${verificacion?.idEstadoInscripcion}`);
 
     // ─── idInscripcion necesario para detalle_doc ────────
     const [[ins]] = await conn.query(
@@ -170,7 +240,7 @@ if (req.body.calle || req.body.numero || req.body.barrio || req.body.localidad |
     // ─── mapear archivos subidos ──────────────────────────
     const archivosMap = {};
     req.files?.forEach(f => {
-      archivosMap[f.fieldname] = '/archivosDocumentacion/' + f.filename;
+      archivosMap[f.fieldname] = '/archivosDocumento/' + f.filename;
     });
 
     // ─── procesar detalleDocumentacion ───────────────────

@@ -178,6 +178,40 @@ router.post('/registrar', upload.any(), async (req, res) => {
         }
     }
 
+    // ─── 3.2) Manejo de archivos de registros pendientes ─────
+    if (req.body.origenPendiente === 'true' && req.body.archivosPendientes) {
+        try {
+            const archivosPendientes = JSON.parse(req.body.archivosPendientes);
+            const fs = require('fs').promises;
+            const pathPendientes = path.join(__dirname, '../archivosDocumentacion');
+            const pathFinal = path.join(__dirname, '../archivosDocumento');
+            
+            console.log('📋 [COPIA ARCHIVOS PENDIENTES] Copiando archivos pendientes a carpeta final...');
+            
+            for (const [tipo, rutaArchivo] of Object.entries(archivosPendientes)) {
+                if (rutaArchivo && rutaArchivo.startsWith('/archivosDocumentacion/')) {
+                    const nombreArchivo = path.basename(rutaArchivo);
+                    const rutaOrigen = path.join(pathPendientes, nombreArchivo);
+                    const nombreNuevo = `${nombre}_${apellido}_${dni}_${tipo}${path.extname(nombreArchivo)}`;
+                    const rutaDestino = path.join(pathFinal, nombreNuevo);
+                    
+                    try {
+                        await fs.copyFile(rutaOrigen, rutaDestino);
+                        archivosMap[tipo] = '/archivosDocumento/' + nombreNuevo;
+                        console.log(`  ✅ Copiado desde pendientes: ${nombreArchivo} -> ${nombreNuevo}`);
+                    } catch (copyError) {
+                        console.error(`  ❌ Error copiando desde pendientes ${nombreArchivo}:`, copyError.message);
+                    }
+                }
+            }
+            
+            console.log('📋 [ARCHIVOS PENDIENTES FINALES] Map actualizado:', archivosMap);
+            
+        } catch (parseError) {
+            console.error('Error al parsear archivos pendientes:', parseError);
+        }
+    }
+
     const fotoUrl = obtenerRutaFoto(archivosMap);
 
     // ─── 4) Insertar estudiante ────────────────────────────
@@ -397,7 +431,7 @@ router.get('/verificar/:dni', async (req, res) => {
       WHERE documento = ?
     `;
     
-    const [rows] = await db.promise().query(query, [dni]);
+    const [rows] = await db.query(query, [dni]);
     const estaRegistrado = rows[0].count > 0;
 
     res.json({ 

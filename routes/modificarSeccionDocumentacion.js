@@ -6,7 +6,7 @@ const fs = require('fs');
 const multer = require('multer');
 const obtenerDocumentacionPorInscripcion = require('../utils/obtenerDocumentacion');
 
-const UPLOAD_DIR = path.join(__dirname, '../archivosDocumentacion');
+const UPLOAD_DIR = path.join(__dirname, '../archivosDocumento');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -24,6 +24,7 @@ const upload = multer({ storage });
 
 // Ruta para modificar documentación por idInscripcion
 router.put('/documentacion/:idInscripcion', upload.any(), async (req, res) => {
+  const idInscripcion = Number(req.params.idInscripcion);
   // LOG: mostrar datos recibidos
   console.log('--- MODIFICAR DOCUMENTACION ---');
   console.log('idInscripcion:', idInscripcion);
@@ -31,7 +32,6 @@ router.put('/documentacion/:idInscripcion', upload.any(), async (req, res) => {
   if (req.files) {
     console.log('Archivos recibidos:', req.files.map(f => f.fieldname + ' -> ' + f.originalname));
   }
-  const idInscripcion = Number(req.params.idInscripcion);
   if (!Number.isInteger(idInscripcion)) return res.status(400).json({ success: false, message: 'ID inscripción inválido.' });
   const conn = await db.getConnection();
   try {
@@ -40,7 +40,7 @@ router.put('/documentacion/:idInscripcion', upload.any(), async (req, res) => {
     // Mapear archivos subidos
     const archivosMap = {};
     req.files?.forEach(f => {
-      archivosMap[f.fieldname] = '/archivosDocumentacion/' + f.filename;
+      archivosMap[f.fieldname] = '/archivosDocumento/' + f.filename;
     });
 
     // Procesar detalleDocumentacion

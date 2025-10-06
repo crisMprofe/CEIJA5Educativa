@@ -26,6 +26,7 @@ const estadoDocumentalRoutes = require('./routes/estadoDocumental');
 const modificarEstSeccionRoutes = require('./routes/modificarEstSeccion'); // Importa la nueva ruta
 const modificarDocumentacionRoutes = require('./routes/modificarSeccionDocumentacion'); // Importa la ruta de modificación de documentación
 const ubicacionesRoutes = require('./routes/ubicaciones'); // Nueva ruta para ubicaciones
+const actualizarEstadoInscripcionRoutes = require('./routes/actualizarEstadoInscripcion'); // Nueva ruta para actualizar solo estado
 const path = require('path');
 
 app.use(cors());
@@ -82,6 +83,7 @@ app.use('/api/estado-documental', estadoDocumentalRoutes);
 app.use('/api/registros-web', require('./routes/registrosWeb')); // Nueva ruta para registros web
 app.use('/api/registros-pendientes', require('./routes/registrosPendientes')); // Nueva ruta para registros pendientes
 app.use('/api/ubicaciones', ubicacionesRoutes); // Nueva ruta para ubicaciones
+app.use('/api/actualizar-estado-inscripcion', actualizarEstadoInscripcionRoutes); // Nueva ruta para actualizar solo el estado
 app.use('/api/notificaciones', require('./routes/notificaciones')); // Ruta para notificaciones por email
 // Middleware para manejo de errores globales
 app.use((err, req, res, next) => {
