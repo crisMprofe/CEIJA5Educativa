@@ -33,12 +33,12 @@
   background: #f8f8fc;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-  padding: 1.2rem 1.5rem;
-  font-size: 0.95rem;
+  padding: 1.8rem 2rem; /* Más padding */
+  font-size: 1rem; /* Fuente más grande */
   font-family: "Roboto Slab", serif;
   color: #222;
-  min-width: 220px;
-  min-height: 180px;
+  min-width: 300px; /* Más ancho */
+  min-height: 250px; /* Más alto */
   transition: box-shadow 0.2s;
   display: flex;
   flex-direction: column;
@@ -133,17 +133,18 @@
 .visor-estudiante-container {
   display: flex;
   flex-direction: column;
-  margin: 20px auto 20px auto; /* Centrado automático */
-  margin-left: auto; /* Empujar hacia la derecha */
-  margin-right: 50px; /* Espacio desde el borde derecho */
-  padding: 20px;
+  margin: 10px auto; /* Menos margen para más espacio */
+  padding: 25px;
   background-color: #ffffff;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   color: #333;
   font-family: "Roboto Slab", serif;
   position: relative;
-  max-height: 90vh;
+  max-height: 95vh; /* Más altura disponible */
+  min-height: 85vh; /* Altura mínima para mejor visibilidad */
+  width: 95%; /* Más ancho */
+  max-width: 1400px; /* Ancho máximo ampliado */
   overflow-y: auto;
 }
 

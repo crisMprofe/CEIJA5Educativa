@@ -40,13 +40,13 @@ const TarjetaDomicilio = ({
     );
 };
 
-TarjetaDomicilio.propTypes = { estudiante: PropTypes.object.isRequired,
+TarjetaDomicilio.propTypes = {
     formData: PropTypes.object.isRequired,
     editMode: PropTypes.object.isRequired,
     isConsulta: PropTypes.bool,
     isEliminacion: PropTypes.bool,
     handleInputChange: PropTypes.func.isRequired,
- 
-    setEditMode: PropTypes.func.isRequired, };
+    setEditMode: PropTypes.func.isRequired,
+};
 
 export default TarjetaDomicilio;

@@ -11,7 +11,7 @@ const modificarAcademica = (idInscripcion, data) =>
   axiosInstance.put(`/modificar-estudiante-seccion/academica/${idInscripcion}`, data);
 
 const modificarDocumentacion = (idInscripcion, formData) =>
-  axiosInstance.put(`/modificar-documentacion-estudiante/documentacion${idInscripcion}`, formData);
+  axiosInstance.put(`/modificar-documentacion-estudiante/documentacion/${idInscripcion}`, formData);
 
 export default {
   modificarPersonales,

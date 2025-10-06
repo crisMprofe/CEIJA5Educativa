@@ -78,6 +78,24 @@ export function handleVolverALista(setVistaActual, setEstudiante) {
     setEstudiante(null);
 }
 
+// Función para el flujo alternativo: Cerrar = Modal anterior, Volver = Menú principal
+export function handleCerrarAlternativo(modoModificacion, modoEliminacion, setVistaActual, setEstudiante) {
+    // Cerrar lleva al modal anterior (mismo comportamiento que handleVolverAOpciones)
+    if (modoModificacion) {
+        setVistaActual('opcionesModificar');
+    } else if (modoEliminacion) {
+        setVistaActual('opcionesEliminar');
+    } else {
+        setVistaActual('opciones');
+    }
+    setEstudiante(null);
+}
+
+export function handleVolverAlternativo(setAccion) {
+    // Volver lleva al menú principal
+    setAccion(null);
+}
+
 export function handleVolverABusquedaDNI(setVistaActual, setEstudiante, setVistaAnterior) {
     setVistaActual('busquedaDNI');
     setEstudiante(null);

@@ -5,6 +5,9 @@ const VistaOpciones = ({ onSeleccion, onClose, modalidadId, modalidadFiltrada })
         onSeleccion={onSeleccion}
         titulo=""
         onClose={onClose}
+        tituloModal="Seleccionar Tipo de Consulta"
+        descripcionModal="Elija cómo desea consultar estudiantes"
+        esModificacion={false}
         modalidadId={modalidadId}
         modalidadFiltrada={modalidadFiltrada}
     />

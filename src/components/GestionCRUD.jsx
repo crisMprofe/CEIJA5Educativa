@@ -9,8 +9,24 @@ import GestionCRUDContenido from './GestionCRUDContenido';
 import PropTypes from 'prop-types';
 import '../estilos/gestionCRUD.css';
 
-const GestionCRUD = ({ isAdmin, onClose, vistaInicial = 'opciones', esModificacion = false, soloListar = false, modalidad, modalidadId }) => {
+const GestionCRUD = ({ isAdmin, onClose, vistaInicial = 'opciones', esModificacion = false, soloListar = false, modalidad, modalidadId, setAccion }) => {
     const { user } = useUserContext();
+    
+    // Calcular modalidadFiltrada según el rol del usuario
+    const modalidadFiltrada = (() => {
+        if (!user?.rol) return modalidad;
+        
+        switch (user.rol) {
+            case 'administrador':
+                return undefined; // Ve todas las modalidades
+            case 'coordinador':
+                return 'SEMIPRESENCIAL'; // Solo modalidad semipresencial
+            case 'secretario':
+                return 'PRESENCIAL'; // Solo modalidad presencial
+            default:
+                return modalidad; // Otros roles usan la modalidad pasada
+        }
+    })();
     const { 
         alerts, 
         modal, 
@@ -78,7 +94,7 @@ const GestionCRUD = ({ isAdmin, onClose, vistaInicial = 'opciones', esModificaci
                 soloListar={soloListar}
                 modalidadId={modalidadId}
                 modalidad={modalidad}
-                user={user}
+                modalidadFiltrada={modalidadFiltrada}
                 vistaActual={vistaActual}
                 setVistaActual={setVistaActual}
                 estudiante={estudiante}
@@ -92,6 +108,7 @@ const GestionCRUD = ({ isAdmin, onClose, vistaInicial = 'opciones', esModificaci
                 modoModificacion={modoModificacion}
                 setModoModificacion={setModoModificacion}
                 modoEliminacion={modoEliminacion}
+                setAccion={setAccion}
             />
             {/* El formulario de BusquedaDNI solo debe renderizarse desde GestionCRUDContenido para evitar duplicados */}
         </div>
@@ -107,6 +124,7 @@ GestionCRUD.propTypes = {
     soloListar: PropTypes.bool,
     modalidad: PropTypes.string,
     modalidadId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]), // Puede ser string o number
+    setAccion: PropTypes.func,
 };
 
 // La validación de PropTypes para GestionCRUDContenido se movió a su propio archivo para evitar errores y seguir buenas prácticas.

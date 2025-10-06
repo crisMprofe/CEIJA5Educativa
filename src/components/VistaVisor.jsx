@@ -27,7 +27,8 @@ const VistaVisor = ({ estudiante, onClose, onVolver, isConsulta, isEliminacion, 
             if (datos.archivos) {
                 Object.entries(datos.archivos).forEach(([desc, archivo]) => {
                     if (archivo) {
-                        const clave = `archivo_${desc.replace(/\s+/g, '').toLowerCase()}`;
+                        // ✅ NO convertir a lowercase - mantener nombres originales
+                        const clave = desc.replace(/\s+/g, '');
                         formData.append(clave, archivo, archivo.name);
                     }
                 });

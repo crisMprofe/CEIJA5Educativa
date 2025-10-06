@@ -25,6 +25,13 @@ const BusquedaDNI = ({
     // Usar sistema unificado de alertas
     const { showError, showWarning } = useContext(AlertContext);
 
+    // Log de depuración para modalidadId y AlertContext
+    console.log('🟦 modalidadId en BusquedaDNI:', modalidadId);
+    console.log('🔔 AlertContext methods:', { showError: !!showError, showWarning: !!showWarning });
+    
+    // Estado de depuración para ver si AlertContext funciona
+    const [debugAlert, setDebugAlert] = useState('');
+
     const handleChange = (e) => {
         // Solo permitir números en el input
         const soloDigitos = e.target.value.replace(/\D/g, '');
@@ -35,15 +42,20 @@ const BusquedaDNI = ({
         e.preventDefault();
 
         if (!dni || dni.length < 7) {
+            console.log('🔴 Mostrando error: DNI muy corto');
+            setDebugAlert('ERROR: DNI debe tener al menos 7 dígitos');
             showError('El DNI debe tener al menos 7 dígitos.');
             return;
         }
         if (dni.length > 8) {
+            console.log('🔴 Mostrando error: DNI muy largo');
+            setDebugAlert('ERROR: DNI no puede tener más de 8 dígitos');
             showError('El DNI no puede tener más de 8 dígitos.');
             return;
         }
 
         setLoading(true);
+        setDebugAlert(''); // Limpiar debug
 
         try {
             const resultado = await serviceDatos.getEstudianteCompletoByDni(Number(dni), modalidadId);
@@ -52,32 +64,25 @@ const BusquedaDNI = ({
 
                 // Si el backend responde con error, determinar el tipo de error
                 if (!resultado.success) {
-                    
-                    // Verificar si el estudiante no fue encontrado
-                    if (resultado.error && (
-                        resultado.error.includes('Estudiante no encontrado') || 
-                        resultado.error.includes('no encontrado')
-                    )) {
-                        showError(`El DNI ${dni} no existe en los registros del sistema.`);
-                    } 
-                    // Verificar si el estudiante está inactivo específicamente
-                    else if (resultado.error && resultado.error.includes('inactivo')) {
-                        showWarning('El estudiante está inactivo en el sistema.');
-                    }
-                    // Verificar si el error indica falta de inscripción en modalidad
-                    else if (resultado.error && resultado.error.includes('No existe inscripción en la modalidad')) {
-                        showError('El estudiante no está inscripto en la modalidad seleccionada.');
-                    }
-                    // Fallback para otros errores
-                    else {
-                        showError(`El DNI ${dni} no existe en los registros del sistema.`);
+                    console.log('❌ Backend responde con error:', resultado);
+                    // Si el error indica que no se encontró el estudiante
+                    if (resultado.error && (resultado.error.includes('no encontrado') || resultado.error.includes('404'))) {
+                        console.log('🔴 Mostrando error: estudiante no encontrado');
+                        setDebugAlert('ERROR: No existe un estudiante registrado con ese DNI');
+                        showError('No existe un estudiante registrado con ese DNI.');
+                    } else {
+                        console.log('🔴 Mostrando error: sin inscripción en modalidad');
+                        setDebugAlert('ERROR: No existe inscripción en la modalidad seleccionada');
+                        showError('No existe inscripción en la modalidad seleccionada.');
                     }
                     onEstudianteEncontrado(null); // Limpia el estudiante en el padre
                     return;
                 }
 
-                // Solo verificar inactivo si el estudiante existe y la consulta fue exitosa
+                // Verificar si el estudiante está inactivo
                 if (resultado.estudiante && resultado.estudiante.activo === 0) {
+                    console.log('🟡 Mostrando warning: estudiante inactivo');
+                    setDebugAlert('WARNING: El estudiante está inactivo en el sistema');
                     showWarning('El estudiante está inactivo en el sistema.');
                     onEstudianteEncontrado(null); // Limpia el estudiante en el padre
                     return;
@@ -85,12 +90,16 @@ const BusquedaDNI = ({
 
                 // Si no hay inscripción, mostrar error
                 if (!resultado.inscripcion) {
-                    showError('El estudiante no está inscripto en la modalidad seleccionada.');
+                    console.log('🔴 Mostrando error: sin inscripción');
+                    setDebugAlert('ERROR: No existe inscripción en la modalidad seleccionada');
+                    showError('No existe inscripción en la modalidad seleccionada.');
                     onEstudianteEncontrado(null); // Limpia el estudiante en el padre
                     return;
                 }
 
                 // Éxito - proceder con el estudiante encontrado
+                console.log('✅ Estudiante encontrado exitosamente');
+                setDebugAlert(''); // Limpiar debug
                 onEstudianteEncontrado({
                     success: true,
                     estudiante: resultado.estudiante,
@@ -101,7 +110,9 @@ const BusquedaDNI = ({
             }, 2000);
         } catch {
             setLoading(false);
-            showError(`No se pudo verificar el DNI ${dni}. Por favor, inténtelo nuevamente.`);
+            console.log('🔴 Mostrando error: problema de consulta');
+            setDebugAlert('ERROR: Hubo un problema al realizar la consulta');
+            showError('Hubo un problema al realizar la consulta.');
         }
     };
 
@@ -110,9 +121,9 @@ const BusquedaDNI = ({
             <div className="modal-container-uniforme">
                 {/* Contenedor de botones superior */}
                 {!esConsultaDirecta && (
-                    <div className="modal-header-buttons-uniforme modal-header-buttons-small">
-                        {onVolver && <VolverButton onClick={onVolver} className="boton-principal boton-small" />}
-                        {onClose && <CloseButton onClose={onClose} className="boton-principal boton-small" />}
+                    <div className="modal-header-buttons-uniforme">
+                        {onVolver && <VolverButton onClick={onVolver} className="boton-principal" />}
+                        {onClose && <CloseButton onClose={onClose} className="boton-principal" />}
                     </div>
                 )}
                 
@@ -138,6 +149,12 @@ const BusquedaDNI = ({
                                     onChange: handleChange,
                                 }}
                             />
+                            {/* Debug alert display */}
+                            {debugAlert && (
+                                <div style={{background: 'red', color: 'white', padding: '10px', margin: '10px 0', borderRadius: '5px'}}>
+                                    <strong>DEBUG:</strong> {debugAlert}
+                                </div>
+                            )}
                         </div>
                         <div className="button-group-uniforme">
                             <BotonCargando loading={loading} className="btn-uniforme btn-primary-uniforme">

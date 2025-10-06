@@ -3,23 +3,25 @@
 .lista-estudiantes {
   display: flex;
   flex-direction: column;
-  margin: 20px;
-  padding: 20px;
+  margin: 10px;
+  padding: 15px;
   background-color: #ffffff;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   color: #333;
   font-family: "Roboto Slab", serif;
   position: relative;
-  max-height: 90vh;
+  max-height: 95vh;
   overflow-y: auto;
+  width: calc(100% - 20px);
+  max-width: none;
 }
 
 /* Header de la lista */
 .lista-header {
   text-align: center;
-  margin-bottom: 15px;
-  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-top: 5px;
 }
 
 .lista-titulo {
@@ -301,28 +303,35 @@
 /* Contenedor de tabla */
 .tabla-container {
   overflow-x: auto;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Tabla */
 .tabla-estudiantes {
   width: 100%;
+  min-width: 1200px;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  background-color: #fff;
+  font-size: 13px;
+  table-layout: auto;
 }
 
 .tabla-estudiantes th {
   background-color: #2d4177;
   color: white;
-  padding: 10px 6px;
+  padding: 8px 4px;
   text-align: left;
   font-weight: bold;
   border-bottom: 2px solid #1a2654;
   font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .tabla-estudiantes td {
-  padding: 10px 6px;
+  padding: 8px 4px;
   border-bottom: 1px solid #ddd;
   vertical-align: middle;
 }

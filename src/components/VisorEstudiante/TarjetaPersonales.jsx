@@ -12,7 +12,7 @@ const TarjetaPersonales = ({
     formatearFecha
 }) => {
     const fotoSrc = formData.foto || estudiante.foto;
-    const isString = typeof fotoSrc === 'string';
+    const isString = typeof fotoSrc === 'string' && fotoSrc.trim() !== '';
 
     return (
         <div className="tarjeta tarjeta-personales" style={{ height: '520px', overflow: 'visible' }}>
@@ -29,10 +29,15 @@ const TarjetaPersonales = ({
                                 src={
                                     fotoSrc.startsWith('http')
                                         ? fotoSrc
-                                        : `http://localhost:5000${fotoSrc}`
+                                        : fotoSrc.startsWith('/')
+                                        ? `http://localhost:5000${fotoSrc}`
+                                        : `http://localhost:5000/${fotoSrc}`
                                 }
                                 alt={`Foto de ${formData.nombre || estudiante.nombre} ${formData.apellido || estudiante.apellido}`}
                                 style={{ width: '64px', height: '64px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', objectFit: 'cover' }}
+                                onError={(e) => {
+                                    e.target.src = '/img/default-avatar.png';
+                                }}
                             />
                         ) : (
                             <img
@@ -40,7 +45,7 @@ const TarjetaPersonales = ({
                                 alt="Foto del estudiante"
                                 style={{ width: '64px', height: '64px', borderRadius: '50%' }}
                             />
-                        )}
+                        )}        
                     </div>
                     {/* Botón editar */}
                     {!isConsulta && !isEliminacion && (

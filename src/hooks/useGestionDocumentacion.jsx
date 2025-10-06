@@ -149,15 +149,8 @@ export default function useGestionDocumentacion() {
 
     // Construir detalle de documentación
     const buildDetalleDocumentacion = () => {
-        if (import.meta.env.DEV) {
-            console.log("Previews actuales:", previews);
-            console.log("DocumentacionNameToId:", DocumentacionNameToId);
-            console.log("Nombres de archivos en previews:", Object.keys(previews));
-        }
-
         return Object.entries(previews)
             .filter(([name]) => {
-                // Usar el nombre tal como está, sin normalización agresiva
                 const exists = DocumentacionNameToId[name];
                 if (!exists && import.meta.env.DEV) {
                     console.warn(`El nombre "${name}" no coincide con ninguna clave en DocumentacionNameToId.`);

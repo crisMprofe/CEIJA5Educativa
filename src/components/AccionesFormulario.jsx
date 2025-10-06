@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import OpcionesModificar from './OpcionesModificar';
-import ConsultaOpciones from './ConsultaOpciones';
 import '../estilos/accionesForm.css';
+import ConsultaOpciones from './ConsultaOpciones';
 
 // Importar los iconos
 import wandIcon from '../assets/logos/wand.png';
@@ -29,9 +28,7 @@ const AccionesFormulario = ({ setAccion }) => {
         if (accion === 'Modificar') {
             setShowOpcionesModificar(true);
         } else if (accion === 'Eliminar') {
-            console.log('AccionesFormulario - llamando setAccion con Eliminar');
-            setAccion('Eliminar');
-            setSelectedButton('Eliminar');
+            setShowOpcionesEliminar(true);
         } else {
             setAccion(accion);
             setSelectedButton(accion);
@@ -75,9 +72,13 @@ const AccionesFormulario = ({ setAccion }) => {
             </div>
 
             {showOpcionesModificar && (
-                <OpcionesModificar 
+                <ConsultaOpciones 
                     onSeleccion={handleSeleccionModificar}
                     onClose={() => setShowOpcionesModificar(false)}
+                    tituloModal="Seleccionar Tipo de Modificación"
+                    descripcionModal="Elija cómo desea modificar estudiantes"
+                    esModificacion={true}
+                    titulo=""
                 />
             )}
 
@@ -85,7 +86,7 @@ const AccionesFormulario = ({ setAccion }) => {
                 <ConsultaOpciones 
                     onSeleccion={handleSeleccionEliminar}
                     onClose={() => setShowOpcionesEliminar(false)}
-                    tituloModal="Seleccionar tipo de eliminación"
+                    tituloModal="Seleccionar Tipo de Eliminación"
                     descripcionModal="Elija cómo desea eliminar estudiantes"
                     esModificacion={false}
                     titulo="Eliminar "

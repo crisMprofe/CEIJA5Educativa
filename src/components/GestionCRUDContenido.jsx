@@ -13,42 +13,43 @@ import { useContext } from 'react';
 import { AlertContext } from '../context/AlertContext';
 import {
     handleEstudianteEncontrado,
-    handleEstudianteEncontradoParaModificar,
     handleAccionEstudiante,
     handleVolverAOpciones,
     handleVolverALista,
     handleVolverABusquedaDNI,
     handleVolverDesdeVisor,
     handleCerrarVisorAOpciones,
+    handleCerrarAlternativo,
+    handleVolverAlternativo,
 } from '../utils/handlersCrud';
 
 import PropTypes from 'prop-types';
 
 const GestionCRUDContenido = ({
-    isAdmin,
-    onClose,
-    vistaInicial,
-    soloListar,
-    modalidad,
-    modalidadId,
-    user,
     vistaActual,
     setVistaActual,
+    vistaInicial,
+    modalidadId,
+    modalidad,
+    modalidadFiltrada,
     estudiante,
     setEstudiante,
     vistaAnterior,
     setVistaAnterior,
-    refreshKey,
-    setRefreshKey,
     modoModificacion,
     setModoModificacion,
-    modoEliminacion
+    modoEliminacion,
+    refreshKey,
+    onClose,
+    setAccion,
+    isAdmin,
+    soloListar,
+    setRefreshKey
 }) => {
     // Usar el sistema unificado de alertas
     const { showSuccess, showError } = useContext(AlertContext);
     // Usar modalidadId recibido por props si existe, si no, derivar de modalidad
     const modalidadIdFinal = typeof modalidadId !== 'undefined' && modalidadId !== null ? modalidadId : (modalidad !== undefined && modalidad !== null && modalidad !== '' && !isNaN(Number(modalidad)) ? Number(modalidad) : undefined);
-    const modalidadFiltrada = user?.rol === 'admDirector' ? undefined : modalidad;
 
     // Handlers importados desde handlersCrud.js
 
@@ -94,14 +95,15 @@ const GestionCRUDContenido = ({
                     modalidad={modalidad}
                     modalidadFiltrada={modalidadFiltrada}
                     onEstudianteEncontrado={modoModificacion
-                        ? (resultado) => handleEstudianteEncontradoParaModificar(
-                            resultado,
-                            setEstudiante,
-                            setVistaAnterior,
-                            vistaActual,
-                            setVistaActual,
-                            showError
-                        )
+                        ? (resultado) => {
+                            if (resultado?.success && resultado.estudiante) {
+                                const estudianteCompleto = construirEstudianteCompleto(resultado);
+                                setEstudiante(estudianteCompleto);
+                                setVistaAnterior(vistaActual);
+                                setVistaActual('visor');
+                            }
+                            // No mostrar alerta flotante aquí, BusquedaDNI maneja sus propios errores
+                        }
                         : (resultado) => handleEstudianteEncontrado(
                             resultado,
                             setEstudiante,
@@ -110,67 +112,33 @@ const GestionCRUDContenido = ({
                             setVistaActual
                         )
                     }
-                    onClose={onClose}
-                    onVolver={vistaInicial === 'busquedaDNI' && !modoModificacion ? null : () => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante)}
+                    onClose={vistaInicial === 'busquedaDNI' && !modoModificacion ? onClose : () => handleCerrarAlternativo(modoModificacion, modoEliminacion, setVistaActual, setEstudiante)}
+                    onVolver={() => handleVolverAlternativo(setAccion)}
                     esConsultaDirecta={vistaInicial === 'busquedaDNI' && !modoModificacion}
                     modoModificacion={modoModificacion}
                 />
             );
         case 'lista':
         case 'listaModificar': {
-            const onAccion = modoModificacion
-                ? (accion, estudianteSeleccionado) => {
-                    if (accion === 'Ver') {
-                        handleAccionEstudiante(
-                            'Ver',
-                            estudianteSeleccionado,
-                            setEstudiante,
-                            setVistaAnterior,
-                            vistaActual,
-                            setVistaActual,
-                            setModoModificacion
-                        );
-                    } else if (accion === 'Modificar') {
-                        handleAccionEstudiante(
-                            'Modificar',
-                            estudianteSeleccionado,
-                            setEstudiante,
-                            setVistaAnterior,
-                            vistaActual,
-                            setVistaActual,
-                            setModoModificacion
-                        );
-                    } else if (accion === 'Eliminar') {
-                        setEstudiante(construirEstudianteCompleto(estudianteSeleccionado));
-                        setVistaActual('confirmarEliminacion');
-                    } else {
-                        handleAccionEstudiante(
-                            accion,
-                            estudianteSeleccionado,
-                            setEstudiante,
-                            setVistaAnterior,
-                            vistaActual,
-                            setVistaActual,
-                            setModoModificacion
-                        );
-                    }
+            // Comportamiento unificado para todas las acciones desde ListaEstudiantes
+            const onAccion = (accion, estudianteSeleccionado) => {
+                if (accion === 'Eliminar') {
+                    // Para eliminar: ir directo a confirmación
+                    setEstudiante(construirEstudianteCompleto(estudianteSeleccionado));
+                    setVistaActual('confirmarEliminacion');
+                } else {
+                    // Para Ver y Modificar: usar el handler estándar
+                    handleAccionEstudiante(
+                        accion,
+                        estudianteSeleccionado,
+                        setEstudiante,
+                        setVistaAnterior,
+                        vistaActual,
+                        setVistaActual,
+                        setModoModificacion
+                    );
                 }
-                : (accion, estudianteSeleccionado) => {
-                    if (accion === 'Eliminar') {
-                        setEstudiante(construirEstudianteCompleto(estudianteSeleccionado));
-                        setVistaActual('confirmarEliminacion');
-                    } else {
-                        handleAccionEstudiante(
-                            accion,
-                            estudianteSeleccionado,
-                            setEstudiante,
-                            setVistaAnterior,
-                            vistaActual,
-                            setVistaActual,
-                            setModoModificacion
-                        );
-                    }
-                };
+            };
             return (
                 <VistaListaEstudiantes
                     soloListar={soloListar}
@@ -211,12 +179,11 @@ const GestionCRUDContenido = ({
                             const estudianteCompleto = construirEstudianteCompleto(resultado);
                             setEstudiante(estudianteCompleto);
                             setVistaActual('confirmarEliminacion');
-                        } else {
-                            showError(resultado?.error || 'Error al buscar estudiante');
                         }
+                        // No mostrar alerta flotante aquí, BusquedaDNI maneja sus propios errores
                     }}
-                    onClose={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
-                    onVolver={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
+                    onClose={() => handleCerrarAlternativo(false, true, setVistaActual, setEstudiante)}
+                    onVolver={() => handleVolverAlternativo(setAccion)}
                     modoEliminacion={true}
                 />
             );
@@ -235,8 +202,8 @@ const GestionCRUDContenido = ({
                             setVistaActual('confirmarEliminacion');
                         }
                     }}
-                    onClose={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
-                    onVolver={() => handleVolverAOpciones(false, false, setVistaActual, setEstudiante)}
+                    onClose={() => handleCerrarAlternativo(false, false, setVistaActual, setEstudiante)}
+                    onVolver={() => handleVolverAlternativo(setAccion)}
                 />
             );
         case 'registro':
@@ -474,7 +441,7 @@ const GestionCRUDContenido = ({
                         documentacion: estudiante?.documentacion || []
                     }}
                     onClose={() => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante)}
-                    onVolver={() => handleVolverAOpciones(modoModificacion, modoEliminacion, setVistaActual, setEstudiante)}
+                    onVolver={() => handleVolverAlternativo(setAccion)}
                     onEliminar={async (tipoEliminacion) => {
                         try {
                             let response;
@@ -531,7 +498,9 @@ GestionCRUDContenido.propTypes = {
   setRefreshKey: PropTypes.func,
   modoModificacion: PropTypes.bool,
   setModoModificacion: PropTypes.func,
-  modoEliminacion: PropTypes.bool
+  modoEliminacion: PropTypes.bool,
+  setAccion: PropTypes.func,
+  modalidadFiltrada: PropTypes.string
 };
 
 export default GestionCRUDContenido;

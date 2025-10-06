@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import CloseButton from './CloseButton';
-import "../estilos/opcionesModificar.css";
+import '../estilos/modalUniforme.css'; // Estilos uniformes
+import '../estilos/botones.css'; // Estilos de botones
 
 const OpcionesAccion = ({ accion, onSeleccion, onClose }) => {
     const configuraciones = {
@@ -51,41 +52,45 @@ const OpcionesAccion = ({ accion, onSeleccion, onClose }) => {
     const config = configuraciones[accion] || configuraciones.Consultar;
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-modificar-container">
-                <CloseButton onClose={onClose} />
+        <div className="modal-overlay-uniforme">
+            <div className="modal-container-uniforme">
+                <div className="modal-header-buttons-uniforme modal-header-buttons-small">
+                    <CloseButton onClose={onClose} className="boton-principal boton-small" />
+                </div>
                 
-                <div className="modificar-header">
-                    <h2>{config.titulo}</h2>
-                    <p>{config.descripcion}</p>
+                <div className="modal-header-uniforme">
+                    <h2 className="modal-title-uniforme">{config.titulo}</h2>
+                    <p className="modal-subtitle-uniforme">{config.descripcion}</p>
                 </div>
 
-                <div className="opciones-modificar-container">
-                    <button 
-                        className="opcion-modificar-button" 
-                        onClick={() => onSeleccion('dni')}
-                    >
-                        <div className="opcion-icono">
-                            {config.opcionDNI.icono}
-                        </div>
-                        <div className="opcion-contenido">
-                            <h3>{config.opcionDNI.titulo}</h3>
-                            <p>{config.opcionDNI.descripcion}</p>
-                        </div>
-                    </button>
-                    
-                    <button 
-                        className="opcion-modificar-button" 
-                        onClick={() => onSeleccion('lista')}
-                    >
-                        <div className="opcion-icono">
-                            {config.opcionLista.icono}
-                        </div>
-                        <div className="opcion-contenido">
-                            <h3>{config.opcionLista.titulo}</h3>
-                            <p>{config.opcionLista.descripcion}</p>
-                        </div>
-                    </button>
+                <div className="modal-content-uniforme">
+                    <div className="opciones-container-uniforme">
+                        <button 
+                            className="opcion-uniforme-button" 
+                            onClick={() => onSeleccion('dni')}
+                        >
+                            <div className="opcion-icono-uniforme">
+                                {config.opcionDNI.icono}
+                            </div>
+                            <div className="opcion-contenido-uniforme">
+                                <h3 className="opcion-titulo-uniforme">{config.opcionDNI.titulo}</h3>
+                                <p className="opcion-descripcion-uniforme">{config.opcionDNI.descripcion}</p>
+                            </div>
+                        </button>
+                        
+                        <button 
+                            className="opcion-uniforme-button" 
+                            onClick={() => onSeleccion('lista')}
+                        >
+                            <div className="opcion-icono-uniforme">
+                                {config.opcionLista.icono}
+                            </div>
+                            <div className="opcion-contenido-uniforme">
+                                <h3 className="opcion-titulo-uniforme">{config.opcionLista.titulo}</h3>
+                                <p className="opcion-descripcion-uniforme">{config.opcionLista.descripcion}</p>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

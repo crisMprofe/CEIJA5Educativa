@@ -24,9 +24,14 @@ const TarjetaAcademica = ({
   const modalidad = modalidadProp !== undefined ? modalidadProp : (formData.modalidad !== undefined ? formData.modalidad : estudiante?.modalidad || '');
   // modalidadId y modulosId ya no se usan directamente, solo se calculan para selects, así que no los defino si no se usan
 
+  // Debug para planAnioId
+  const planIdParaHook = formData.cursoPlanId || formData.planAnioId;
+  // Solo log una vez para evitar loops
+  // Debug logging removido para evitar renders infinitos
+
   const [modulos, estadosInscripcion] = useModulosYEstados(
     editMode.academica,
-    formData.cursoPlanId || formData.planAnioId,
+    planIdParaHook,
     modalidad
   );
 
@@ -34,17 +39,25 @@ const TarjetaAcademica = ({
   useEffect(() => {
     if (editMode.academica) {
       // Inicializar plan si está vacío
-      if ((!formData.cursoPlanId && !formData.planAnioId) && planes && planes.length > 0) {
-        handleInputChange('cursoPlanId', planes[0].id);
-        handleInputChange('cursoPlan', planes[0].plan);
+      if ((!formData.planAnioId && !formData.cursoPlanId) && planes && planes.length > 0 && planes[0] && planes[0].id) {
+        handleInputChange('planAnioId', planes[0].id);
+        handleInputChange('cursoPlanId', planes[0].id); // Para compatibilidad
+        if (planes[0].plan) {
+          handleInputChange('cursoPlan', planes[0].plan);
+          handleInputChange('planAnio', planes[0].plan);
+        }
       }
       // Inicializar módulo si está vacío
-      if ((!formData.modulosId || formData.modulosId === '') && modulos && modulos.length > 0) {
+      if ((!formData.modulosId || formData.modulosId === '') && modulos && modulos.length > 0 && modulos[0] && modulos[0].id) {
         handleInputChange('modulosId', modulos[0].id);
+      }
+      // Inicializar estado de inscripción si está vacío
+      if ((!formData.estadoInscripcionId || formData.estadoInscripcionId === '') && estadosInscripcion && estadosInscripcion.length > 0 && estadosInscripcion[0] && estadosInscripcion[0].id) {
+        handleInputChange('estadoInscripcionId', estadosInscripcion[0].id);
       }
     }
     // eslint-disable-next-line
-  }, [editMode.academica, planes, modulos]);
+  }, [editMode.academica, planes, modulos, estadosInscripcion]);
 
   const handleEditar = () => {
     setEditMode(prev => ({ ...prev, academica: true }));
@@ -68,8 +81,8 @@ const TarjetaAcademica = ({
             <CursoPlanSelector
               planes={planes}
               value={{
-                cursoPlanId: formData.cursoPlanId || '',
-                cursoPlan: formData.cursoPlan || ''
+                planAnioId: formData.planAnioId || formData.cursoPlanId || '',
+                cursoPlan: formData.cursoPlan || formData.planAnio || ''
               }}
               setFieldValue={(campo, valor) => handleInputChange(campo, valor)}
             />
@@ -89,9 +102,9 @@ const TarjetaAcademica = ({
               type="select"
               options={[{ value: '', label: 'Seleccionar estado' }, ...estadosInscripcion.map(ei => ({ value: ei.id, label: ei.descripcionEstado }))]}
               registro={{
-                value: formData.estadoInscripcionId !== undefined
+                value: formData.estadoInscripcionId !== undefined && formData.estadoInscripcionId !== ''
                   ? formData.estadoInscripcionId
-                  : (estudiante?.estadoInscripcionId || ''),
+                  : (estudiante?.estadoInscripcionId || 1),
                 onChange: (e) => handleInputChange('estadoInscripcionId', e.target.value)
               }}
             />
@@ -108,8 +121,8 @@ const TarjetaAcademica = ({
         ) : (
           <div className="tarjeta-academica">
             <p>Modalidad: {modalidad || 'Sin datos'}</p>
-            <p>Curso/Plan: {estudiante?.cursoPlan || formData?.cursoPlan || 'Sin datos'}</p>
-            <p>Módulo: {estudiante?.modulo || formData?.modulo || 'Sin datos'}</p>
+            <p>Curso/Plan: {estudiante?.planAnio || estudiante?.cursoPlan || formData?.planAnio || formData?.cursoPlan || 'Sin datos'}</p>
+            <p>Módulo: {estudiante?.modulos || estudiante?.modulo || formData?.modulos || formData?.modulo || 'Sin datos'}</p>
             <p>Estado de Inscripción: {estudiante?.estadoInscripcion || formData?.estadoInscripcion || 'Sin datos'}</p>
             <p>Fecha de Inscripción: {
               estudiante?.fechaInscripcion
@@ -136,8 +149,8 @@ TarjetaAcademica.propTypes = {
   modulosId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   planes: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      plan: PropTypes.string.isRequired
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      descripcionAnioPlan: PropTypes.string
     })
   )
 };

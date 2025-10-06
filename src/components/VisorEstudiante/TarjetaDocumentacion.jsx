@@ -1,12 +1,15 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useMemo } from 'react';
 import useGestionDocumentacion from '../../hooks/useGestionDocumentacion';
 import { AlertContext } from '../../context/AlertContext';
 
 const TarjetaDocumentacion = ({ estudiante, editMode, setEditMode, isConsulta, isEliminacion, onGuardar, onCancelar }) => {
-    // Log visual para depuración
-    console.log('🟢 Documentación recibida en TarjetaDocumentacion:', estudiante.documentacion);
     const [archivosSubidos, setArchivosSubidos] = useState({});
+    
+    // Memoizar la documentación para evitar renders innecesarios
+    const documentacion = useMemo(() => {
+        return estudiante?.documentacion || [];
+    }, [estudiante?.documentacion]);
     
     // Usar el sistema unificado de alertas
     const { showSuccess, showWarning } = useContext(AlertContext);
@@ -20,10 +23,11 @@ const TarjetaDocumentacion = ({ estudiante, editMode, setEditMode, isConsulta, i
         setPreviews
     } = useGestionDocumentacion();
 
+// Solo inicializar previews una vez cuando cambie la documentación
 useEffect(() => {
-    if (estudiante?.documentacion) {
+    if (documentacion.length > 0) {
         const inicialPreviews = {};
-        estudiante.documentacion.forEach(doc => {
+        documentacion.forEach(doc => {
             inicialPreviews[doc.descripcionDocumentacion] = {
                 url: doc.archivoDocumentacion
                     ? (doc.archivoDocumentacion.startsWith('http')
@@ -34,16 +38,9 @@ useEffect(() => {
                 file: null
             };
         });
-        // Solo actualiza si realmente cambió
-        if (JSON.stringify(previews) !== JSON.stringify(inicialPreviews)) {
-            setPreviews(inicialPreviews);
-        }
-        // El reset de archivos solo se hace si realmente cambió la documentación
-        // y nunca dentro del mismo render que setPreviews para evitar bucles
+        setPreviews(inicialPreviews);
     }
-    // Solo depende de estudiante.documentacion
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [estudiante?.documentacion]);
+}, [documentacion, setPreviews]);
 
     const handleSubirArchivo = (desc) => {
         if (previews[desc]?.file) {
@@ -61,11 +58,12 @@ useEffect(() => {
             </div>
             <div className="tarjeta-contenido">
                 <div className="documentacion-lista-tarjeta">
-                    {(estudiante.documentacion || []).map((doc, idx) => {
+                    {documentacion.map((doc, idx) => {
                         const desc = doc.descripcionDocumentacion;
                         const fileSelected = previews[desc]?.file;
-                        const fileUploaded = archivosSubidos[desc] || doc.archivoDocumentacion;
-                        const fileUrl = doc.archivoDocumentacion
+                        const tieneArchivo = !!(doc.archivoDocumentacion && doc.archivoDocumentacion !== null);
+                        const fileUploaded = archivosSubidos[desc] || tieneArchivo;
+                        const fileUrl = tieneArchivo
                             ? (doc.archivoDocumentacion.startsWith('http')
                                 ? doc.archivoDocumentacion
                                 : `http://localhost:5000${doc.archivoDocumentacion}`)

@@ -5,7 +5,7 @@ const VistaOpcionesEliminar = ({ onSeleccion, onClose, modalidadId, modalidadFil
     <ConsultaOpciones 
         onSeleccion={onSeleccion}
         onClose={onClose}
-        tituloModal="Seleccionar tipo de eliminación"
+        tituloModal="Seleccionar Tipo de Eliminación"
         descripcionModal="Elija cómo desea eliminar estudiantes"
         esModificacion={false}
         titulo="Eliminar "

@@ -38,7 +38,26 @@ const getEstudianteCompletoByDni = async (dni, modalidadId, setAlert) => {
         const { data } = await axiosInstance.get(`/consultar-estudiantes-dni/${dni}?modalidadId=${modalidadId}`);
         return data;
     } catch (error) {
-        const message = FormatError(error);
+        // Intentar extraer el mensaje específico del backend
+        let message = 'Error al buscar el estudiante.';
+        
+        if (error.response && error.response.data) {
+            const backendData = error.response.data;
+            // El backend devuelve { success: false, message: "mensaje específico" }
+            if (backendData.message) {
+                message = backendData.message;
+            } else if (backendData.mensaje) {
+                message = backendData.mensaje;
+            } else if (typeof backendData === 'string') {
+                message = backendData;
+            } else {
+                // Fallback a FormatError solo si no encontramos mensaje específico
+                message = FormatError(error);
+            }
+        } else {
+            message = FormatError(error);
+        }
+        
         if (setAlert) setAlert({ text: message, variant: 'error' });
         return { error: message };
     }

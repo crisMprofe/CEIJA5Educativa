@@ -1,13 +1,14 @@
 // /src/utils/DocumentacionMap.jsx
+// ✅ MAPEO CORREGIDO SEGÚN BASE DE DATOS documentaciones
 export const DocumentacionNameToId = {
-  archivo_dni: 1,
-  archivo_cuil: 2,
-  archivo_partidaNacimiento: 3,
-  archivo_fichaMedica: 4,
-  archivo_certificadoNivelPrimario: 5,
-  archivo_analiticoParcial: 6,
-  archivo_solicitudPase: 7,
-  foto: 8,
+  archivo_dni: 1,                      // ID 1: 'DNI'
+  archivo_cuil: 2,                     // ID 2: 'CUIL' 
+  archivo_fichaMedica: 3,              // ID 3: 'Ficha Médica'
+  archivo_partidaNacimiento: 4,        // ID 4: 'Partida Nacimiento'
+  archivo_solicitudPase: 5,            // ID 5: 'Solicitud Pase'
+  archivo_analiticoParcial: 6,         // ID 6: 'Analítico Parcial/Pase'
+  archivo_certificadoNivelPrimario: 7, // ID 7: 'Certificado Nivel Primario' ✅
+  foto: 8,                            // ID 8: 'Foto'
 };
 export const DocumentacionDescripcionToName = {
   dni: 'archivo_dni',

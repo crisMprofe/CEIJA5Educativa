@@ -1,4 +1,4 @@
-/* Contenedor principal */
+/* Contenedor principal - Uniformizado con el diseño del sitio */
 .busqueda-dni-container {
   display: flex;
   flex-direction: column;
@@ -7,12 +7,13 @@
   padding: 30px;
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border-radius: 15px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(45, 65, 119, 0.15);
   width: 90%;
-  max-width: 500px;
+  max-width: 600px; /* Aumentado para uniformidad */
   margin: 20px auto;
   position: relative;
-  border: 1px solid #e9ecef;
+  border: 2px solid #87ceeb;
+  font-family: "Roboto Slab", serif;
 }
 
 /* Ajuste específico para los botones del header en BusquedaDNI */
@@ -25,17 +26,16 @@
   z-index: 1000;
 }
 
-/* Título */
+/* Título uniformizado */
 .busqueda-dni-container h2 {
   color: #2d4177;
   margin-bottom: 25px;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 700;
   text-align: center;
-  background: linear-gradient(135deg, #2d4177 0%, #4e53e6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-family: "Roboto Slab", serif;
+  text-shadow: 0 2px 8px rgba(45, 65, 119, 0.2);
+  letter-spacing: 0.5px;
 }
 
 /* Formulario */

@@ -1,21 +1,38 @@
 import comprobanteStyles from '../estilos/comprobante.css?raw';
 import jsPDF from 'jspdf';
 
-// Documentos requeridos por plan/año
+// Mapeo de nombres técnicos a nombres legibles
+const nombresLegibles = {
+    'archivo_dni': 'Documento Nacional de Identidad (DNI)',
+    'archivo_cuil': 'Constancia de CUIL',
+    'archivo_fichaMedica': 'Ficha Médica',
+    'archivo_partidaNacimiento': 'Partida de Nacimiento',
+    'archivo_analiticoParcial': 'Analítico Parcial',
+    'archivo_certificadoNivelPrimario': 'Certificado Nivel Primario',
+    'archivo_solicitudPase': 'Solicitud de Pase',
+    'foto': 'Fotografía'
+};
+
+// Documentos requeridos por plan/año - NOMBRES EXACTOS de la DB
 const docsPrimario = [
-    'Certificado Nivel Primario',
-    'DNI',
-    'CUIL',
-    'Partida de Nacimiento',
-    'Ficha Médica'
+    'archivo_certificadoNivelPrimario',
+    'archivo_dni',
+    'archivo_cuil', 
+    'archivo_partidaNacimiento',
+    'archivo_fichaMedica'
 ];
 const docsAnalitico = [
-    'Analítico Parcial',
-    'DNI',
-    'CUIL',
-    'Partida de Nacimiento',
-    'Ficha Médica'
+    'archivo_analiticoParcial',
+    'archivo_dni',
+    'archivo_cuil',
+    'archivo_partidaNacimiento', 
+    'archivo_fichaMedica'
 ];
+
+// Función para convertir nombre técnico a legible
+function getNombreLegible(nombreTecnico) {
+    return nombresLegibles[nombreTecnico] || nombreTecnico;
+}
 
 // Determina los requeridos según plan/año
 function getDocsRequeridos(planAnio) {
@@ -68,18 +85,53 @@ class ComprobanteGenerator {
   static generarSeccionDocumentacion(estudiante) {
     // Documentos requeridos según el plan
     const requeridos = getDocsRequeridos(estudiante.planAnio || estudiante.cursoPlan);
-    // Documentos presentados: solo los requeridos y con archivo
-    const presentados = (estudiante.documentacion || [])
-      .filter(doc => requeridos.includes(doc.descripcionDocumentacion) && doc.archivoDocumentacion)
-      .map(doc => doc.descripcionDocumentacion);
-    // Documentos faltantes: requeridos menos presentados
-    const faltantes = requeridos.filter(doc => !presentados.includes(doc));
+    
+    console.log('📋 Documentación del estudiante completa:', estudiante.documentacion);
+    console.log('📝 Documentos requeridos para el plan:', requeridos);
+    console.log('🎯 Plan/Año del estudiante:', estudiante.planAnio, estudiante.cursoPlan);
+    
+    // Obtener documentos presentados desde la documentación del estudiante
+    const presentados = [];
+    const faltantes = [];
+    
+    // Verificar cada documento requerido
+    requeridos.forEach(docRequerido => {
+      console.log(`🔍 Buscando documento: ${docRequerido}`);
+      
+      // Mostrar TODOS los documentos del estudiante para debug
+      console.log(`  📂 Documentos disponibles del estudiante:`, (estudiante.documentacion || []).map(d => `${d.descripcionDocumentacion} (${d.estadoDocumentacion})`));
+      
+      // Buscar si el documento está en la documentación del estudiante
+      const docEncontrado = (estudiante.documentacion || []).find(doc => {
+        const coincideNombre = doc.descripcionDocumentacion === docRequerido;
+        const tieneArchivo = doc.archivoDocumentacion && doc.archivoDocumentacion !== null && doc.archivoDocumentacion !== '';
+        const noEsFaltante = doc.estadoDocumentacion !== 'Faltante';
+        
+        console.log(`  📄 Evaluando ${doc.descripcionDocumentacion}:`);
+        console.log(`    - Coincide nombre: ${coincideNombre} (buscando: "${docRequerido}")`);
+        console.log(`    - Tiene archivo: ${tieneArchivo} (archivo: "${doc.archivoDocumentacion}")`);
+        console.log(`    - No es faltante: ${noEsFaltante} (estado: "${doc.estadoDocumentacion}")`);
+        
+        return coincideNombre && tieneArchivo && noEsFaltante;
+      });
+      
+      if (docEncontrado) {
+        console.log(`  ✅ PRESENTADO: ${docRequerido} (archivo: ${docEncontrado.archivoDocumentacion})`);
+        presentados.push(getNombreLegible(docRequerido));
+      } else {
+        console.log(`  ❌ FALTANTE: ${docRequerido}`);
+        faltantes.push(getNombreLegible(docRequerido));
+      }
+    });
+    
+    console.log('✅ RESUMEN - Documentos presentados:', presentados);
+    console.log('❌ RESUMEN - Documentos faltantes:', faltantes);
 
     return `
       <div class="comprobante-documentos-requeridos">
         <h3 class="comprobante-h3">📑 Documentos Requeridos</h3>
         <ul class="comprobante-ul">
-          ${requeridos.length > 0 ? requeridos.map(doc => `<li class="comprobante-li">${doc}</li>`).join('') : '<li class="comprobante-li">No hay requeridos.</li>'}
+          ${requeridos.length > 0 ? requeridos.map(doc => `<li class="comprobante-li">${getNombreLegible(doc)}</li>`).join('') : '<li class="comprobante-li">No hay requeridos.</li>'}
         </ul>
       </div>
       <div class="comprobante-documentos-presentados">
@@ -163,6 +215,16 @@ class ComprobanteGenerator {
    */
   static generar(estudiante) {
     try {
+      console.log('🎯 Generando comprobante para estudiante:', estudiante);
+      
+      if (!estudiante) {
+        throw new Error('Datos del estudiante no proporcionados');
+      }
+      
+      if (!estudiante.dni) {
+        throw new Error('DNI del estudiante no disponible');
+      }
+      
       const contenidoHTML = this.generarHTML(estudiante);
       
       // Crear ventana nueva para imprimir
@@ -180,9 +242,10 @@ class ComprobanteGenerator {
         ventanaImpresion.print();
       };
       
+      console.log('✅ Comprobante generado exitosamente');
       return true;
     } catch (error) {
-      console.error('Error al generar comprobante:', error);
+      console.error('🚨 Error al generar comprobante:', error);
       throw error;
     }
   }

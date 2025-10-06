@@ -2,6 +2,8 @@ import PropTypes from 'prop-types';
 import { useState } from 'react';
 import '../estilos/consultaEstd.css';
 import '../estilos/eliminarEstd.css';
+import '../estilos/modalUniforme.css';
+import '../estilos/botones.css';
 import CloseButton from '../components/CloseButton';
 import VolverButton from '../components/VolverButton';
 
@@ -47,12 +49,12 @@ const EliminarEstd = ({ data, onClose, onVolver, onEliminar }) => {
     return (
         <div className="eliminar-overlay">
             <div className="modal-container">
-                <div className="eliminar-buttons-container">
-                    <VolverButton onClick={onVolver} />
-                    <CloseButton onClose={onClose} variant="modal" />
+                <div className="modal-header-buttons-uniforme modal-header-buttons-small">
+                    <VolverButton onClick={onVolver} className="boton-principal boton-small" />
+                    <CloseButton onClose={onClose} className="boton-principal boton-small" />
                 </div>
-                <div className="form-header">
-                    <h2 className="form-title">Eliminar Estudiante</h2>
+                <div className="modal-header-uniforme">
+                    <h2 className="modal-title-uniforme">Eliminar Estudiante</h2>
                 </div>
                 
                 <div className="eliminar-warning-message">

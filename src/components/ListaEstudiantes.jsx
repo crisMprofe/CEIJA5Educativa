@@ -1,24 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import PropTypes from 'prop-types';
 import serviceInscripcion from '../services/serviceInscripcion';
 import BotonCargando from './BotonCargando';
 import CloseButton from './CloseButton';
-import VolverButton from './VolverButton'; // Importa el componente VolverButton
-import AlertaMens from './AlertaMens'; // Importa el componente AlertaMens
+import VolverButton from './VolverButton';
 import '../estilos/listaEstudiantes.css';
-import '../estilos/estilosInscripcion.css'; // Importa los estilos para modal-header-buttons
+import '../estilos/estilosInscripcion.css';
+import '../estilos/modalUniforme.css';
+import { AlertContext } from '../context/AlertContext'; // Sistema unificado de alertas
 
 const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = false, refreshKey = 0, modalidadId }) => {
     const [estudiantes, setEstudiantes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalEstudiantes, setTotalEstudiantes] = useState(0);
     const [estudianteAEliminar, setEstudianteAEliminar] = useState(null);
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
     const [showConfirmDeleteDefinitivo, setShowConfirmDeleteDefinitivo] = useState(false);
-    const [alerta, setAlerta] = useState({ text: '', variant: 'info' });
+    
+    // Sistema unificado de alertas
+    const { showError, showSuccess } = useContext(AlertContext);
     // Filtrar por modalidadId (número) si está definido
     const cargarEstudiantes = useCallback(async (currentPage = 1) => {
         setLoading(true);
@@ -33,15 +35,14 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
             setEstudiantes(estudiantesFiltrados);
             setTotalPages(response.totalPages || 1);
             setTotalEstudiantes(estudiantesFiltrados.length);
-            setError('');
         } catch (err) {
             console.error('Error al cargar estudiantes:', err);
-            setError('Error de conexión al cargar estudiantes');
+            showError('Error de conexión al cargar estudiantes');
             setEstudiantes([]);
         } finally {
             setLoading(false);
         }
-    }, [modalidadId]); // modalidadId como dependencia para cumplir reglas de hooks
+    }, [modalidadId, showError]); // modalidadId y showError como dependencias
     useEffect(() => {
         cargarEstudiantes(page);
     }, [page, refreshKey, cargarEstudiantes]); // Incluir cargarEstudiantes como dependencia
@@ -89,16 +90,16 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
                 setTotalEstudiantes(prevTotal => prevTotal - 1);
                 setShowConfirmDelete(false);
                 setEstudianteAEliminar(null);
-                setAlerta({ text: 'Estudiante desactivado correctamente.', variant: 'success' });
+                showSuccess('Estudiante desactivado correctamente.');
                 if (estudiantes.length === 1 && page > 1) {
                     setPage(page - 1);
                 }
             } else {
-                setError(data.message || 'Error al desactivar estudiante');
+                showError(data.message || 'Error al desactivar estudiante');
             }
         } catch (error) {
             console.error('Error al desactivar estudiante:', error);
-            setError('Error de conexión al desactivar estudiante');
+            showError('Error de conexión al desactivar estudiante');
         }
     };
 
@@ -126,11 +127,11 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
                 };
                 onAccion(accion, estudianteCompleto);
             } else {
-                setError(data?.message || 'Error de conexión o ruta incorrecta');
+                showError(data?.message || 'Error de conexión o ruta incorrecta');
                 onAccion(accion, estudiante); // Fallback con datos básicos
             }
         } catch {
-            setError('Error al procesar respuesta del servidor');
+            showError('Error al procesar respuesta del servidor');
             onAccion(accion, estudiante); // Fallback con datos básicos
         }
     };
@@ -139,9 +140,9 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
         return (
             <div className="lista-estudiantes-container">
                 {/* Contenedor de botones superior */}
-                <div className="modal-header-buttons">
-                    {onVolver && <VolverButton onClick={onVolver} />}
-                    {onClose && <CloseButton onClose={onClose} variant="modal" />}
+                <div className="modal-header-buttons-uniforme modal-header-buttons-small">
+                    {onVolver && <VolverButton onClick={onVolver} className="boton-principal boton-small" />}
+                    {onClose && <CloseButton onClose={onClose} className="boton-principal boton-small" />}
                 </div>
                 
                 {/* Título delicado más arriba */}
@@ -159,24 +160,18 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
 
     return (
         <div className="lista-estudiantes-container">
-            <div className="modal-header-buttons">
-                {onVolver && <VolverButton onClick={onVolver} />}
-                {onClose && <CloseButton onClose={onClose} variant="modal" />}
+            <div className="modal-header-buttons-uniforme modal-header-buttons-small">
+                {onVolver && <VolverButton onClick={onVolver} className="boton-principal boton-small" />}
+                {onClose && <CloseButton onClose={onClose} className="boton-principal boton-small" />}
             </div>
             <div className="lista-header">
                 <h2 className="lista-titulo">{getTituloLista()}</h2>
                 <p className="lista-subtitulo">Total: {totalEstudiantes} estudiantes</p>
             </div>
-            {alerta.text && (
-                <AlertaMens text={alerta.text} variant={alerta.variant} duration={4000} onClose={() => setAlerta({ text: '', variant: 'info' })} />
-            )}
-            {error && (
-                <AlertaMens text={error} variant="error" duration={4000} onClose={() => setError('')} />
-            )}
-            {!error && estudiantes.length === 0 && (
+            {estudiantes.length === 0 && (
                 <div className="no-data"><p>No se encontraron estudiantes inscriptos.</p></div>
             )}
-            {!error && estudiantes.length > 0 && (
+            {estudiantes.length > 0 && (
                 <>
                     <div className="tabla-container">
                         <table className="tabla-estudiantes">
@@ -255,15 +250,15 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
                                         setTotalEstudiantes(prevTotal => prevTotal - 1);
                                         setShowConfirmDeleteDefinitivo(false);
                                         setEstudianteAEliminar(null);
-                                        setAlerta({ text: 'Estudiante eliminado definitivamente.', variant: 'success' });
+                                        showSuccess('Estudiante eliminado definitivamente.');
                                         if (estudiantes.length === 1 && page > 1) {
                                             setPage(page - 1);
                                         }
                                     } else {
-                                        setError('Error al eliminar estudiante');
+                                        showError('Error al eliminar estudiante');
                                     }
                                 } catch {
-                                    setError('Error de conexión al eliminar estudiante');
+                                    showError('Error de conexión al eliminar estudiante');
                                 }
                             }}>Eliminar Definitivamente</button>
                         </div>

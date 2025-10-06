@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import '../estilos/estilosInscripcion.css';
 import '../estilos/preinscripcionHeader.css';
 
 import AccionesFormulario from '../components/AccionesFormulario';
-import OpcionesAccion from '../components/OpcionesAccion';
+import ConsultaOpciones from '../components/ConsultaOpciones';
 import GestionCRUD from '../components/GestionCRUD';
 import GestionEstudiante from './GestionEstudiante';
 import { Logo } from '../components/Logo';
@@ -226,6 +226,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         vistaInicial="opciones"
                         modalidad={modalidadSeleccionada}
                         modalidadId={obtenerModalidadId(modalidadSeleccionada)}
+                        setAccion={setAccion}
                     />
                 );
             case 'Modificar':
@@ -236,6 +237,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         vistaInicial="opcionesModificar"
                         modalidad={modalidadSeleccionada}
                         modalidadId={obtenerModalidadId(modalidadSeleccionada)}
+                        setAccion={setAccion}
                     />
                 );
             case 'ModificarPorDNI':
@@ -247,6 +249,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         esModificacion={true}
                         modalidad={modalidadSeleccionada}
                         modalidadId={obtenerModalidadId(modalidadSeleccionada)}
+                        setAccion={setAccion}
                     />
                 );
             case 'ModificarLista':
@@ -258,30 +261,33 @@ const Preinscripcion = ({ isAdmin }) => {
                         esModificacion={true}
                         modalidad={modalidadSeleccionada}
                         modalidadId={obtenerModalidadId(modalidadSeleccionada)}
+                        setAccion={setAccion}
                     />
                 );
             case 'Eliminar':
-                return (
-                    <OpcionesAccion
-                        accion="Eliminar"
-                        onSeleccion={(opcion) => {
-                            if (opcion === 'dni') {
-                                setAccion('EliminarPorDNI');
-                            } else if (opcion === 'lista') {
-                                setAccion('EliminarLista');
-                            }
-                        }}
-                        onClose={() => setAccion(null)}
-                    />
-                );
+                return React.createElement(ConsultaOpciones, {
+                    onSeleccion: (opcion) => {
+                        if (opcion === 'dni') {
+                            setAccion('EliminarPorDNI');
+                        } else if (opcion === 'inscripciones') {
+                            setAccion('EliminarLista');
+                        }
+                    },
+                    onClose: () => setAccion(null),
+                    tituloModal: "Seleccionar Tipo de Eliminación",
+                    descripcionModal: "Elija cómo desea eliminar estudiantes",
+                    esModificacion: false,
+                    titulo: "Eliminar "
+                });
             case 'EliminarPorDNI':
                 return (
                     <GestionCRUD
                         isAdmin={isAdmin}
                         onClose={() => setAccion(null)}
-                        vistaInicial="opcionesEliminar"
+                        vistaInicial="busquedaDNIEliminar"
                         modalidad={modalidadSeleccionada}
                         modalidadId={obtenerModalidadId(modalidadSeleccionada)}
+                        setAccion={setAccion}
                     />
                 );
             case 'EliminarLista':
@@ -292,6 +298,7 @@ const Preinscripcion = ({ isAdmin }) => {
                         vistaInicial="listaEliminar"
                         modalidad={modalidadSeleccionada}
                         modalidadId={obtenerModalidadId(modalidadSeleccionada)}
+                        setAccion={setAccion}
                     />
                 );
             case 'Registrar':

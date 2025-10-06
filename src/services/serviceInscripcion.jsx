@@ -127,6 +127,23 @@ const getEstadoDocumental = async (idInscripcion) => {
     }
 };
 
+// Actualizar solo el estado de inscripción
+const updateEstadoInscripcion = async (dni, estadoInscripcionId, estadoAnterior) => {
+    try {
+        console.log('🎯 Actualizando estado de inscripción:', { dni, estadoInscripcionId, estadoAnterior });
+        const response = await axiosInstance.put(`/actualizar-estado-inscripcion/${dni}`, {
+            estadoInscripcionId,
+            estadoAnterior
+        });
+        console.log('✅ Respuesta actualización estado:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('🚨 Error al actualizar estado de inscripción:', error);
+        const message = FormatError(error);
+        return { error: message, success: false };
+    }
+};
+
 export default {
     updateEstd,
     deleteEstd,
@@ -136,4 +153,5 @@ export default {
     getDocumentosFaltantes,
     getEstudiantePorDNI,
     getEstadoDocumental,
+    updateEstadoInscripcion,
 };

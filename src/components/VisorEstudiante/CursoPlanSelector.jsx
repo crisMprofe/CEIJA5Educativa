@@ -7,17 +7,16 @@ import Input from '../Input';
  * Recibe los planes ya filtrados como prop.
  */
 const CursoPlanSelector = ({ planes, value, setFieldValue }) => {
-    // Logs para depuración
-    console.log('CursoPlanSelector props:', { planes, value });
-
     const handleCursoPlanChange = (e) => {
         const selectedPlanId = Number(e.target.value);
-        setFieldValue('cursoPlanId', selectedPlanId);
+        setFieldValue('planAnioId', selectedPlanId);  // Cambiar a planAnioId
+        setFieldValue('cursoPlanId', selectedPlanId); // Mantener cursoPlanId para compatibilidad
 
         // Busca el curso/plan seleccionado para setear también el nombre
-        const cursoSeleccionado = planes.find(p => p.id === selectedPlanId);
-        if (cursoSeleccionado) {
+        const cursoSeleccionado = planes && planes.find(p => p && p.id === selectedPlanId);
+        if (cursoSeleccionado && cursoSeleccionado.plan) {
             setFieldValue('cursoPlan', cursoSeleccionado.plan);
+            setFieldValue('planAnio', cursoSeleccionado.plan); // También planAnio
         }
     };
 
@@ -30,17 +29,24 @@ const CursoPlanSelector = ({ planes, value, setFieldValue }) => {
             )}
             <Input
                 label="Curso / Plan"
-                name="cursoPlanId"
+                name="planAnioId"
                 type="select"
-                options={[
-                    { value: '', label: 'Seleccionar curso/plan' },
-                    ...planes.map(p => ({
-                        value: p.id,
-                        label: p.plan
-                    }))
-                ]}
+                options={(() => {
+                    const opciones = [
+                        { value: '', label: 'Seleccionar curso/plan' },
+                        ...(planes || []).filter(p => p && p.id && p.descripcionAnioPlan).map(p => ({
+                            value: p.id,
+                            label: p.descripcionAnioPlan
+                        }))
+                    ];
+                    return opciones;
+                })()}
                 registro={{
-                    value: value.cursoPlanId || '',
+                    value: (() => {
+                        const valorOriginal = value.planAnioId || value.cursoPlanId || '';
+                        const valorFinal = valorOriginal === '' ? '' : Number(valorOriginal);
+                        return valorFinal;
+                    })(),
                     onChange: handleCursoPlanChange
                 }}
             />
@@ -51,10 +57,10 @@ const CursoPlanSelector = ({ planes, value, setFieldValue }) => {
 CursoPlanSelector.propTypes = {
     planes: PropTypes.arrayOf(
         PropTypes.shape({
-            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-            plan: PropTypes.string.isRequired
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            plan: PropTypes.string
         })
-    ).isRequired,
+    ),
     value: PropTypes.object.isRequired, // Debe contener cursoPlanId y cursoPlan
     setFieldValue: PropTypes.func.isRequired
 };
