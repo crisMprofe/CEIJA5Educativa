@@ -65,6 +65,8 @@ router.get('/', async (req, res) => {
 });
 
 // POST: Crear un nuevo registro web
+// ⚠️ SOLO guarda en Registro_Web.json y archivosDocWeb. NO mueve a pendientes ni a la base de datos.
+// El registro web queda en estado 'PENDIENTE' hasta que un admin lo procese desde el dashboard.
 router.post('/', upload.any(), async (req, res) => {
     try {
         await ensureFileExists();
@@ -227,203 +229,213 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// POST: Procesar un registro web (enviar a BD y marcar como PROCESADO)
-router.post('/:id/procesar', async (req, res) => {
+// POST: Procesar un registro web (solo ADMIN)
+// Si la documentación está completa: guarda en la base de datos y migra archivos a archivosDocumento.
+// Si está incompleta: mueve a Registros_Pendientes.json y marca el registro web como MOVIDO_A_PENDIENTES.
+router.post('/:id/procesar', upload.any(), async (req, res) => {
     try {
         await ensureFileExists();
         const { id } = req.params;
-        const { datosFormulario, documentos } = req.body;
-        
-        console.log(`🔄 Procesando registro web ID: ${id} en base de datos`);
-        
-        // Leer registros actuales
+        // Los datos del formulario pueden venir en req.body
+        // Los archivos nuevos en req.files
+        // Cargar registro web original
         const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
-        const registros = JSON.parse(data);
-        
+        let registros = JSON.parse(data);
         const indiceRegistro = registros.findIndex(r => r.id === id);
         if (indiceRegistro === -1) {
             return res.status(404).json({ error: 'Registro web no encontrado' });
         }
-        
         const registro = registros[indiceRegistro];
-        console.log(`📋 Datos originales del registro:`, registro.datos);
-        console.log(`📝 Datos actualizados del formulario:`, datosFormulario);
-        
-        // Importar funciones de la BD (desde registroEst.js)
-        const db = require('../db');
-        const buscarOInsertarProvincia = require('../utils/buscarOInsertarProvincia');
-        const buscarOInsertarLocalidad = require('../utils/buscarOInsertarLocalidad');
-        const buscarOInsertarBarrio = require('../utils/buscarOInsertarBarrio');
-        const obtenerRutaFoto = require('../utils/obtenerRutaFoto');
-        const insertarInscripcion = require('../utils/insertarInscripcion');
-        const buscarOInsertarDetalleDocumentacion = require('../utils/buscarOInsertarDetalleDocumentacion');
-        
-        // Función auxiliar para obtener primer valor de array o string
-        const getFirst = (val) => Array.isArray(val) ? val[0] : val;
-        
-        // 1) Verificar si el estudiante ya existe por DNI
-        const dniEstudiante = datosFormulario.dni || registro.datos.dni;
-        const [existeEstudiante] = await db.query('SELECT dni FROM estudiantes WHERE dni = ?', [dniEstudiante]);
-        
-        if (existeEstudiante.length > 0) {
-            return res.status(400).json({ 
-                error: 'El estudiante ya está registrado en la base de datos',
-                message: `Ya existe un estudiante con DNI ${dniEstudiante}` 
+        // Mapear archivos nuevos
+        const archivosNuevos = {};
+        if (req.files) {
+            req.files.forEach(file => {
+                archivosNuevos[file.fieldname] = `/archivosDocumento/${file.filename}`;
             });
         }
-        
-        // 2) Insertar domicilio
-        const provincia = await buscarOInsertarProvincia(db, datosFormulario.provincia || registro.datos.provincia);
-        const localidad = await buscarOInsertarLocalidad(db, datosFormulario.localidad || registro.datos.localidad, provincia.id || provincia);
-        const barrio = await buscarOInsertarBarrio(db, datosFormulario.barrio || registro.datos.barrio, localidad.id || localidad);
-        
-        // Extraer IDs correctamente (manejar tanto números como objetos)
-        const provinciaId = provincia.id || provincia;
-        const localidadId = localidad.id || localidad;
-        const barrioId = barrio.id || barrio;
-        
-        const [domRes] = await db.query(
-            `INSERT INTO domicilios (calle, numero, idBarrio, idLocalidad, idProvincia) VALUES (?,?,?,?,?)`,
-            [
-                datosFormulario.calle || registro.datos.calle,
-                datosFormulario.numero || registro.datos.numero,
-                barrioId,
-                localidadId,
-                provinciaId
-            ]
-        );
-        const idDomicilio = domRes.insertId;
-        
-        // 3) Obtener ruta de la foto
-        let fotoUrl = null;
-        if (registro.archivos?.foto) {
-            // Convertir ruta de archivosDocWeb a archivosDocumento para consistencia
-            const nombreFoto = path.basename(registro.archivos.foto);
-            fotoUrl = `/archivosDocumento/${nombreFoto}`;
-            
-            // Copiar archivo de archivosDocWeb a archivosDocumento si no existe
-            const rutaOrigen = path.join(__dirname, '..', registro.archivos.foto.replace(/^\//, ''));
-            const rutaDestino = path.join(__dirname, '../archivosDocumento', nombreFoto);
-            
-            try {
-                await fs.access(rutaDestino);
-                console.log(`📷 Foto ya existe en archivosDocumento: ${nombreFoto}`);
-            } catch {
+        // Combinar archivos existentes y nuevos
+        const archivosCombinados = { ...registro.archivos, ...archivosNuevos };
+        // Combinar datos del formulario
+        const datosCompletos = { ...registro.datos, ...req.body };
+        // Validar documentación (usa tu lógica de validación)
+    const { obtenerDocumentosRequeridos } = require(path.join(__dirname, '../utils/obtenerDocumentosRequeridos.js'));
+        const modalidad = datosCompletos.modalidad || '';
+        const planAnio = datosCompletos.planAnio || '';
+        const modulos = datosCompletos.modulos || '';
+        const requerimientos = obtenerDocumentosRequeridos(modalidad, planAnio, modulos);
+        const documentosRequeridos = requerimientos.documentos;
+        const documentosAlternativos = requerimientos.alternativos;
+        // Validar documentos subidos
+        let documentosSubidos = [];
+        let documentosFaltantes = [];
+        let validacionAlternativaOK = true;
+        for (const doc of documentosRequeridos) {
+            if (documentosAlternativos && (doc === documentosAlternativos.preferido || doc === documentosAlternativos.alternativa)) {
+                const tienePreferido = !!archivosCombinados[documentosAlternativos.preferido];
+                const tieneAlternativa = !!archivosCombinados[documentosAlternativos.alternativa];
+                if (tienePreferido || tieneAlternativa) {
+                    documentosSubidos.push(tienePreferido ? documentosAlternativos.preferido : documentosAlternativos.alternativa);
+                } else {
+                    documentosFaltantes.push(doc);
+                    validacionAlternativaOK = false;
+                }
+                continue;
+            }
+            if (archivosCombinados[doc]) {
+                documentosSubidos.push(doc);
+            } else {
+                documentosFaltantes.push(doc);
+            }
+        }
+        const cantidadSubidos = documentosSubidos.length;
+        const totalDocumentos = documentosRequeridos.length;
+        const esCompleto = (cantidadSubidos === totalDocumentos) && validacionAlternativaOK;
+        // Si la documentación está incompleta, mover a pendientes
+        const REGISTROS_PENDIENTES_PATH = path.join(__dirname, '..', 'data', 'Registros_Pendientes.json');
+        let registrosPendientes = [];
+        try {
+            const dataPendientes = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
+            registrosPendientes = JSON.parse(dataPendientes);
+        } catch { registrosPendientes = []; }
+        // Validar si ya existe en pendientes por DNI
+        const yaEnPendientes = registrosPendientes.some(rp => rp.dni === datosCompletos.dni);
+        if (yaEnPendientes) {
+            // Solo cambiar estado y devolver mensaje, no eliminar ni crear duplicado
+            registros[indiceRegistro] = {
+                ...registro,
+                estado: 'MOVIDO_A_PENDIENTES',
+                fechaMovimiento: new Date().toISOString(),
+                motivoPendiente: `Ya existe en pendientes`,
+                observaciones: `Registro ya estaba en pendientes, contabilizado como procesado a pendientes el ${new Date().toLocaleDateString('es-AR')}`
+            };
+            await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify(registros, null, 2));
+            return res.status(200).json({
+                message: 'Registro procesado a pendientes',
+                registroWebActualizado: registros[indiceRegistro]
+            });
+        }
+        // Copiar todos los archivos de archivosDocWeb a archivosPendientes antes de crear el registro pendiente
+        const archivosPendientesDir = path.join(__dirname, '../archivosPendientes');
+        await fs.mkdir(archivosPendientesDir, { recursive: true });
+        for (const [campo, ruta] of Object.entries(archivosCombinados)) {
+            if (ruta && ruta.startsWith('/archivosDocWeb/')) {
+                const nombreArchivo = path.basename(ruta);
+                const origen = path.join(__dirname, '../archivosDocWeb', nombreArchivo);
+                const destino = path.join(archivosPendientesDir, nombreArchivo);
                 try {
-                    await fs.copyFile(rutaOrigen, rutaDestino);
-                    console.log(`📷 Foto copiada a archivosDocumento: ${nombreFoto}`);
-                } catch (copyError) {
-                    console.error(`❌ Error al copiar foto: ${copyError.message}`);
-                    fotoUrl = registro.archivos.foto; // Usar ruta original si falla la copia
+                    await fs.copyFile(origen, destino);
+                    // Actualiza la ruta para el registro pendiente
+                    archivosCombinados[campo] = `/archivosPendientes/${nombreArchivo}`;
+                } catch (err) {
+                    console.error(`Error copiando archivo ${nombreArchivo}:`, err);
                 }
             }
         }
-        
-        // 4) Insertar estudiante
-        const fechaNacimiento = datosFormulario.fechaNacimiento || registro.datos.fechaNacimiento;
-        const [estRes] = await db.query(
-            `INSERT INTO estudiantes
-             (nombre, apellido, tipoDocumento, paisEmision, dni, cuil, email, telefono, fechaNacimiento, foto, idDomicilio, idUsuarios)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-            [
-                datosFormulario.nombre || registro.datos.nombre,
-                datosFormulario.apellido || registro.datos.apellido,
-                datosFormulario.tipoDocumento || registro.datos.tipoDocumento || 'DNI',
-                datosFormulario.paisEmision || registro.datos.paisEmision || 'Argentina',
-                dniEstudiante,
-                datosFormulario.cuil || registro.datos.cuil,
-                datosFormulario.email || registro.datos.email,
-                datosFormulario.telefono || registro.datos.telefono,
-                fechaNacimiento,
-                fotoUrl,
-                idDomicilio,
-                null // idUsuarios - null para registros web
-            ]
-        );
-        const idEstudiante = estRes.insertId;
-        
-        // 5) Insertar inscripción
-        const modalidadId = Number(getFirst(datosFormulario.modalidadId || registro.datos.modalidadId));
-        const planAnioId = Number(getFirst(datosFormulario.planAnio || registro.datos.planAnio));
-        const modulosId = Number(getFirst(datosFormulario.idModulo || registro.datos.idModulo));
-        const idEstadoInscripcion = Number(getFirst(datosFormulario.idEstadoInscripcion)) || 1;
-        
-        const idInscripcion = await insertarInscripcion(
-            db,
-            idEstudiante,
-            modalidadId,
-            planAnioId,
-            modulosId,
-            idEstadoInscripcion,
-            'CURDATE()'
-        );
-        
-        // 6) Insertar detalle de documentación
-        let detalleDocumentacion = [];
-        if (documentos?.detalle && Array.isArray(documentos.detalle)) {
-            detalleDocumentacion = documentos.detalle;
+        // Crear registro pendiente
+        const registroPendiente = {
+            dni: datosCompletos.dni,
+            timestamp: new Date().toISOString(),
+            fechaRegistro: new Date().toLocaleDateString('es-AR'),
+            horaRegistro: new Date().toLocaleTimeString('es-AR'),
+            tipo: 'REGISTRO_WEB_PENDIENTE',
+            estado: 'PENDIENTE',
+            origenWeb: true,
+            idRegistroWebOriginal: registro.id,
+            datos: {
+                ...datosCompletos,
+                motivoPendiente: `Faltan: ${documentosFaltantes.join(', ')}`,
+                administrador: 'admin_web'
+            },
+            archivos: archivosCombinados,
+            observaciones: `Movido desde registro web a pendientes el ${new Date().toLocaleDateString('es-AR')} - Faltan: ${documentosFaltantes.join(', ')}`
+        };
+        registrosPendientes.push(registroPendiente);
+        await fs.writeFile(REGISTROS_PENDIENTES_PATH, JSON.stringify(registrosPendientes, null, 2));
+        // Actualizar estado del registro web original
+        registros[indiceRegistro] = {
+            ...registro,
+            estado: 'MOVIDO_A_PENDIENTES',
+            fechaMovimiento: new Date().toISOString(),
+            motivoPendiente: `Faltan: ${documentosFaltantes.join(', ')}`,
+            observaciones: `Movido a registros pendientes el ${new Date().toLocaleDateString('es-AR')} - Faltan: ${documentosFaltantes.join(', ')}`
+        };
+        await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify(registros, null, 2));
+        return res.status(200).json({
+            message: 'Registro web movido a pendientes por documentación incompleta',
+            registroWebActualizado: registros[indiceRegistro],
+            registroPendienteCreado: registroPendiente
+        });
+        // Si la documentación está completa, guardar en la base de datos
+        const pool = require('../db');
+        try {
+            // Insertar estudiante en la tabla 'estudiantes'
+            const [result] = await pool.query(
+                `INSERT INTO estudiantes (nombre, apellido, dni, cuil, email, telefono, fechaNacimiento, tipoDocumento, paisEmision, calle, numero, barrio, localidad, provincia, modalidad, planAnio, modulos, usuario, archivo_dni, archivo_cuil, archivo_fichaMedica, archivo_partidaNacimiento, foto, archivo_analiticoParcial, archivo_certificadoNivelPrimario, archivo_solicitudPase)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    datosCompletos.nombre,
+                    datosCompletos.apellido,
+                    datosCompletos.dni,
+                    datosCompletos.cuil,
+                    datosCompletos.email,
+                    datosCompletos.telefono,
+                    datosCompletos.fechaNacimiento,
+                    datosCompletos.tipoDocumento,
+                    datosCompletos.paisEmision,
+                    datosCompletos.calle,
+                    datosCompletos.numero,
+                    datosCompletos.barrio,
+                    datosCompletos.localidad,
+                    datosCompletos.provincia,
+                    datosCompletos.modalidad,
+                    datosCompletos.planAnio,
+                    datosCompletos.modulos,
+                    datosCompletos.usuario,
+                    archivosCombinados['archivo_dni'] || '',
+                    archivosCombinados['archivo_cuil'] || '',
+                    archivosCombinados['archivo_fichaMedica'] || '',
+                    archivosCombinados['archivo_partidaNacimiento'] || '',
+                    archivosCombinados['foto'] || '',
+                    archivosCombinados['archivo_analiticoParcial'] || '',
+                    archivosCombinados['archivo_certificadoNivelPrimario'] || '',
+                    archivosCombinados['archivo_solicitudPase'] || ''
+                ]
+            );
+            registros[indiceRegistro] = {
+                ...registro,
+                estado: 'PROCESADO',
+                fechaProcesado: new Date().toISOString(),
+                archivos: archivosCombinados,
+                datos: datosCompletos,
+                observaciones: `Procesado y guardado en BD el ${new Date().toLocaleDateString('es-AR')}`
+            };
+            await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify(registros, null, 2));
+            return res.status(200).json({
+                message: 'Registro web procesado y guardado en la base de datos',
+                registroProcesado: registros[indiceRegistro],
+                insertId: result.insertId
+            });
+        } catch (err) {
+            console.error('Error al guardar en la base de datos:', err);
+            return res.status(500).json({
+                error: 'Error al guardar en la base de datos',
+                message: err.message
+            });
         }
-        
-        if (detalleDocumentacion.length > 0) {
-            await buscarOInsertarDetalleDocumentacion(db, idInscripcion, detalleDocumentacion);
-        }
-        
-        // 7) Actualizar estado del registro web
+        // Por ahora, solo marcamos como PROCESADO y respondemos
         registros[indiceRegistro] = {
             ...registro,
             estado: 'PROCESADO',
-            datosActualizados: datosFormulario,
-            documentosFinales: documentos,
-            fechaProcesamiento: new Date().toISOString(),
-            idEstudianteBD: idEstudiante,
-            idInscripcionBD: idInscripcion,
-            observaciones: `Procesado y guardado en base de datos el ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR')} - ID Estudiante: ${idEstudiante}`
+            fechaProcesado: new Date().toISOString(),
+            archivos: archivosCombinados,
+            datos: datosCompletos,
+            observaciones: `Procesado correctamente el ${new Date().toLocaleDateString('es-AR')}`
         };
-        
-        // Guardar cambios en el JSON
         await fs.writeFile(REGISTROS_WEB_PATH, JSON.stringify(registros, null, 2));
-        
-        // 8) Eliminar registro pendiente si existe
-        try {
-            const registrosPendientesPath = path.join(__dirname, '../data/Registros_Pendientes.json');
-            
-            // Verificar si el archivo existe
-            try {
-                await fs.access(registrosPendientesPath);
-                
-                // Leer el archivo
-                const dataPendientes = await fs.readFile(registrosPendientesPath, 'utf8');
-                const registrosPendientes = JSON.parse(dataPendientes);
-                
-                // Buscar y eliminar el registro con el mismo DNI
-                const registrosFiltrados = registrosPendientes.filter(regPendiente => regPendiente.dni !== dniEstudiante);
-                
-                // Si se eliminó algún registro, actualizar el archivo
-                if (registrosFiltrados.length < registrosPendientes.length) {
-                    await fs.writeFile(registrosPendientesPath, JSON.stringify(registrosFiltrados, null, 2));
-                    console.log(`🗑️ Registro pendiente eliminado automáticamente para DNI: ${dniEstudiante}`);
-                }
-                
-            } catch (fileError) {
-                // Si el archivo no existe, no hay problema
-                if (fileError.code !== 'ENOENT') {
-                    console.error('Error al procesar registros pendientes:', fileError);
-                }
-            }
-        } catch (cleanupError) {
-            console.error('Error en limpieza de registros pendientes:', cleanupError);
-            // No interrumpir el flujo principal por este error
-        }
-        
-        console.log(`✅ Registro web ${id} procesado y guardado en BD - ID Estudiante: ${idEstudiante}, ID Inscripción: ${idInscripcion}`);
-        
-        res.json({
-            message: 'Registro web procesado y guardado en base de datos exitosamente',
-            registro: registros[indiceRegistro],
-            idEstudiante: idEstudiante,
-            idInscripcion: idInscripcion
+        return res.status(200).json({
+            message: 'Registro web procesado exitosamente',
+            registroProcesado: registros[indiceRegistro]
         });
-        
     } catch (error) {
         console.error('Error al procesar registro web:', error);
         res.status(500).json({ 
@@ -433,7 +445,8 @@ router.post('/:id/procesar', async (req, res) => {
     }
 });
 
-// POST: Mover un registro web a pendientes
+// POST: Mover un registro web a pendientes (solo ADMIN, acción manual)
+// Permite mover un registro web a Registros_Pendientes.json y marcarlo como MOVIDO_A_PENDIENTES.
 router.post('/:id/mover-pendiente', async (req, res) => {
     try {
         await ensureFileExists();

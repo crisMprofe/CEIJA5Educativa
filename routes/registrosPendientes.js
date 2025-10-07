@@ -8,7 +8,7 @@ const multer = require('multer');
 const storage = multer.diskStorage({
     // Carpeta donde se guardan los archivos de registros pendientes
     destination: (_req, _file, cb) => {
-        cb(null, path.join(__dirname, '../archivosDocumentacion'));
+        cb(null, path.join(__dirname, '../archivosPendientes'));
     },
     // Nombre del archivo: <nombre>_<apellido>_<dni>_<campo>.<ext>
     filename: (req, file, cb) => {
@@ -104,7 +104,7 @@ router.post('/', upload.any(), async (req, res) => {
         if (req.files) {
             req.files.forEach(file => {
                 // Guardar la ruta relativa para acceso web
-                archivosMap[file.fieldname] = `/archivosDocumentacion/${file.filename}`;
+                archivosMap[file.fieldname] = `/archivosPendientes/${file.filename}`;
                 console.log(`📎 [archivos-pendientes] Mapeado: ${file.fieldname} → ${file.filename}`);
             });
         }
@@ -134,14 +134,16 @@ router.post('/', upload.any(), async (req, res) => {
                 barrio: req.body.barrio || '',
                 localidad: req.body.localidad || '',
                 provincia: req.body.provincia || '',
-                codigoPostal: req.body.codigoPostal || '',
+                
                 
                 // Información académica
                 modalidad: req.body.modalidad || '',
                 modalidadId: req.body.modalidadId || null,
-                planAnio: req.body.planAnio || '',
-                modulos: req.body.modulos || '',
-                idModulo: req.body.idModulo || null,
+                planAnio: req.body.planAnio !== undefined && req.body.planAnio !== null ? req.body.planAnio : '',
+                modulos: req.body.modulos !== undefined && req.body.modulos !== null ? req.body.modulos : '',
+                idModulo: Array.isArray(req.body.idModulo)
+                    ? req.body.idModulo.filter(x => x && x !== ',' && x !== '').map(String)
+                    : (typeof req.body.idModulo === 'string' && req.body.idModulo !== '' && req.body.idModulo !== ',' ? [req.body.idModulo] : []),
                 
                 // Información del administrador
                 administrador: req.body.administrador || req.user?.usuario || 'admin',
@@ -326,7 +328,7 @@ router.put('/:dni', upload.any(), async (req, res) => {
         if (req.files && req.files.length > 0) {
             console.log(`📎 Procesando ${req.files.length} archivos actualizados`);
             req.files.forEach(file => {
-                archivosActualizados[file.fieldname] = `/archivosDocumentacion/${file.filename}`;
+                archivosActualizados[file.fieldname] = `/archivosPendientes/${file.filename}`;
             });
         }
         
@@ -368,5 +370,7 @@ router.put('/:dni', upload.any(), async (req, res) => {
         });
     }
 });
+
+
 
 module.exports = router;

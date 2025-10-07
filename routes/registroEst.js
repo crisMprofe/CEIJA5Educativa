@@ -3,6 +3,7 @@ const router  = express.Router();
 const db      = require('../db');
 const multer  = require('multer');
 const path    = require('path');
+const fs      = require('fs').promises;
 
 const buscarOInsertarProvincia  = require('../utils/buscarOInsertarProvincia');
 const buscarOInsertarLocalidad  = require('../utils/buscarOInsertarLocalidad');
@@ -281,6 +282,52 @@ router.post('/registrar', upload.any(), async (req, res) => {
         console.log(`✅ [DETALLE] Insertado con ID: ${idDetalle}`);
     }
 
+    // ─── 7.1) Mover archivos a carpeta definitiva y registrar en BD ──────
+    console.log('📎 [ARCHIVOS] Moviendo archivos a carpeta definitiva y guardando en BD...');
+    const archivosFinales = {};
+    
+    for (const [campo, rutaArchivo] of Object.entries(archivosMap)) {
+        if (rutaArchivo) {
+            try {
+                // Generar nombre final del archivo
+                const nombreFinal = `${nombre}_${apellido}_${dni}_${campo}`;
+                const extension = path.extname(rutaArchivo);
+                const nombreCompletoFinal = nombreFinal + extension;
+                
+                // Rutas de origen y destino
+                const rutaOrigen = path.join(__dirname, '..', rutaArchivo.replace(/^\//, ''));
+                const rutaDestino = path.join(__dirname, '../archivosDocumento', nombreCompletoFinal);
+                const rutaFinalBD = `/archivosDocumento/${nombreCompletoFinal}`;
+                
+                // Mover archivo si existe y la ruta origen es diferente a destino
+                if (rutaOrigen !== rutaDestino) {
+                    try {
+                        await fs.access(rutaOrigen);
+                        await fs.copyFile(rutaOrigen, rutaDestino);
+                        console.log(`📁 [MOVER] ${rutaArchivo} -> ${rutaFinalBD}`);
+                    } catch (moveError) {
+                        console.warn(`⚠️ No se pudo mover archivo ${rutaArchivo}:`, moveError.message);
+                        // Usar ruta original si no se pudo mover
+                    }
+                }
+                
+                archivosFinales[campo] = rutaDestino !== rutaOrigen ? rutaFinalBD : rutaArchivo;
+                
+                // Guardar en BD solo si es un archivo de documentación
+                if (campo.startsWith('archivo_') || campo === 'foto') {
+                    await db.query(
+                        'INSERT INTO archivos_estudiantes (idEstudiante, tipoArchivo, rutaArchivo) VALUES (?, ?, ?)',
+                        [idEstudiante, campo, archivosFinales[campo]]
+                    );
+                    console.log(`✅ [ARCHIVO BD] ${campo} -> ${archivosFinales[campo]}`);
+                }
+                
+            } catch (archivoError) {
+                console.warn(`⚠️ Error procesando archivo ${campo}:`, archivoError.message);
+                archivosFinales[campo] = rutaArchivo; // Mantener ruta original
+            }
+        }
+    }
 
     // ─── 8) Eliminar registro pendiente si existe ─────────
     try {
@@ -428,7 +475,7 @@ router.get('/verificar/:dni', async (req, res) => {
     const query = `
       SELECT COUNT(*) as count 
       FROM estudiantes 
-      WHERE documento = ?
+      WHERE dni = ?
     `;
     
     const [rows] = await db.query(query, [dni]);
