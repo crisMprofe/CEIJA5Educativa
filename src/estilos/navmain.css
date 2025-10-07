@@ -18,7 +18,22 @@
 /* Estilos para el header del sistema */
 .nav-header {
   flex: 1;
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.nav-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.nav-logo {
+  height: 50px;
+  width: auto;
+  margin-left: auto;
 }
 
 .sistema-titulo {
@@ -27,6 +42,7 @@
   font-weight: bold;
   margin: 0;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  line-height: 1.2;
 }
 
 .sistema-subtitulo {
@@ -34,6 +50,7 @@
   font-size: 12px;
   margin: 2px 0 0 0;
   font-weight: 500;
+  line-height: 1.2;
 }
 
 /* Estilos para los enlaces de navegación */
@@ -92,4 +109,32 @@
 .logout-button:hover {
   background-color: #2d4177; /* Azul oscuro */
   color: #ffffff; /* Texto blanco */
+}
+
+/* Logo fijo en esquina inferior derecha */
+.logo-fixed {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+
+/* Ajustes para el componente Logo cuando está fijo */
+.logo-fixed .title {
+  display: none; /* Ocultar el título del logo cuando está fijo */
+}
+
+.logo-fixed .logoProyecto {
+  margin: 0;
+}
+
+.logo-fixed .logo {
+  max-width: 120px;
+  max-height: 80px;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.logo-fixed .logo:hover {
+  opacity: 1;
 }

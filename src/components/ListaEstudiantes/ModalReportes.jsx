@@ -106,12 +106,12 @@ const ModalReportes = ({
       }
     }}>
       <div className="modal-reportes-contenido">
-        <div className="modal-reportes-header">
+        <div className="modal-reportes-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 15 }}>
+          <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 600, flex: 1 }}>📊 Centro de Análisis Institucional</h3>
           <CloseButton 
             onClose={onCerrar}
             className="boton-small boton-cerrar-lista"
           />
-          <h3>📊 Centro de Análisis Institucional</h3>
         </div>
         
         <div className="modal-reportes-body">

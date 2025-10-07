@@ -141,5 +141,44 @@ export const registrosPendientesService = {
             console.error('Error al actualizar registro:', error);
             throw error;
         }
+    },
+
+    // NUEVO: Completar documentación y registrar en BD
+    completarDocumentacion: async (dni, datosFormulario, archivos) => {
+        try {
+            const formData = new FormData();
+            
+            // Agregar datos del formulario
+            Object.keys(datosFormulario).forEach(key => {
+                if (datosFormulario[key] !== null && datosFormulario[key] !== undefined) {
+                    formData.append(key, datosFormulario[key]);
+                }
+            });
+            
+            // Agregar archivos nuevos si hay
+            if (archivos) {
+                Object.keys(archivos).forEach(fieldName => {
+                    const archivo = archivos[fieldName];
+                    if (archivo && archivo.file) {
+                        formData.append(fieldName, archivo.file);
+                    }
+                });
+            }
+            
+            const response = await fetch(`/api/completar-documentacion/${dni}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Error al completar documentación');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error al completar documentación:', error);
+            throw error;
+        }
     }
 };

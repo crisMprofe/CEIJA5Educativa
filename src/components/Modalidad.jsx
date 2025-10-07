@@ -79,8 +79,10 @@ const Modalidad = ({ isOpen, onClose, onSelectModalidad }) => {
         ) : (
           // Mostrar selector de modalidades
           <div className="modal-container" style={{ position: 'relative' }}>
-            <CloseButton onClose={handleModalClose} variant="modal" className="modal-close" />
-            <h2 className="modal-title">Elija una Modalidad</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 className="modal-title" style={{ margin: 0 }}>Elija una Modalidad</h2>
+              <CloseButton onClose={handleModalClose} className="cerrar-button modal-close" />
+            </div>
             <div className="modal-buttons">
               {opciones.map((opcion) => (
                 <button

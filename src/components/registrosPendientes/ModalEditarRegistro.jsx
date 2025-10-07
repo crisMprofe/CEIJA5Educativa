@@ -66,7 +66,6 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
             switch (modalidad) {
                 case 'Presencial': return 1;
                 case 'Semipresencial': return 2;
-                case 'A Distancia': return 3;
                 default: return '';
             }
         })(),
@@ -157,7 +156,7 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
                 
                 // Verificar si la respuesta indica éxito
                 if (resultado && (resultado.success === true || resultado.message?.includes('exitoso') || resultado.id)) {
-                    // No mostrar mensaje aquí - lo maneja el componente padre
+                    showSuccess('✅ Registro enviado, procesando...');
                     console.log('✅ Registro completado exitosamente');
                     // Eliminar del archivo de pendientes
                     await registrosPendientesService.eliminarRegistroPendiente(registro.dni);
@@ -166,8 +165,8 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
                     throw new Error(resultado.message || 'Error al completar el registro');
                 } else {
                     // Si no hay estructura de respuesta clara pero llegó aquí, considerar como éxito
+                    showSuccess('✅ Registro enviado, procesando...');
                     console.log('⚠️ Respuesta sin estructura clara para completar, considerando como éxito');
-                    // No mostrar mensaje aquí - lo maneja el componente padre
                     await registrosPendientesService.eliminarRegistroPendiente(registro.dni);
                     onGuardado && onGuardado(registro, 'completado');
                 }

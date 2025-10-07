@@ -16,13 +16,13 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
 
     const handleSelection = (event) => {
         const newValue = event.target.value;
-        setFieldValue('planAnio', newValue); // Actualiza Formik
-         if (typeof handleChange === 'function') { // ← defensa extra
-                    handleChange(event);
-                } // Actualiza el valor en Formik
-        setAlerta(newValue === ""); // Muestra la alerta si no selecciona nada
-        setIdModulo(''); // Limpia módulo si cambia plan
-        setFieldValue('modulos', ''); // Limpia módulo en Formik
+        setFieldValue('planAnio', newValue || ''); // Siempre string
+        if (typeof handleChange === 'function') {
+            handleChange(event);
+        }
+        setAlerta(newValue === "");
+        setIdModulo('');
+        setFieldValue('modulos', '');
     };
 
    const handleModuloChange = (event) => {
@@ -129,7 +129,7 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
                             { value: 3, label: '3er Año' },
                         ]}
                         registro={{
-                            value: typeof value === 'object' ? value.planAnio || '' : value,
+                            value: (typeof value === 'object' ? value.planAnio : value) || '',
                             onChange: handleSelection
                         }}
                         error={alerta && <AlertaMens text="Por favor, selecciona un año." variant="error" />}
@@ -150,7 +150,7 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
                             { value: 6, label: 'Plan C' },
                         ]}
                         registro={{
-                            value: typeof value === 'object' ? value.planAnio || '' : value,
+                            value: (typeof value === 'object' ? value.planAnio : value) || '',
                             onChange: handleSelection
                         }}
                         error={alerta && <AlertaMens text="Por favor, selecciona un plan." variant="error" />}

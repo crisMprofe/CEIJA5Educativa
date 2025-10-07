@@ -83,6 +83,9 @@ const RegistroPendienteItem = ({
         };
     }, [registro.datos, registro.modalidad, registro.planAnio, registro.modulos, registro.documentosSubidos, registro.archivos]);
     
+    // Solo mostrar el badge si el registro está aprobado y registrado (no en pendientes)
+    const mostrarBadgeAprobado = !!estaRegistrado;
+
     return (
         <div 
             key={registro.id || index} 
@@ -95,7 +98,7 @@ const RegistroPendienteItem = ({
                     <div className="registro-info-estudiante">
                         <h4>
                             {registro.datos?.nombre || registro.nombre} {registro.datos?.apellido || registro.apellido}
-                            {estaRegistrado && (
+                            {mostrarBadgeAprobado && (
                                 <span 
                                     className="badge-estudiante-registrado" 
                                     style={{
@@ -133,18 +136,23 @@ const RegistroPendienteItem = ({
                     
                     {/* Información de la derecha */}
                     <div className="registro-info-derecha">
-                        <div className="registro-vencimiento" style={{ color: info.color }}>
-                            {info.vencido ? '🔴 VENCIDO' : `🕒 ${info.mensaje}`}
-                        </div>
-                        {!info.vencido && (
-                            <div className="registro-fecha-limite">
-                                Vence: {info.fechaVencimiento}
-                            </div>
-                        )}
-                        {registro.modalidad && (
-                            <div className="registro-modalidad">
-                                📚 {registro.modalidad}
-                            </div>
+                        {/* Mostrar alarma/vencimiento solo si NO está registrado */}
+                        {!mostrarBadgeAprobado && (
+                            <>
+                                <div className="registro-vencimiento" style={{ color: info.color }}>
+                                    {info.vencido ? '🔴 VENCIDO' : `🕒 ${info.mensaje}`}
+                                </div>
+                                {!info.vencido && (
+                                    <div className="registro-fecha-limite">
+                                        Vence: {info.fechaVencimiento}
+                                    </div>
+                                )}
+                                {registro.modalidad && (
+                                    <div className="registro-modalidad">
+                                        📚 {registro.modalidad}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

@@ -143,7 +143,7 @@ const ModalidadModal = ({ modalidad, onClose, onBackToSelector }) => {
                 {/* Contenido del modal */}
                 <div className="modal-content-body">
                     {renderContent()}
-                    <div className="modal-actions">
+                    <div className="modal-actions" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 32 }}>
                         <Link to={`/preinscripcion-estd?modalidad=${modalidad}&web=true`}>
                             <button type="button" className="boton-principal modal-cta-button">
                                 ✨ Iniciar Preinscripción

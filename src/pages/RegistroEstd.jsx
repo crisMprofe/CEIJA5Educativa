@@ -1,5 +1,6 @@
 import { Form } from 'formik';
 import { useState, useMemo } from 'react';
+// (Eliminado import duplicado de useEffect)
 import CloseButton from '../components/CloseButton';
 import VolverButton from '../components/VolverButton';
 import ModalidadSelection from '../components/ModalidadSelection';
@@ -17,7 +18,6 @@ import BotonCargando from '../components/BotonCargando';
 import { useContext } from 'react';
 import { AlertContext } from '../context/alertContextDefinition';
 
-
 const RegistroEstd = ({
     previews,
     handleFileChange,
@@ -34,6 +34,24 @@ const RegistroEstd = ({
     completarRegistro // Nuevo prop para detectar si se está completando un registro
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Limpiar archivos/documentos y sessionStorage justo ANTES de abrir el modal de documentación para un registro nuevo
+    const handleAbrirModalDocumentacion = () => {
+        if ((isWebUser || isAdmin) && accion === 'Registrar') {
+            if (typeof setFieldValue === 'function') {
+                setFieldValue('archivos', {});
+                setFieldValue('previews', {});
+            }
+            // Limpieza extra: eliminar posibles archivos/previews de la sesión
+            sessionStorage.removeItem('datosRegistroWeb');
+            sessionStorage.removeItem('datosRegistroPendiente');
+            // Limpieza extra: si existen variables globales o en window
+            if (window.archivos) window.archivos = {};
+            if (window.previews) window.previews = {};
+        }
+        setIsModalOpen(false); // Cierra primero por si quedó abierto
+        setTimeout(() => setIsModalOpen(true), 0); // Reabre limpio
+    };
     // Estado requerido por ModalidadSelection (solo formData)
     const [formData, setFormData] = useState({});
     // Estados para manejo de registros pendientes - No mostrar si se está completando un registro desde URL
@@ -95,10 +113,36 @@ const RegistroEstd = ({
         }
 
         // Usar el handleSubmit del hook que maneja todo el flujo correctamente
-        await handleSubmit(values, { 
+        const result = await handleSubmit(values, { 
             setSubmitting: () => {}, 
             resetForm: () => {} 
         }, accion, isAdmin, isWebUser, completarRegistro, values.modalidad, null);
+
+        // Mostrar feedback según resultado
+        if (result && result.success) {
+            if (result.migradoABaseDatos) {
+                // Registro completo y guardado en BD
+                if (window?.showSuccess) window.showSuccess('✅ Registro completado y guardado en la base de datos');
+                else alert('✅ Registro completado y guardado en la base de datos');
+            } else if (result.migradoAPendientes) {
+                // Documentación incompleta, movido a pendientes
+                if (window?.showWarning) window.showWarning('⚠️ Documentación incompleta. El registro se movió a pendientes');
+                else alert('⚠️ Documentación incompleta. El registro se movió a pendientes');
+            } else {
+                // Registro exitoso pero sin detalle
+                if (window?.showSuccess) window.showSuccess('✅ Registro procesado correctamente');
+                else alert('✅ Registro procesado correctamente');
+            }
+        } else {
+            // Error
+            if (window?.showError) window.showError(result?.message || '❌ Error al procesar el registro');
+            else alert(result?.message || '❌ Error al procesar el registro');
+        }
+
+        // Si es usuario web y el registro fue exitoso, redirigir al home
+        if (isWebUser && result && result.success) {
+            window.location.href = '/';
+        }
     };
 
     return (
@@ -160,7 +204,7 @@ const RegistroEstd = ({
                 </div>
                 <div className="left-container button-stack">
                     <h4>Acciones</h4>
-                    <button type="button" className="boton-principal" onClick={() => setIsModalOpen(true)}>
+                    <button type="button" className="boton-principal" onClick={handleAbrirModalDocumentacion}>
                         Adjuntar Documentación
                     </button>
                         {accion === "Eliminar" ? (

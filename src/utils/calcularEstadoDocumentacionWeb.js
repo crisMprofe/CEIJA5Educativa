@@ -124,22 +124,8 @@ const testNarella = {
     }
 };
 
-const testNicolas = {
-    datos: {
-        modalidad: "Semipresencial",
-        planAnio: "4"
-    },
-    archivos: {
-        "foto": "/archivosDocWeb/Nicolas_Gutierrez_36256145_foto.jpg",
-        "archivo_dni": "/archivosDocWeb/Nicolas_Gutierrez_36256145_archivo_dni.pdf",
-        "archivo_cuil": "/archivosDocWeb/Nicolas_Gutierrez_36256145_archivo_cuil.pdf",
-        "archivo_fichaMedica": "/archivosDocWeb/Nicolas_Gutierrez_36256145_archivo_fichaMedica.pdf",
-        "archivo_analiticoParcial": "/archivosDocWeb/Nicolas_Gutierrez_36256145_archivo_analiticoParcial.pdf"
-    }
-};
+
 
 console.log('=== TEST NARELLA (Presencial 3° año) ===');
 console.log(calcularEstadoDocumentacionWeb(testNarella));
 
-console.log('\n=== TEST NICOLAS (Semipresencial Plan A) ===');
-console.log(calcularEstadoDocumentacionWeb(testNicolas));

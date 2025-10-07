@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import CloseButton from '../CloseButton';
 
 const HeaderModal = ({ 
     cantidadTotal, 
@@ -15,13 +16,13 @@ const HeaderModal = ({
             borderBottom: '1px solid #e0e0e0'
         }}>
             <div>
-                <h2 style={{ margin: 0, color: '#333' }}>
+                <h2 style={{ margin: 0, color: '#e7cdcdff' }}>
                     📋 Registros Pendientes
                 </h2>
-                <div style={{ 
-                    fontSize: '0.9rem', 
-                    color: '#fafbfc;', 
-                    marginTop: '5px' 
+                <div style={{
+                    fontSize: '0.9rem',
+                    color: '#aba6a6ff',
+                    marginTop: '5px'
                 }}>
                     Total: <strong>{cantidadTotal}</strong> registros
                     {fechaActualizacion && (
@@ -31,25 +32,7 @@ const HeaderModal = ({
                     )}
                 </div>
             </div>
-            <button
-                onClick={onCerrar}
-                style={{
-                    background: '#dc3545',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '35px',
-                    height: '35px',
-                    fontSize: '18px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}
-                title="Cerrar modal"
-            >
-                ✕
-            </button>
+            <CloseButton onClose={onCerrar} className="cerrar-button" />
         </div>
     );
 };

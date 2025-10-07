@@ -183,7 +183,7 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
     } catch (error) {
       console.error('🚨 Error en handleEmitirComprobante:', error);
       const errorMessage = error.message || 'Error al generar el comprobante';
-      showAlerta('error', errorMessage);
+  setError(errorMessage);
       setLoading(false);
     }
   };
@@ -196,14 +196,14 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
 
     try {
       setLoading(true);
-      setError('');
+  setError('');
       
       const response = await service.getEstudiantePorDNI(dni);
       
       if (response.success && response.estudiante) {
         const modalidadEstudiante = response.inscripcion?.modalidad || response.estudiante?.modalidad || '';
         if (typeof modalidad !== 'undefined' && modalidad && modalidad !== 'todas' && modalidadEstudiante !== modalidad) {
-          setError('El estudiante no pertenece a la modalidad seleccionada.');
+         setError('El estudiante no pertenece a la modalidad seleccionada.');
           setEstudiantes([]);
           setLoading(false);
           return;
@@ -228,7 +228,7 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
         setTotalPages(1);
         setPage(1);
       } else {
-        setError('No se encontró ningún estudiante con ese DNI');
+  setError('No se encontró ningún estudiante con ese DNI');
         setEstudiantes([]);
       }
       setLoading(false);
@@ -240,10 +240,10 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
   };
 
   const handleLimpiarBusqueda = () => {
-    setModoBusqueda(false);
-    setError('');
-    setPage(1);
-    cargarEstudiantes(1);
+  setModoBusqueda(false);
+  setError('');
+  setPage(1);
+  cargarEstudiantes(1);
   };
 
   const getTituloLista = () => {
@@ -292,9 +292,10 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
             {modalidad && modalidad !== 'todas' && ` | Modalidad: ${modalidad}`}
           </p>
         </div>
-        <div className="botones-navegacion">
-          {onVolver && <VolverButton onClick={onVolver} />}
-          {onClose && <CloseButton onClose={onClose} className="boton-small boton-cerrar-lista" />}
+        <div className="botones-navegacion" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onVolver && <VolverButton onClick={onVolver} className="volver-button" />}
+          <div style={{ flex: 1 }} />
+          {onClose && <CloseButton onClose={onClose} className="cerrar-button" />}
         </div>
       </div>
 
@@ -318,6 +319,7 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
         </div>
       )}
 
+
       {/* Mensajes de error */}
       {error && (
         <div className="error-message">
@@ -337,7 +339,7 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
       <TablaEstudiantes
         estudiantes={estudiantesFiltrados}
         loading={loading}
-        error={error}
+  error={error}
         onEmitirComprobante={handleEmitirComprobante}
         formatearFecha={formatearFecha}
         modoBusqueda={modoBusqueda}

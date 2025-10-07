@@ -782,49 +782,6 @@
   letter-spacing: 0.5px;
 }
 
-/* Botón de cerrar más pequeño en modal */
-.btn-cerrar-modal-small {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  font-size: 0.7rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease;
-}
-
-.btn-cerrar-modal-small:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Botón de cerrar pequeño en header */
-.boton-cerrar-lista {
-  background: #dc3545 !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 50% !important;
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  cursor: pointer;
-  font-size: 0.75rem !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  font-weight: bold;
-}
-
-.boton-cerrar-lista:hover {
-  background: #c82333 !important;
-  transform: scale(1.1);
-}
-
 /* Mejorar dropdown de estados */
 .grupo-select-estado {
   display: flex;

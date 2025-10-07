@@ -1,24 +1,28 @@
+
 import PropTypes from 'prop-types';
 import { FaArrowLeft } from 'react-icons/fa';
-import '../estilos/botones.css'; // Usar estilos unificados
+import '../estilos/botones.css';
+import '../estilos/botonClose.css';
 
 const VolverButton = ({ onClick, className }) => {
-    const buttonClassName = className || 'boton-principal';
-    const isSmall = className && className.includes('boton-small');
-    
     return (
-        <button 
-            className={buttonClassName} 
+        <button
+            className={className ? className : 'volver-button'}
             onClick={onClick}
             style={{
-                minWidth: isSmall ? '28px' : '50px',
-                width: isSmall ? '28px' : '50px',
-                height: isSmall ? '28px' : '50px',
+                minWidth: '28px',
+                width: '28px',
+                height: '28px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: isSmall ? '12px' : '16px'
+                fontSize: '16px',
+                fontWeight: 'bold',
+                background: '#f0f0f0',
+                color: '#333',
+                border: '1px solid #ccc',
+                padding: 0
             }}
         >
             <FaArrowLeft />

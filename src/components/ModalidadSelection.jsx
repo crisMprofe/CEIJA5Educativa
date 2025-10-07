@@ -32,23 +32,25 @@ const ModalidadSelection = memo(({ modalidad, modalidadId, handleChange, setFiel
         }
     }, [modalidad, values.planAnio, modalidadId, showMateriasList]);
 
+    // Para nuevos registros, asegurar value controlado (string vacío si no hay valor)
+    const planAnioValue = values.planAnio !== undefined && values.planAnio !== null ? values.planAnio : '';
     return (
-        <div className="form-eleccion">
-            <h3>Información Académica</h3>
-            
-            <div className="modalidad-info">
-                <strong>Modalidad:</strong> <span className="modalidad-elegida">{modalidad}</span>
-            </div>
-            
-            <div className="form-group">
-                <PlanAnioSelector
-                    modalidad={modalidad}
-                    modalidadId={modalidadId}
-                    value={values.planAnio}
-                    setFieldValue={setFieldValue}
-                    showMateriasList={showMateriasList}
-                    handleChange={handleChange}
-                />
+        <div className="form-eleccion" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <h3 style={{ margin: 0, flex: 1 }}>Información Académica</h3>
+            <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <div className="modalidad-info" style={{ marginBottom: 8 }}>
+                    <strong>Modalidad:</strong> <span className="modalidad-elegida">{modalidad || ''}</span>
+                </div>
+                <div className="form-group" style={{ width: '100%' }}>
+                    <PlanAnioSelector
+                        modalidad={modalidad}
+                        modalidadId={modalidadId}
+                        value={planAnioValue}
+                        setFieldValue={setFieldValue}
+                        showMateriasList={showMateriasList}
+                        handleChange={handleChange}
+                    />
+                </div>
             </div>
         </div>
     );

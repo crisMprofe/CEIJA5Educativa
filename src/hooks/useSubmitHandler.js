@@ -9,7 +9,6 @@ import serviceInscripcion from '../services/serviceInscripcion';
 import serviceRegistrosWeb from '../services/serviceRegistrosWeb';
 import { useContext } from 'react';
 import { AlertContext } from '../context/alertContextDefinition';
-import { calcularEstadoDocumentacionWeb } from '../utils/calcularEstadoDocumentacionWeb';
 
 /**
  * Hook personalizado para manejar el envío del formulario de registro
@@ -49,11 +48,28 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
                 'archivo_certificadoNivelPrimario', 'foto'
             ];
             if (!archivosFields.includes(key)) {
-                const campo = key === 'modulos' ? 'idModulo' : key;
-                formDataToSend.append(campo, value);
+                let campo = key;
+                let valorFinal = value;
+                if (key === 'modulos') {
+                    campo = 'idModulo';
+                    // Si es array, tomar el primer valor válido
+                    if (Array.isArray(value)) {
+                        valorFinal = value.find(v => v && v !== '' && v !== null);
+                    }
+                    // Convertir a número si es string numérico
+                    if (typeof valorFinal === 'string') {
+                        valorFinal = valorFinal.trim();
+                        if (valorFinal !== '' && !isNaN(valorFinal)) {
+                            valorFinal = Number(valorFinal);
+                        }
+                    }
+                    // Si sigue sin ser número, no agregar
+                    if (!valorFinal || isNaN(valorFinal)) return;
+                }
+                formDataToSend.append(campo, valorFinal);
                 // Debug logging para usuarios web
-                if (!isAdmin && value) {
-                    console.log(`🌐 [DEBUG] Agregando al FormData: ${campo} = ${value}`);
+                if (!isAdmin && valorFinal) {
+                    console.log(`🌐 [DEBUG] Agregando al FormData: ${campo} = ${valorFinal}`);
                 }
             }
         });
@@ -77,12 +93,21 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
         return formDataToSend;
     };
 
-    const sendRequest = async (formData, accion, isAdmin, values) => {
+    // Solo enviar a la base de datos si la documentación está completa
+    const sendRequest = async (formData, accion, isAdmin, values, hayDocumentosCompletos) => {
         let response;
         if (accion === "Registrar") {
-            response = isAdmin
-                ? await serviceRegInscripcion.createEstd(formData)
-                : await serviceRegInscripcion.createWebInscription(formData);
+            if (isAdmin) {
+                if (hayDocumentosCompletos) {
+                    // Solo guardar en la base de datos si la documentación está completa
+                    response = await serviceRegInscripcion.createEstd(formData);
+                } else {
+                    // No guardar en la base de datos, solo en pendientes (se maneja en handleResponse)
+                    response = { message: 'Registro pendiente por documentación incompleta', pendiente: true };
+                }
+            } else {
+                response = await serviceRegInscripcion.createWebInscription(formData);
+            }
         } else if (accion === "Modificar" && isAdmin) {
             response = await serviceInscripcion.updateEstd(formData, values.dni);
         }
@@ -259,7 +284,7 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
             
             if (esCompletarRegistroWeb) {
                 console.log('🌐 Completando registro web:', completarRegistroWeb);
-                await handleCompletarRegistroWeb(values, resetForm, resetArchivos);
+                await handleCompletarRegistroWeb(values, resetForm, resetArchivos, files, previews);
                 return;
             }
 
@@ -272,6 +297,8 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
 
             // Construir FormData
             const detalleDocumentacion = buildDetalleDocumentacion();
+            const estadoDocumentacion = obtenerEstadoDocumentacion(files, previews);
+            const hayDocumentosCompletos = estadoDocumentacion.completo;
             const formDataToSend = buildFormData(values, files, detalleDocumentacion, isAdmin);
 
             let response;
@@ -279,7 +306,7 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
 
             // Intentar enviar request - si es admin y falla la BD, ir a pendientes
             try {
-                response = await sendRequest(formDataToSend, accion, isAdmin, values);
+                response = await sendRequest(formDataToSend, accion, isAdmin, values, hayDocumentosCompletos);
                 console.log('✅ [DEBUG] Request exitoso, procesando respuesta...');
                 
                 // Debug logging para usuarios web
@@ -332,71 +359,62 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
         }
     };
 
-    const handleCompletarRegistroWeb = async (values, resetForm, resetArchivos) => {
+    // Ahora recibe filesArg y previewsArg para asegurar contexto correcto
+    const handleCompletarRegistroWeb = async (values, resetForm, resetArchivos, filesArg = {}, previewsArg = {}) => {
         try {
             console.log('🔄 Procesando completar registro web...');
-            
+
             // Obtener datos del registro web desde sessionStorage
             const datosRegistroWeb = JSON.parse(sessionStorage.getItem('datosRegistroWeb') || '{}');
             const idRegistroWeb = datosRegistroWeb.id;
-            
             if (!idRegistroWeb) {
                 throw new Error('ID de registro web no encontrado');
             }
 
-            console.log('📋 Datos del registro web:', datosRegistroWeb);
-            console.log('🎓 Valores del formulario:', values);
-
-            // Usar la nueva función de cálculo de documentación web
-            const estadoDocumentacionWeb = calcularEstadoDocumentacionWeb(datosRegistroWeb);
-            
-            console.log('📊 Estado documentación registro web (NUEVO CALCULO):', estadoDocumentacionWeb);
-
-            // Construir datos completos para envío
+            // Unir datos originales y los del formulario (por si el usuario actualizó algo)
             const datosCompletos = {
-                ...datosRegistroWeb.datos, // Datos originales del registro web
-                ...values,  // Datos actualizados del formulario (sobrescribe los originales)
+                ...datosRegistroWeb.datos,
+                ...values,
             };
 
-            console.log('📦 Datos completos a procesar:', datosCompletos);
+            // Determinar modalidad, plan y módulos para validación
+            const modalidad = datosCompletos.modalidad || '';
+            const planAnio = datosCompletos.planAnio || datosCompletos.anioPlan || '';
+            const modulos = datosCompletos.modulos || '';
 
-            // Construir información de documentos
+            // Validar documentación usando la lógica centralizada
+            const estadoDocumentacion = obtenerEstadoDocumentacion(filesArg, previewsArg, modalidad, planAnio, modulos);
+            console.log('� Estado documentación registro web (VALIDACIÓN):', estadoDocumentacion);
+
+            // Construir información de documentos para guardar
             const documentos = {
-                files: files,
-                previews: previews,
+                files: filesArg,
+                previews: previewsArg,
                 detalle: buildDetalleDocumentacion(),
-                estado: estadoDocumentacionWeb
+                estado: estadoDocumentacion
             };
 
-            // Decidir si procesar en BD o mover a pendientes
-            if (estadoDocumentacionWeb.esCompleto) {
+            if (estadoDocumentacion.completo) {
+                // Documentación completa: procesar en BD
                 console.log('✅ Documentación completa - Procesando registro web en BD');
-                
-                // Procesar en BD y marcar como PROCESADO
                 const resultado = await serviceRegistrosWeb.procesarRegistroWeb(idRegistroWeb, datosCompletos, documentos);
-                
                 showSuccess('Registro web procesado y guardado en la base de datos exitosamente');
-                
                 console.log('✅ Registro procesado en BD:', resultado);
             } else {
-                console.log('⚠️ Documentación incompleta - Moviendo a pendientes');
-                
-                // Usar el mensaje calculado correctamente
-                const motivoPendiente = estadoDocumentacionWeb.mensaje;
-                
-                // Mover a registros pendientes
-                const resultado = await serviceRegistrosWeb.moverRegistroWebAPendientes(idRegistroWeb, motivoPendiente);
-                
-                showWarning(`⚠️ Registro movido a pendientes. ${motivoPendiente}`);
-                
-                console.log('⚠️ Registro movido a pendientes:', resultado);
+                // Documentación incompleta: guardar TODO en pendientes
+                console.log('⚠️ Documentación incompleta - Guardando en Registros_Pendientes.json');
+                const motivoPendiente = estadoDocumentacion.mensaje;
+                // Enviar todos los datos y archivos a pendientes
+                const resultado = await serviceRegistrosWeb.moverRegistroWebAPendientes(idRegistroWeb, motivoPendiente, datosCompletos, documentos);
+                showWarning(`⚠️ Registro PROCESADO A PENDIENTES. ${motivoPendiente}`);
+                console.log('⚠️ Registro PROCESADO A PENDIENTES:', resultado);
             }
 
             // Limpiar y resetear
             resetArchivos();
             resetForm();
             sessionStorage.removeItem('datosRegistroWeb');
-            
+
             // Redirigir al dashboard con mensaje
             setTimeout(() => {
                 window.location.href = '/dashboard?tab=registros-web';

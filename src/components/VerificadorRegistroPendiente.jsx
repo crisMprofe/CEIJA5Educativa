@@ -2,11 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import AlertaMens from './AlertaMens';
 import MensajeError from '../utils/MensajeError';
-import { 
-  verificarRegistroPendiente, 
-  obtenerInfoVencimiento, 
-  eliminarRegistroPendiente 
-} from '../utils/registroSinDocumentacion';
+import { obtenerInfoVencimiento } from '../utils/registroSinDocumentacion';
 import '../estilos/verificadorRegistro.css';
 import '../estilos/botones.css';
 
@@ -17,34 +13,34 @@ const VerificadorRegistroPendiente = ({ dni, onRegistroCompleto, onSinRegistro }
   const [alert, setAlert] = useState({ text: '', variant: '' });
   const [completandoRegistro, setCompletandoRegistro] = useState(false);
 
+  // Nueva función: buscar registro pendiente solo en el backend
   const verificarEstadoRegistro = useCallback(async () => {
     try {
       setLoading(true);
-      
       if (!dni) {
         setLoading(false);
         return;
       }
-
-      // Verificar si hay registro pendiente
-      const registro = verificarRegistroPendiente(dni);
-      
-      if (registro) {
-        setRegistroPendiente(registro);
-        const info = obtenerInfoVencimiento(registro);
-        setInfoVencimiento(info);
-        
-        // Si está vencido, eliminar automáticamente
-        if (info.vencido) {
-          eliminarRegistroPendiente(dni);
-          setRegistroPendiente(null);
-          setInfoVencimiento(null);
+      // Buscar en el backend si existe el registro pendiente
+      const resp = await fetch(`/api/registros-pendientes/${dni}`);
+      if (resp.ok) {
+        const registro = await resp.json();
+        if (registro && registro.dni) {
+          setRegistroPendiente(registro);
+          const info = obtenerInfoVencimiento(registro);
+          setInfoVencimiento(info);
+          // Si está vencido, no mostrar y notificar
+          if (info.vencido) {
+            setRegistroPendiente(null);
+            setInfoVencimiento(null);
+            onSinRegistro && onSinRegistro();
+          }
+        } else {
           onSinRegistro && onSinRegistro();
         }
       } else {
         onSinRegistro && onSinRegistro();
       }
-      
     } catch (error) {
       console.error('Error al verificar estado de registro:', error);
       const mensajeError = MensajeError(error);
@@ -65,16 +61,13 @@ const VerificadorRegistroPendiente = ({ dni, onRegistroCompleto, onSinRegistro }
     try {
       setCompletandoRegistro(true);
       
-      // Eliminar el registro pendiente
-      const eliminado = eliminarRegistroPendiente(dni);
-      
-      if (eliminado) {
+      // Eliminar el registro pendiente en el backend
+      const resp = await fetch(`/api/registros-pendientes/${dni}`, { method: 'DELETE' });
+      if (resp.ok) {
         setAlert({ 
           text: '✅ Continuando con el registro completo...', 
           variant: 'success' 
         });
-        
-        // Notificar que se puede completar el registro
         setTimeout(() => {
           onRegistroCompleto && onRegistroCompleto(registroPendiente);
         }, 1500);

@@ -51,23 +51,43 @@ const registrosPendientesService = {
         }
     },
 
-    // Actualizar estado de un registro pendiente
-    actualizarRegistroPendiente: async (dni, datos) => {
+    // Actualizar un registro pendiente (acepta datos y archivos, siempre guarda en archivosPendientes)
+    actualizarRegistroPendiente: async (dni, datos, archivos = null) => {
         try {
             console.log(`🔄 Actualizando registro pendiente: ${dni}`);
-            const response = await fetch(`${API_BASE_URL}/registros-pendientes/${dni}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(datos),
-            });
-
+            let response;
+            // Si hay archivos, usar FormData
+            if (archivos && Object.keys(archivos).length > 0) {
+                const formData = new FormData();
+                Object.keys(datos).forEach(key => {
+                    if (datos[key] !== null && datos[key] !== undefined) {
+                        formData.append(key, datos[key]);
+                    }
+                });
+                Object.keys(archivos).forEach(fieldName => {
+                    const archivo = archivos[fieldName];
+                    if (archivo && archivo.file) {
+                        formData.append(fieldName, archivo.file);
+                    }
+                });
+                response = await fetch(`${API_BASE_URL}/registros-pendientes/${dni}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+            } else {
+                // Si no hay archivos, usar JSON
+                response = await fetch(`${API_BASE_URL}/registros-pendientes/${dni}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(datos),
+                });
+            }
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
             }
-
             const resultado = await response.json();
             console.log('✅ Registro pendiente actualizado exitosamente');
             return resultado;
@@ -147,8 +167,11 @@ const registrosPendientesService = {
     // Completar un registro pendiente (enviarlo a la BD)
     completarRegistro: async (formData) => {
         try {
+            // Obtener el dni del FormData
+            const dni = formData.get('dni') || formData.get('registroPendienteId');
+            if (!dni) throw new Error('No se encontró el DNI en el FormData');
             console.log('✅ Enviando registro completo a la base de datos...');
-            const response = await fetch(`${API_BASE_URL}/registro-estudiante`, {
+            const response = await fetch(`${API_BASE_URL}/completar-documentacion/${dni}`, {
                 method: 'POST',
                 body: formData, // FormData se envía sin Content-Type header
             });

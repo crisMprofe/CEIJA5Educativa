@@ -17,8 +17,8 @@ import '../estilos/botones.css';
 import '../estilos/ModalRegistrosPendientes.css';
 
 const ModalRegistrosPendientes = ({ onClose }) => {
-    const { showSuccess, showError, showWarning, showInfo, alerts, removeAlert, modal, closeModal } = useAlerts();
-    // Eliminar estado local de alerta, usar solo sistema global
+    const { showSuccess, showError, showWarning, showInfo } = useAlerts();
+    const [alerta, setAlerta] = useState(null);
     const [registros, setRegistros] = useState([]);
     const [mensajeEmail, setMensajeEmail] = useState('');
     const [enviandoEmail, setEnviandoEmail] = useState(false);
@@ -340,28 +340,33 @@ const ModalRegistrosPendientes = ({ onClose }) => {
     // Función para manejar eliminación desde el modal
     const handleRegistroEliminado = (registro) => {
         console.log(`🗑️ Registro eliminado:`, registro.dni);
+        
         // Eliminar de la lista local
         setRegistros(prevRegistros => 
             prevRegistros.filter(r => r.dni !== registro.dni)
         );
+        
         cerrarModalEdicion();
     };
+
     // Función para eliminar un registro del listado de pendientes
-    const procesarEliminacion = async (registro) => {
-        // Construir nombre completo robusto
-        const nombreCompleto = `${registro.datos?.nombre || registro.nombre || ''} ${registro.datos?.apellido || registro.apellido || ''}`.trim();
+    const procesarEliminacion = async (registro, nombreCompleto) => {
         try {
-            showInfo(`🗑️ Eliminando ${nombreCompleto || 'registro'} del listado de pendientes...`);
+            setAlerta({ text: `🗑️ Eliminando ${nombreCompleto} del listado de pendientes...`, variant: 'info' });
+
             await registrosPendientesService.eliminarRegistroPendiente(registro.dni);
             console.log('✅ Registro eliminado del archivo de pendientes exitosamente');
+
             setRegistros(prevRegistros =>
                 prevRegistros.filter(r => (r.datos?.dni || r.dni) !== registro.dni)
             );
-            showSuccess(`✅ ${nombreCompleto || 'Registro'} eliminado del listado de pendientes`);
+
+            setAlerta({ text: `✅ ${nombreCompleto} eliminado del listado de pendientes`, variant: 'success' });
             setMensajeEmail('');
+
         } catch (error) {
             console.error('Error al eliminar registro:', error);
-            showError(`❌ Error al eliminar: ${error.message}`);
+            setAlerta({ text: `❌ Error al eliminar: ${error.message}`, variant: 'error' });
         }
     };
 
@@ -861,14 +866,7 @@ const ModalRegistrosPendientes = ({ onClose }) => {
                         fechaActualizacion={fechaActualizacion}
                         onCerrar={onClose}
                     />
-                    {/* ALERTAS FLOTANTES GLOBALES */}
-                    <AlertaMens 
-                        mode="floating"
-                        alerts={alerts}
-                        onCloseAlert={removeAlert}
-                        modal={modal}
-                        onCloseModal={closeModal}
-                    />
+
                     {/* Contenido principal */}
                     <div className="modal-content">
                         
@@ -940,16 +938,99 @@ const ModalRegistrosPendientes = ({ onClose }) => {
                 <ModalEditarRegistro
                     registro={registroEditando}
                     onClose={cerrarModalEdicion}
-                    onGuardado={handleRegistroGuardado}
-                    onEliminado={handleRegistroEliminado}
-                />
-            )}
-        </div>
-    );
-}
+                    return (
+                        <div className="modal-registros-pendientes">
+                            <div className="modal-overlay">
+                                <div className="modal-container registros-pendientes">
+                                    {/* Header del modal */}
+                                    <HeaderModal 
+                                        cantidadTotal={registros.length}
+                                        fechaActualizacion={fechaActualizacion}
+                                        onCerrar={onClose}
+                                    />
 
-ModalRegistrosPendientes.propTypes = {
-    onClose: PropTypes.func.isRequired
-};
+                                    {/* ALERTA UNIFICADA */}
+                                    {alerta && (
+                                        <AlertaMens 
+                                            text={alerta.text}
+                                            variant={alerta.variant}
+                                            onClose={() => setAlerta(null)}
+                                            duration={3500}
+                                        />
+                                    )}
 
-export default ModalRegistrosPendientes;
+                                    {/* Contenido principal */}
+                                    <div className="modal-content">
+                                        <ListaRegistrosPendientes
+                                            registros={registros}
+                                            cargandoRegistros={cargandoRegistros}
+                                            estudiantesRegistrados={estudiantesRegistrados}
+                                            mapeoDocumentos={{
+                                                'cuil': 'CUIL',
+                                                'dni': 'DNI',
+                                                'fichaMedica': 'Ficha Médica',
+                                                'certificadoNivelPrimario': 'Certificado Nivel Primario',
+                                                'partidaNacimiento': 'Partida de Nacimiento',
+                                                'foto': 'Foto',
+                                                'certificadoNivelSecundario': 'Certificado Nivel Secundario',
+                                                'constanciaAlumnoRegular': 'Constancia Alumno Regular'
+                                            }}
+                                            enviandoEmail={enviandoEmail}
+                                            onCompletar={completarRegistro}
+                                            onEliminar={procesarEliminacion}
+                                            onEnviarEmail={enviarEmailIndividual}
+                                            obtenerInfoVencimiento={obtenerInfoVencimiento}
+                                            getTipoIcon={getTipoIcon}
+                                            formatearTipo={formatearTipo}
+                                        />
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="modal-footer">
+                                        {/* Mensaje de estado de emails */}
+                                        {mensajeEmail && (
+                                            <div className={`mensaje-email ${mensajeEmail.includes('❌') ? 'error' : 'success'}`}>
+                                                {mensajeEmail}
+                                            </div>
+                                        )}
+
+                                        {/* Sección de emails */}
+                                        <SeccionEmails
+                                            onEnviarUrgentes={enviarEmailsUrgentes}
+                                            onEnviarTodos={enviarEmailsMasivos}
+                                            enviandoEmail={enviandoEmail}
+                                        />
+
+                                        {/* Sección de descargas */}
+                                        <SeccionDescargas
+                                            onGenerarReporteTXT={generarReporteAdministrativo}
+                                            onGenerarReporteCSV={generarReporteCSV}
+                                            onGenerarReportePDF={generarReportePDF}
+                                            onDescargarJSON={descargarJSON}
+                                            descargando={descargando}
+                                        />
+
+                                        {/* Sección de duplicados */}
+                                        <SeccionDuplicados
+                                            estadoDuplicados={estadoDuplicados}
+                                            limpiandoDuplicados={limpiandoDuplicados}
+                                            onVerificarDuplicados={verificarEstadoDuplicadosManual}
+                                            onLimpiarDuplicados={limpiarDuplicadosManual}
+                                            onTestSistema7Dias={probarSistema7Dias}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal de edición de registro */}
+                            {mostrarModalEdicion && registroEditando && (
+                                <ModalEditarRegistro
+                                    registro={registroEditando}
+                                    onClose={cerrarModalEdicion}
+                                    onGuardado={handleRegistroGuardado}
+                                    onEliminado={handleRegistroEliminado}
+                                />
+                            )}
+
+                        </div>
+                    );

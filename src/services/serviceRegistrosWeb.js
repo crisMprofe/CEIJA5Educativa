@@ -146,29 +146,52 @@ const registrosWebService = {
     },
 
     // Procesar un registro web (convertir a registro completo en BD)
-    procesarRegistroWeb: async (id, datosFormulario, documentos) => {
+    /**
+     * Procesar un registro web (convertir a registro completo en BD o guardar en registros_web/pendientes)
+     * Si destinoBD es true, usa FormData (para la BD). Si es false, usa JSON (para registros_web o registros_pendientes).
+     */
+    procesarRegistroWeb: async (id, datosFormulario, documentos, destinoBD = true) => {
         try {
-            console.log(`🔄 Procesando registro web ID: ${id}`);
-            
-            // Llamar endpoint de procesamiento (enviar a BD)
-            const response = await fetch(`${API_BASE_URL}/registros-web/${id}/procesar`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    datosFormulario,
-                    documentos
-                })
-            });
+            console.log(`🔄 Procesando registro web ID: ${id} (destinoBD=${destinoBD})`);
+            let response;
+            if (destinoBD) {
+                // Enviar a la BD: usar FormData para archivos
+                const formData = new FormData();
+                formData.append('datosFormulario', JSON.stringify(datosFormulario));
+                // documentos: puede tener File o string (ruta existente)
+                Object.entries(documentos || {}).forEach(([key, value]) => {
+                    if (value instanceof File) {
+                        formData.append(key, value);
+                    } else if (typeof value === 'string') {
+                        formData.append(key + '_ruta', value); // backend debe aceptar *_ruta para rutas existentes
+                    }
+                });
+                response = await fetch(`${API_BASE_URL}/registros-web/${id}/procesar`, {
+                    method: 'POST',
+                    body: formData
+                });
+            } else {
+                // Guardar como JSON (registros_web o registros_pendientes)
+                response = await fetch(`${API_BASE_URL}/registros-web/${id}/procesar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        datosFormulario,
+                        documentos
+                    })
+                });
+            }
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+                let errorData;
+                try { errorData = await response.json(); } catch { errorData = {}; }
+                throw new Error(errorData?.message || `Error ${response.status}: ${response.statusText}`);
             }
 
             const resultado = await response.json();
-            console.log(`✅ Registro web procesado y guardado en BD:`, resultado);
+            console.log(`✅ Registro web procesado y guardado:`, resultado);
             return resultado;
         } catch (error) {
             console.error('❌ Error al procesar registro web:', error);

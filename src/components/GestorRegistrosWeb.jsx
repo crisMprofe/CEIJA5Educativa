@@ -6,19 +6,23 @@ import { calcularEstadoDocumentacionWeb } from '../utils/calcularEstadoDocumenta
 import { useAlerts } from '../hooks/useAlerts';
 import BotonCargando from './BotonCargando';
 import CloseButton from './CloseButton';
-import FormatError from '../utils/MensajeError';
+
 import '../estilos/RegistrosPendientes.css';
 
 const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }) => {
     const navigate = useNavigate();
     const {
-        showSuccess, 
-        showError
+        showSuccess,
+        showError,
+        showWarning
     } = useAlerts();
     const [registros, setRegistros] = useState([]);
     const [stats, setStats] = useState({ total: 0, pendientes: 0, procesados: 0, anulados: 0 });
+
+    // Usar stats del backend para los contadores
+    const contadoresVisuales = stats;
     const [loading, setLoading] = useState(true);
-    const [procesando, setProcesando] = useState('');
+    // const [procesando, setProcesando] = useState('');
     const [filtro, setFiltro] = useState('TODOS'); // TODOS, PENDIENTE, PROCESADO, ANULADO
     const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
     const [registroAEliminar, setRegistroAEliminar] = useState(null);
@@ -55,49 +59,35 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
             console.error('Error al cargar estadísticas:', error);
         }
     };
-
+    // Estado visual amigable para mostrar en la interfaz
+function getEstadoVisual(registro) {
+    // Mapear los valores válidos de estado a los visuales
+    if (registro.estado === 'APROBADO') return 'PROCESADO';
+    if (registro.estado === 'ANULADO') return 'ANULADO';
+    if (registro.estado === 'PENDIENTE') return 'PENDIENTE';
+    if (registro.estado === 'MOVIDO_A_PENDIENTES') return 'PROCESADO A PENDIENTES'; // <--- AÑADIDO
+    // Si por alguna razón el backend envía minúsculas
+    if (registro.estado === 'aprobado') return 'PROCESADO';
+    if (registro.estado === 'anulado') return 'ANULADO';
+    if (registro.estado === 'pendiente') return 'PENDIENTE';
+    if (registro.estado === 'movido_a_pendientes') return 'PROCESADO A PENDIENTES'; // <--- AÑADIDO
+    // Cualquier otro valor, mostrar en mayúsculas
+    return (registro.estado || '').toUpperCase();
+}
     const manejarProcesarRegistro = async (registro) => {
-        setProcesando(registro.id);
-        try {
-            // Llamar la función del componente padre para completar registro
-            if (onRegistroSeleccionado) {
-                // Navegar usando React Router para evitar error 404
-                // Pasar el registro completo (incluyendo archivos) al formulario
-                const registroCompleto = {
-                    ...registro,
-                    archivos: registro.archivos || {} // Asegurar que archivos existe
-                };
-                const datosWebEncoded = encodeURIComponent(JSON.stringify(registroCompleto));
-                
-                // Navegar a la ruta correcta según si es admin o no
-                const rutaDestino = isAdmin 
-                    ? `/dashboard/formulario-inscripcion-adm?accion=Registrar&modalidad=${registro.datos.modalidad || ''}&completarWeb=${registro.id}&datosWeb=${datosWebEncoded}&origen=registros-web`
-                    : `/preinscripcion-estd?accion=Registrar&modalidad=${registro.datos.modalidad || ''}&completarWeb=${registro.id}&datosWeb=${datosWebEncoded}&origen=registros-web`;
-                
-                navigate(rutaDestino);
-            }
-            // Actualizar el estado local del registro a PROCESADO si corresponde
-            if (registro.estado === 'PENDIENTE') {
-                // Simular cambio de estado localmente para el contador
-                setRegistros(prev => prev.map(r => r.id === registro.id ? { ...r, estado: 'PROCESADO' } : r));
-                setStats(prev => ({
-                    ...prev,
-                    pendientes: prev.pendientes > 0 ? prev.pendientes - 1 : 0,
-                    procesados: prev.procesados + 1
-                }));
-            }
-            const mensajeSegunEstado = {
-                'PENDIENTE': '✅ Registro cargado para completar inscripción',
-                'PROCESADO': '🔍 Registro cargado para revisar y completar inscripción presencial',
-                'ANULADO': '🔄 Registro reactivado para completar inscripción'
+        // Solo navegar al formulario de edición, NO procesar automáticamente
+        if (onRegistroSeleccionado) {
+            const registroCompleto = {
+                ...registro,
+                archivos: registro.archivos || {},
             };
-            showSuccess(mensajeSegunEstado[registro.estado] || '📋 Registro cargado para gestionar');
-        } catch (error) {
-            console.error('Error al procesar registro:', error);
-            showError('❌ Error al procesar el registro: ' + error.message);
-        } finally {
-            setProcesando('');
+            const datosWebEncoded = encodeURIComponent(JSON.stringify(registroCompleto));
+            const rutaDestino = isAdmin 
+                ? `/dashboard/formulario-inscripcion-adm?accion=Registrar&modalidad=${registro.datos.modalidad || ''}&completarWeb=${registro.id}&datosWeb=${datosWebEncoded}&origen=registros-web`
+                : `/preinscripcion-estd?accion=Registrar&modalidad=${registro.datos.modalidad || ''}&completarWeb=${registro.id}&datosWeb=${datosWebEncoded}&origen=registros-web`;
+            navigate(rutaDestino);
         }
+        // El procesamiento se hará en el formulario, no aquí
     };
 
     // Función para iniciar el proceso de eliminación
@@ -117,10 +107,10 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
             await serviceRegistrosWeb.eliminarRegistroWeb(registroAEliminar.id);
             showSuccess(`🗑️ Registro de ${registroAEliminar.datos.apellido}, ${registroAEliminar.datos.nombre} eliminado`);
             cargarRegistrosWeb();
-            cargarEstadisticas();
+            await cargarEstadisticas();
         } catch (error) {
             console.error('Error al eliminar registro:', error);
-            showError('❌ Error al eliminar registro: ' + FormatError(error));
+            showError('❌ Error al eliminar registro: ' + error.message);
         } finally {
             setEliminando(false);
             setRegistroAEliminar(null);
@@ -133,9 +123,28 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
         setRegistroAEliminar(null);
     };
 
+    // Filtrar registros según el estado visual, no solo el estado real
     const filtrarRegistros = () => {
         if (filtro === 'TODOS') return registros;
-        return registros.filter(registro => registro.estado === filtro);
+        if (filtro === 'PROCESADO') {
+            // Contar como procesados los que son 'aprobado', 'PROCESADO' o 'PROCESADO A PENDIENTES'
+            return registros.filter(registro => {
+                const estadoVisual = getEstadoVisual(registro);
+                return estadoVisual === 'PROCESADO' || estadoVisual === 'PROCESADO A PENDIENTES';
+            });
+        }
+        if (filtro === 'PENDIENTE') {
+            // Solo los que nunca fueron procesados: estado visual 'PENDIENTE'
+            return registros.filter(registro => {
+                const estadoVisual = getEstadoVisual(registro);
+                return estadoVisual === 'PENDIENTE';
+            });
+        }
+        // Otros filtros (anulado, etc)
+        return registros.filter(registro => {
+            const estadoVisual = getEstadoVisual(registro);
+            return estadoVisual === filtro;
+        });
     };
 
     const formatearFecha = (timestamp) => {
@@ -157,7 +166,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
                 <div className="gestor-modal-container">
                     <div className="gestor-header">
                         <h2>🌐 Gestión de Registros Web</h2>
-                        <CloseButton onClose={onClose} variant="modal" />
+                            <CloseButton onClose={onClose} className="cerrar-button" />
                     </div>
                     <div className="gestor-content">
                         <div className="loading-container">
@@ -176,31 +185,33 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
         return registroLocal ? { ...r, estado: registroLocal.estado } : r;
     });
 
+    // handleGestionarRegistro eliminado: no se utiliza en el componente
+
     return (
         <div className="gestor-registros-web">
             <div className="gestor-modal-container">
                 <div className="gestor-header">
                     <h2>🌐 Gestión de Registros Web</h2>
-                    <CloseButton onClose={onClose} variant="modal" />
+                       <CloseButton onClose={onClose} className="cerrar-button" />
                 </div>
 
                 <div className="gestor-content">
                     {/* Primera fila: Estadísticas en horizontal */}
                     <div className="stats-container-horizontal">
                         <div className="stat-card">
-                            <div className="stat-number">{stats.total || 0}</div>
+                            <div className="stat-number">{contadoresVisuales.total}</div>
                             <div className="stat-label">Total</div>
                         </div>
                         <div className="stat-card">
-                            <div className="stat-number">{stats.pendientes || 0}</div>
+                            <div className="stat-number">{contadoresVisuales.pendientes}</div>
                             <div className="stat-label">Pendientes</div>
                         </div>
                         <div className="stat-card">
-                            <div className="stat-number">{stats.procesados || 0}</div>
+                            <div className="stat-number">{contadoresVisuales.procesados}</div>
                             <div className="stat-label">Procesados</div>
                         </div>
                         <div className="stat-card">
-                            <div className="stat-number">{stats.anulados || 0}</div>
+                            <div className="stat-number">{contadoresVisuales.anulados}</div>
                             <div className="stat-label">Anulados</div>
                         </div>
                     </div>
@@ -225,7 +236,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
                             className="refresh-button"
                             onClick={() => {
                                 cargarRegistrosWeb();
-                                cargarEstadisticas();
+                                // cargarEstadisticas();
                             }}
                         >
                             🔄 Actualizar
@@ -327,34 +338,40 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
 
                                             <div className="registro-acciones">
                                                 <span 
-                                                    className={`estado-badge estado-${registro.estado.toLowerCase()}`}
+                                                    className={`estado-badge estado-${getEstadoVisual(registro).toLowerCase().replace(/ /g, '-')}`}
                                                 >
-                                                    {registro.estado}
+                                                    {getEstadoVisual(registro)}
                                                 </span>
 
                                                 {/* TODOS los registros web deben permitir completar inscripción */}
                                                 <button
                                                     className="btn-procesar"
-                                                    onClick={() => manejarProcesarRegistro(registro)}
-                                                    disabled={procesando === registro.id}
+                                                    onClick={() => {
+                                                        if (registro.estado === 'MOVIDO_A_PENDIENTES') {
+                                                            showWarning('⚠️ REGISTRO PROCESADO A PENDIENTES');
+                                                            return;
+                                                        }
+                                                        manejarProcesarRegistro(registro);
+                                                    }}
+                                                    disabled={registro.estado === 'MOVIDO_A_PENDIENTES'}
                                                     title={
                                                         registro.estado === 'PENDIENTE' 
                                                         ? 'Completar inscripción del registro web'
                                                         : registro.estado === 'PROCESADO'
                                                         ? 'Revisar y completar inscripción presencial'
+                                                        : registro.estado === 'MOVIDO_A_PENDIENTES'
+                                                        ? 'REGISTRO PROCESADO A PENDIENTES'
                                                         : 'Gestionar registro web'
                                                     }
                                                 >
-                                                    {procesando === registro.id ? (
-                                                        <BotonCargando loading={true} size="small">
-                                                            Procesando...
-                                                        </BotonCargando>
-                                                    ) : registro.estado === 'PENDIENTE' ? (
+                                                    {registro.estado === 'PENDIENTE' ? (
                                                         '✅ Completar Inscripción'
                                                     ) : registro.estado === 'PROCESADO' ? (
                                                         '🔍 Revisar & Completar'
                                                     ) : registro.estado === 'ANULADO' ? (
                                                         '🔄 Reactivar Registro'
+                                                    ) : registro.estado === 'MOVIDO_A_PENDIENTES' ? (
+                                                        '🛑 Procesado a Pendientes'
                                                     ) : (
                                                         '📝 Gestionar Registro'
                                                     )}
