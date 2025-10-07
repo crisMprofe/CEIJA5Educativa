@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEIJA5 Educativa - Proyecto Tesis</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <h1 class="logo">CEIJA5 Educativa</h1>
+                <ul class="nav-menu">
+                    <li><a href="#inicio">Inicio</a></li>
+                    <li><a href="#proyectos">Proyectos</a></li>
+                    <li><a href="#recursos">Recursos</a></li>
+                    <li><a href="#contacto">Contacto</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="inicio" class="hero">
+            <div class="container">
+                <h2>Plataforma Educativa de Tesis</h2>
+                <p>Bienvenido a la plataforma educativa CEIJA5 para la gestión y desarrollo de proyectos de tesis</p>
+                <button class="btn-primary" onclick="mostrarFormulario()">Iniciar Proyecto</button>
+            </div>
+        </section>
+
+        <section id="proyectos" class="section">
+            <div class="container">
+                <h2>Proyectos de Tesis</h2>
+                <div id="lista-proyectos" class="project-grid">
+                    <!-- Los proyectos se cargarán dinámicamente -->
+                </div>
+            </div>
+        </section>
+
+        <section id="recursos" class="section">
+            <div class="container">
+                <h2>Recursos Educativos</h2>
+                <div class="resources-grid">
+                    <div class="resource-card">
+                        <h3>Guías de Investigación</h3>
+                        <p>Metodología y técnicas de investigación académica</p>
+                    </div>
+                    <div class="resource-card">
+                        <h3>Plantillas</h3>
+                        <p>Formatos y plantillas para documentos de tesis</p>
+                    </div>
+                    <div class="resource-card">
+                        <h3>Bibliografía</h3>
+                        <p>Referencias y recursos bibliográficos recomendados</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contacto" class="section">
+            <div class="container">
+                <h2>Contacto</h2>
+                <form id="form-contacto" class="contact-form">
+                    <input type="text" placeholder="Nombre" required>
+                    <input type="email" placeholder="Email" required>
+                    <textarea placeholder="Mensaje" required></textarea>
+                    <button type="submit" class="btn-primary">Enviar</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 CEIJA5 Educativa - Todos los derechos reservados</p>
+        </div>
+    </footer>
+
+    <script src="scripts/main.js"></script>
+</body>
+</html>
