@@ -48,7 +48,7 @@
     "fechaRegistro": "7/10/2025",
     "horaRegistro": "06:42:05",
     "tipo": "WEB_REGISTRATION",
-    "estado": "PENDIENTE",
+    "estado": "MOVIDO_A_PENDIENTES",
     "datos": {
       "nombre": "Gabriela",
       "apellido": "Lopez",
@@ -81,6 +81,172 @@
       "archivo_dni": "/archivosDocWeb/Gabriela_Lopez_45147745_archivo_dni.pdf",
       "archivo_cuil": "/archivosDocWeb/Gabriela_Lopez_45147745_archivo_cuil.pdf"
     },
-    "observaciones": "Registro web realizado el 7/10/2025 a las 06:42:05"
+    "observaciones": "Movido a registros pendientes el 7/10/2025 - Faltan: archivo_fichaMedica, archivo_partidaNacimiento, archivo_analiticoParcial",
+    "fechaMovimiento": "2025-10-08T01:16:37.267Z",
+    "motivoPendiente": "Faltan: archivo_fichaMedica, archivo_partidaNacimiento, archivo_analiticoParcial"
+  },
+  {
+    "id": "1759887321575",
+    "timestamp": "2025-10-08T01:35:21.575Z",
+    "fechaRegistro": "7/10/2025",
+    "horaRegistro": "10:35:21",
+    "tipo": "WEB_REGISTRATION",
+    "estado": "MOVIDO_A_PENDIENTES",
+    "datos": {
+      "nombre": "Patricia ",
+      "apellido": "Machado",
+      "dni": "45125874",
+      "cuil": "20-45125874-6",
+      "email": "crisbmaia50@gmail.com",
+      "telefono": "03517845214",
+      "fechaNacimiento": "2002-05-15",
+      "tipoDocumento": "DNI",
+      "paisEmision": "Argentina",
+      "calle": "Francisco Miranda",
+      "numero": "631",
+      "barrio": "11",
+      "localidad": "108",
+      "provincia": "5",
+      "modalidad": "Presencial",
+      "modalidadId": "1",
+      "planAnio": "2",
+      "modulos": "",
+      "idModulo": null,
+      "usuario": "usuario_web",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+    },
+    "archivos": {
+      "foto": "/archivosDocWeb/Patricia_Machado_45125874_foto.png",
+      "archivo_dni": "/archivosDocWeb/Patricia_Machado_45125874_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocWeb/Patricia_Machado_45125874_archivo_cuil.pdf",
+      "archivo_fichaMedica": "/archivosDocWeb/Patricia_Machado_45125874_archivo_fichaMedica.pdf",
+      "archivo_partidaNacimiento": "/archivosDocWeb/Patricia_Machado_45125874_archivo_partidaNacimiento.pdf"
+    },
+    "observaciones": "Movido a registros pendientes el 8/10/2025 - Faltan: archivo_analiticoParcial",
+    "fechaMovimiento": "2025-10-08T04:27:32.454Z",
+    "motivoPendiente": "Faltan: archivo_analiticoParcial"
+  },
+  {
+    "id": "1759896525854",
+    "timestamp": "2025-10-08T04:08:45.854Z",
+    "fechaRegistro": "8/10/2025",
+    "horaRegistro": "01:08:45",
+    "tipo": "WEB_REGISTRATION",
+    "estado": "PENDIENTE",
+    "datos": {
+      "nombre": "Stefanía",
+      "apellido": "Iriarte",
+      "dni": "45874126",
+      "cuil": "20-45874126-4",
+      "email": "crisbamaia50@gmail.com",
+      "telefono": "03517845625",
+      "fechaNacimiento": "2003-06-10",
+      "tipoDocumento": "DNI",
+      "paisEmision": "Argentina",
+      "calle": "Roca",
+      "numero": "458",
+      "barrio": "25",
+      "localidad": "108",
+      "provincia": "5",
+      "modalidad": "Presencial",
+      "modalidadId": "1",
+      "planAnio": "2",
+      "modulos": "",
+      "idModulo": null,
+      "usuario": "usuario_web",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+    },
+    "archivos": {
+      "foto": "/archivosDocWeb/Stefanía_Iriarte_45874126_foto.png",
+      "archivo_dni": "/archivosDocWeb/Stefanía_Iriarte_45874126_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocWeb/Stefanía_Iriarte_45874126_archivo_cuil.pdf",
+      "archivo_partidaNacimiento": "/archivosDocWeb/Stefanía_Iriarte_45874126_archivo_partidaNacimiento.pdf"
+    },
+    "observaciones": "Registro web realizado el 8/10/2025 a las 01:08:45"
+  },
+  {
+    "id": "1759922701679",
+    "timestamp": "2025-10-08T11:25:01.679Z",
+    "fechaRegistro": "8/10/2025",
+    "horaRegistro": "08:25:01",
+    "tipo": "WEB_REGISTRATION",
+    "estado": "PENDIENTE",
+    "datos": {
+      "nombre": "Carlos",
+      "apellido": "Mercado",
+      "dni": "39458569",
+      "cuil": "20-39458569-7",
+      "email": "crisbmaia50@gmail.com",
+      "telefono": "035156789415",
+      "fechaNacimiento": "1995-08-16",
+      "tipoDocumento": "DNI",
+      "paisEmision": "Argentina",
+      "calle": "Mitre",
+      "numero": "952",
+      "barrio": "1",
+      "localidad": "108",
+      "provincia": "5",
+      "modalidad": "Semipresencial",
+      "modalidadId": "2",
+      "planAnio": "4",
+      "modulos": "",
+      "idModulo": [
+        "1",
+        ""
+      ],
+      "usuario": "usuario_web",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+    },
+    "archivos": {
+      "archivo_dni": "/archivosDocWeb/Carlos_Mercado_39458569_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocWeb/Carlos_Mercado_39458569_archivo_cuil.pdf",
+      "foto": "/archivosDocWeb/Carlos_Mercado_39458569_foto.png",
+      "archivo_fichaMedica": "/archivosDocWeb/Carlos_Mercado_39458569_archivo_fichaMedica.pdf"
+    },
+    "observaciones": "Registro web realizado el 8/10/2025 a las 08:25:01"
+  },
+  {
+    "id": "1759936566233",
+    "timestamp": "2025-10-08T15:16:06.233Z",
+    "fechaRegistro": "8/10/2025",
+    "horaRegistro": "12:16:06",
+    "tipo": "WEB_REGISTRATION",
+    "estado": "PENDIENTE",
+    "datos": {
+      "nombre": "Fernanda",
+      "apellido": "Ceballos",
+      "dni": "36256456",
+      "cuil": "20-36256456-6",
+      "email": "crisbmaia50@gmail.com",
+      "telefono": "035156123963",
+      "fechaNacimiento": "1993-05-06",
+      "tipoDocumento": "DNI",
+      "paisEmision": "Argentina",
+      "calle": "Francisco Miranda",
+      "numero": "235",
+      "barrio": "11",
+      "localidad": "108",
+      "provincia": "5",
+      "modalidad": "Semipresencial",
+      "modalidadId": "2",
+      "planAnio": "4",
+      "modulos": "",
+      "idModulo": [
+        "1",
+        ""
+      ],
+      "usuario": "usuario_web",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+    },
+    "archivos": {
+      "foto": "/archivosDocWeb/Fernanda_Ceballos_36256456_foto.png",
+      "archivo_dni": "/archivosDocWeb/Fernanda_Ceballos_36256456_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocWeb/Fernanda_Ceballos_36256456_archivo_cuil.pdf"
+    },
+    "observaciones": "Registro web realizado el 8/10/2025 a las 12:16:06"
   }
 ]

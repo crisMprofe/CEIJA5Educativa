@@ -64,23 +64,33 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET: Obtener un registro pendiente específico por DNI
+// GET: Obtener un registro pendiente específico por DNI y modalidadId (opcional)
 router.get('/:dni', async (req, res) => {
     try {
         await ensureFileExists();
         const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
         const registros = JSON.parse(data);
-        
-        const registro = registros.find(r => r.dni === req.params.dni);
-        
+
+        const { modalidadId } = req.query;
+        let registro = registros.find(r => r.dni === req.params.dni);
+
+        // Si se pasa modalidadId, filtrar también por modalidadId
+        if (registro && modalidadId) {
+            // Puede estar en r.datos o en r.modalidadId
+            const regModalidadId = (registro.datos && registro.datos.modalidadId) || registro.modalidadId;
+            if (parseInt(regModalidadId) !== parseInt(modalidadId)) {
+                registro = undefined;
+            }
+        }
+
         if (!registro) {
             return res.status(404).json({ 
                 error: 'Registro no encontrado',
-                message: `No se encontró un registro con DNI ${req.params.dni}` 
+                message: `No se encontró un registro con DNI ${req.params.dni}` + (modalidadId ? ` y modalidadId ${modalidadId}` : '')
             });
         }
-        
-        console.log(`📋 Obteniendo registro pendiente para DNI: ${req.params.dni}`);
+
+        console.log(`📋 Obteniendo registro pendiente para DNI: ${req.params.dni}` + (modalidadId ? ` y modalidadId: ${modalidadId}` : ''));
         res.json(registro);
     } catch (error) {
         console.error('Error al obtener registro pendiente:', error);
@@ -372,5 +382,113 @@ router.put('/:dni', upload.any(), async (req, res) => {
 });
 
 
+
+
+// POST: Procesar/aprobar un registro pendiente
+router.post('/:dni/procesar', async (req, res) => {
+    try {
+        await ensureFileExists();
+        const { dni } = req.params;
+        const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
+        let registros = JSON.parse(data);
+        const indiceRegistro = registros.findIndex(r => r.dni === dni);
+        if (indiceRegistro === -1) {
+            return res.status(404).json({ error: 'Registro pendiente no encontrado' });
+        }
+        const registro = registros[indiceRegistro];
+
+        // Validar documentación completa (puedes ajustar la lógica según tus requerimientos)
+        const documentosRequeridos = [
+            'archivo_dni', 'archivo_cuil', 'archivo_fichaMedica', 'archivo_partidaNacimiento',
+            'foto', 'archivo_analiticoParcial', 'archivo_certificadoNivelPrimario', 'archivo_solicitudPase'
+        ];
+        const archivos = registro.archivos || {};
+        const faltantes = documentosRequeridos.filter(doc => !archivos[doc]);
+        if (faltantes.length > 0) {
+            return res.status(400).json({
+                error: 'Documentación incompleta',
+                faltantes
+            });
+        }
+
+        // 1. Migrar archivos a /archivosDocumento
+        const archivosMigrados = {};
+        const archivosPendientesDir = path.join(__dirname, '../archivosPendientes');
+        const archivosDocumentoDir = path.join(__dirname, '../archivosDocumento');
+        await fs.mkdir(archivosDocumentoDir, { recursive: true });
+        for (const [campo, ruta] of Object.entries(archivos)) {
+            if (ruta && ruta.startsWith('/archivosPendientes/')) {
+                const nombreArchivo = path.basename(ruta);
+                const origen = path.join(archivosPendientesDir, nombreArchivo);
+                const destino = path.join(archivosDocumentoDir, nombreArchivo);
+                try {
+                    await fs.copyFile(origen, destino);
+                    archivosMigrados[campo] = `/archivosDocumento/${nombreArchivo}`;
+                } catch (err) {
+                    return res.status(500).json({ error: `Error migrando archivo ${nombreArchivo}: ${err.message}` });
+                }
+            } else if (ruta && ruta.startsWith('/archivosDocumento/')) {
+                archivosMigrados[campo] = ruta;
+            } else {
+                archivosMigrados[campo] = '';
+            }
+        }
+
+        // 2. Guardar en la base de datos (tabla estudiantes)
+        let insertId = null;
+        try {
+            const pool = require('../db');
+            const datos = registro.datos || {};
+            const [result] = await pool.query(
+                `INSERT INTO estudiantes (nombre, apellido, dni, cuil, email, telefono, fechaNacimiento, tipoDocumento, paisEmision, calle, numero, barrio, localidad, provincia, modalidad, planAnio, modulos, usuario, archivo_dni, archivo_cuil, archivo_fichaMedica, archivo_partidaNacimiento, foto, archivo_analiticoParcial, archivo_certificadoNivelPrimario, archivo_solicitudPase)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    datos.nombre,
+                    datos.apellido,
+                    registro.dni,
+                    datos.cuil,
+                    datos.email,
+                    datos.telefono,
+                    datos.fechaNacimiento,
+                    datos.tipoDocumento,
+                    datos.paisEmision,
+                    datos.calle,
+                    datos.numero,
+                    datos.barrio,
+                    datos.localidad,
+                    datos.provincia,
+                    datos.modalidad,
+                    datos.planAnio,
+                    datos.modulos,
+                    datos.administrador || 'admin',
+                    archivosMigrados['archivo_dni'] || '',
+                    archivosMigrados['archivo_cuil'] || '',
+                    archivosMigrados['archivo_fichaMedica'] || '',
+                    archivosMigrados['archivo_partidaNacimiento'] || '',
+                    archivosMigrados['foto'] || '',
+                    archivosMigrados['archivo_analiticoParcial'] || '',
+                    archivosMigrados['archivo_certificadoNivelPrimario'] || '',
+                    archivosMigrados['archivo_solicitudPase'] || ''
+                ]
+            );
+            insertId = result.insertId;
+        } catch (err) {
+            return res.status(500).json({ error: 'Error al guardar en la base de datos', message: err.message });
+        }
+
+        // 3. Eliminar del JSON de pendientes
+        registros.splice(indiceRegistro, 1);
+        await fs.writeFile(REGISTROS_PENDIENTES_PATH, JSON.stringify(registros, null, 2));
+
+        return res.status(200).json({
+            message: 'Registro pendiente procesado y guardado en la base de datos',
+            insertId,
+            archivos: archivosMigrados
+        });
+    } catch (error) {
+        console.error('Error al procesar/aprobar pendiente:', error);
+        res.status(500).json({ error: 'Error al procesar/aprobar pendiente', message: error.message });
+    }
+});
 
 module.exports = router;

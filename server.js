@@ -36,11 +36,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // en app.js o server.js, antes de las rutas
 
-app.use(
-  '/archivosDocumentacion',                              // URL pública
-  express.static(path.join(__dirname, 'archivosDocumentacion')) // carpeta real
-);
-
 // También servir desde archivosDocumento (sin 's') para compatibilidad
 app.use(
   '/archivosDocumento',                              // URL pública
@@ -52,13 +47,11 @@ app.use(
   '/archivosDocWeb',                              // URL pública
   express.static(path.join(__dirname, 'archivosDocWeb')) // carpeta real
 );
-
 // Servir archivos de registros pendientes
 app.use(
-  '/archivosDocumentacion',                       // URL pública
-  express.static(path.join(__dirname, 'archivosDocumentacion')) // carpeta real
+  '/archivosPendientes',
+  express.static(path.join(__dirname, 'archivosPendientes'))
 );
-
 
 // Rutas
 app.use('/api/users', userRoutes);

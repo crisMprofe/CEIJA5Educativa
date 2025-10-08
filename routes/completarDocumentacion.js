@@ -308,17 +308,19 @@ router.post('/:dni', upload.any(), async (req, res) => {
             }
         }
         
-        // 5. ELIMINAR del archivo registros pendientes
-        registros.splice(indiceRegistro, 1);
+        // 5. Marcar como PROCESADO pero NO eliminar del archivo de pendientes
+        registros[indiceRegistro].estado = 'PROCESADO';
+        registros[indiceRegistro].fechaProcesado = new Date().toISOString();
+        registros[indiceRegistro].observaciones = `Procesado y guardado en BD el ${new Date().toLocaleDateString('es-AR')}`;
         await fs.writeFile(REGISTROS_PENDIENTES_PATH, JSON.stringify(registros, null, 2));
-        
-        console.log(`✅ [COMPLETAR] Estudiante ${datos.nombre} ${datos.apellido} (DNI: ${dni}) registrado y ELIMINADO de pendientes`);
-        
+
+        console.log(`✅ [COMPLETAR] Estudiante ${datos.nombre} ${datos.apellido} (DNI: ${dni}) registrado y marcado como PROCESADO en pendientes`);
+
         res.json({
             success: true,
             migradoABaseDatos: true,
             migradoAPendientes: false,
-            message: 'Registrado correctamente en el sistema',
+            message: 'Registrado correctamente en el sistema (marcado como PROCESADO, no eliminado)',
             estado: 'APROBADO_Y_PROCESADO',
             estudiante: {
                 id: idEstudiante,
