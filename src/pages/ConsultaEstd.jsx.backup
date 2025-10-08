@@ -1,0 +1,721 @@
+import PropTypes from 'prop-types';import PropTypes from 'prop-types';import PropTypes from 'prop-types';
+
+import '../estilos/modalUniforme.css';
+
+import CloseButton from '../components/CloseButton';import '../estilos/modalUniforme.css';import 'import '../styles/modalUniforme.css';';
+
+import { serviceInscripcion } from '../services';
+
+import CloseButton from '../components/CloseButton'; // Importa el componente CloseButtonimport '../estilos/modalUniforme.css';
+
+// Función para formatear la fecha
+
+const formatDate = (dateString) => {import { serviceInscripcion } from '../services'; // Asegúrate de importar el servicioimport CloseButton from '.                                    import PropTypes from 'prop-types';
+
+    if (!dateString) return 'No especificado';
+
+    const date = new Date(dateString);import '../estilos/modalUniforme.css';
+
+    return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+
+};// Función para formatear la fechaimport CloseButton from '../components/CloseButton'; // Importa el componente CloseButton
+
+
+
+const ConsultaEstd = ({ data, onClose }) => {const formatDate = (dateString) => {import { serviceInscripcion } from '../services'; // Asegúrate de importar el servicioponents/CloseButton'; // Importa el componente CloseButton
+
+    // Si por alguna razón el objeto no trae success true, mostramos mensaje genérico
+
+    if (!data?.success) {    if (!dateString) return 'No especificado';import { serviceInscripcion } from '../services'; // Asegúrate de importar el servicio
+
+        return (
+
+            <div className="modal-overlay-uniforme">    const date = new Date(dateString);
+
+                <div className="modal-container-uniforme">
+
+                    <div className="modal-header-buttons-uniforme">    return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+
+                        <CloseButton onClose={onClose} />
+
+                    </div>};// Función para formatear la fecha
+
+                    <p>No se encontraron datos para el estudiante.</p>
+
+                </div>const formatDate = (dateString) => {
+
+            </div>
+
+        );const ConsultaEstd = ({ data, onClose }) => {    if (!dateString) return 'No especificado';
+
+    }
+
+    // Si por alguna razón el objeto no trae success true, mostramos mensaje genérico    const date = new Date(dateString);
+
+    // Desestructuramos directamente
+
+    const { estudiante, domicilio, inscripcion, documentacion } = data;    if (!data?.success) {    return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+
+
+
+    // Función para generar comprobante        return (};
+
+    const handleGenerarComprobante = async () => {
+
+        console.log('🔄 Generando comprobante...');            <div className="modal-overlay-uniforme">
+
+        
+
+        // Obtener el estado actual de documentación del estudiante                <div className="modal-container-uniforme">const ConsultaEstd = ({ data, onClose }) => {
+
+        let estadoDoc = { requeridos: [], presentados: [], faltantes: [] };
+
+        try {                    <div className="modal-header-buttons-uniforme">    // Si por alguna razón el objeto no trae success true, mostramos mensaje genérico
+
+            const response = await serviceInscripcion.obtenerEstadosDocumentacion(estudiante.dni);
+
+            if (response.success) {                        <CloseButton onClose={onClose} />    if (!data?.success) {
+
+                estadoDoc = response.data;
+
+                console.log('✅ Estado de documentación obtenido:', estadoDoc);                    </div>        return (
+
+            }
+
+        } catch (error) {                    <p>No se encontraron datos para el estudiante.</p>            <div className="modal-overlay">
+
+            console.warn('⚠️ No se pudo obtener el estado de documentación:', error);
+
+        }                </div>                <div className="modal-container">
+
+
+
+        const comprobanteData = {            </div>                    <CloseButton onClose={onClose} />
+
+            // Datos del estudiante
+
+            nombre: estudiante?.nombre,        );                    <p>No se encontraron datos para el estudiante.</p>
+
+            apellido: estudiante?.apellido,
+
+            dni: estudiante?.dni,    }                </div>
+
+            email: estudiante?.email,
+
+            telefono: estudiante?.telefono,            </div>
+
+            fechaNacimiento: estudiante?.fechaNacimiento,
+
+            activo: estudiante?.activo,    // Desestructuramos directamente        );
+
+            // Domicilio
+
+            domicilio: domicilio || {},    const { estudiante, domicilio, inscripcion, documentacion } = data;    }
+
+            // Inscripción
+
+            modalidad: inscripcion?.modalidad,
+
+            planAnio: inscripcion?.planAnio || inscripcion?.plan,
+
+            cursoPlan: inscripcion?.plan,    // Función para generar comprobante    // Desestructuramos directamente
+
+            modulo: inscripcion?.modulo || inscripcion?.modulos,
+
+            estadoInscripcion: inscripcion?.estado,    const handleGenerarComprobante = async () => {    const { estudiante, domicilio, inscripcion, documentacion } = data;
+
+            fechaInscripcion: inscripcion?.fechaInscripcion,
+
+            // Documentación        console.log('🔄 Generando comprobante...');
+
+            documentacion: documentacion || [],
+
+            // Estado documental            // Generar comprobante de inscripción
+
+            requeridos: estadoDoc.requeridos,
+
+            presentados: estadoDoc.presentados || [],        // Obtener el estado actual de documentación del estudiante    const handleGenerarComprobante = async () => {
+
+            faltantes: estadoDoc.faltantes || []
+
+        };        let estadoDoc = { requeridos: [], presentados: [], faltantes: [] };        // Obtener estado documental y generar comprobante con toda la info relevante
+
+        
+
+        // Aseguramos que presentados y faltantes sean solo arrays de nombres        try {        const estadoDoc = await serviceInscripcion.getEstadoDocumental(inscripcion.idInscripcion);
+
+        if (Array.isArray(comprobanteData.presentados)) {
+
+            comprobanteData.presentados = comprobanteData.presentados.map(nombre =>             const response = await serviceInscripcion.obtenerEstadosDocumentacion(estudiante.dni);        if (!estadoDoc.success) {
+
+                typeof nombre === 'string' ? nombre : nombre.descripcionDocumentacion);
+
+        }            if (response.success) {            // Manejar error
+
+        if (Array.isArray(comprobanteData.faltantes)) {
+
+            comprobanteData.faltantes = comprobanteData.faltantes.map(nombre =>                 estadoDoc = response.data;            return;
+
+                typeof nombre === 'string' ? nombre : nombre.descripcionDocumentacion);
+
+        }                console.log('✅ Estado de documentación obtenido:', estadoDoc);        }
+
+        
+
+        // Log para depuración            }        // Unificar todos los datos relevantes para el comprobante
+
+        console.log('✅ Documentos presentados:', comprobanteData.presentados);
+
+        console.log('❌ Documentos faltantes:', comprobanteData.faltantes);        } catch (error) {        const comprobanteData = {
+
+        
+
+        import('../components/ComprobanteGenerator').then(mod => {            console.warn('⚠️ No se pudo obtener el estado de documentación:', error);            // Datos personales
+
+            mod.default.generar(comprobanteData);
+
+        });        }            nombre: estudiante?.nombre,
+
+    };
+
+            apellido: estudiante?.apellido,
+
+    return (
+
+        <div className="modal-overlay-uniforme">        const comprobanteData = {            dni: estudiante?.dni,
+
+            <div className="modal-container-uniforme">
+
+                <div className="modal-header-buttons-uniforme">            // Datos del estudiante            cuil: estudiante?.cuil,
+
+                    <CloseButton onClose={onClose} />
+
+                </div>            nombre: estudiante?.nombre,            email: estudiante?.email,
+
+                <div className="modal-header-uniforme">
+
+                    <div>            apellido: estudiante?.apellido,            fechaNacimiento: estudiante?.fechaNacimiento,
+
+                        <h2 className="modal-title-uniforme">Consulta Completa del Estudiante</h2>
+
+                        <p className="modal-subtitle-uniforme">Información detallada del registro académico</p>            dni: estudiante?.dni,            tipoDocumento: estudiante?.tipoDocumento,
+
+                    </div>
+
+                    <button className="btn-uniforme btn-secondary-uniforme" onClick={handleGenerarComprobante}>            email: estudiante?.email,            paisEmision: estudiante?.paisEmision,
+
+                       📄 Emitir Comprobante
+
+                    </button>            telefono: estudiante?.telefono,            activo: estudiante?.activo,
+
+                </div>
+
+                <div className="modal-content-uniforme">            fechaNacimiento: estudiante?.fechaNacimiento,            // Domicilio
+
+                    <div className="consultaEstdRow tarjetas-container">
+
+                        {/* Datos Personales */}            activo: estudiante?.activo,            domicilio: domicilio || {},
+
+                        <div className="tarjeta-uniforme">
+
+                            <div className="tarjeta-header-uniforme"><h3>Datos Personales</h3></div>            // Domicilio            // Inscripción
+
+                            <div className="tarjeta-contenido-uniforme">
+
+                                <div className="dato-item-uniforme">            domicilio: domicilio || {},            modalidad: inscripcion?.modalidad,
+
+                                    <label>Nombre:</label> 
+
+                                    <span>{estudiante?.nombre || 'No especificado'}</span>            // Inscripción            planAnio: inscripcion?.planAnio || inscripcion?.plan,
+
+                                </div>
+
+                                <div className="dato-item-uniforme">            modalidad: inscripcion?.modalidad,            cursoPlan: inscripcion?.plan,
+
+                                    <label>Apellido:</label> 
+
+                                    <span>{estudiante?.apellido || 'No especificado'}</span>            planAnio: inscripcion?.planAnio || inscripcion?.plan,            modulo: inscripcion?.modulo || inscripcion?.modulos,
+
+                                </div>
+
+                                <div className="dato-item-uniforme">            cursoPlan: inscripcion?.plan,            estadoInscripcion: inscripcion?.estado,
+
+                                    <label>DNI:</label> 
+
+                                    <span>{estudiante?.dni || 'No especificado'}</span>            modulo: inscripcion?.modulo || inscripcion?.modulos,            fechaInscripcion: inscripcion?.fechaInscripcion,
+
+                                </div>
+
+                                <div className="dato-item-uniforme">            estadoInscripcion: inscripcion?.estado,            // Documentación
+
+                                    <label>CUIL:</label> 
+
+                                    <span>{estudiante?.cuil || 'No especificado'}</span>            fechaInscripcion: inscripcion?.fechaInscripcion,            documentacion: documentacion || [],
+
+                                </div>
+
+                                <div className="dato-item-uniforme">            // Documentación            // Estado documental
+
+                                    <label>Email:</label> 
+
+                                    <span>{estudiante?.email || 'Sin email registrado'}</span>            documentacion: documentacion || [],            requeridos: estadoDoc.requeridos,
+
+                                </div>
+
+                                <div className="dato-item-uniforme">            // Estado documental            presentados: estadoDoc.presentados || [], // Aseguramos array
+
+                                    <label>Fecha de Nacimiento:</label> 
+
+                                    <span>{formatDate(estudiante?.fechaNacimiento)}</span>            requeridos: estadoDoc.requeridos,            faltantes: estadoDoc.faltantes || [] // Aseguramos array
+
+                                </div>
+
+                                <div className="dato-item-uniforme">            presentados: estadoDoc.presentados || [], // Aseguramos array        };
+
+                                    <label>Tipo de Documento:</label> 
+
+                                    <span>{estudiante?.tipoDocumento || 'DNI'}</span>            faltantes: estadoDoc.faltantes || [] // Aseguramos array        // Aseguramos que presentados y faltantes sean solo arrays de nombres
+
+                                </div>
+
+                                <div className="dato-item-uniforme">        };        if (Array.isArray(comprobanteData.presentados)) {
+
+                                    <label>País de Emisión:</label> 
+
+                                    <span>{estudiante?.paisEmision || 'Argentina'}</span>        // Aseguramos que presentados y faltantes sean solo arrays de nombres            comprobanteData.presentados = comprobanteData.presentados.map(nombre => typeof nombre === 'string' ? nombre : nombre.descripcionDocumentacion);
+
+                                </div>
+
+                                <div className="dato-item-uniforme">        if (Array.isArray(comprobanteData.presentados)) {        }
+
+                                    <label>Estado:</label> 
+
+                                    <span className={`estado-badge-uniforme estado-${estudiante?.activo ? 'activo' : 'inactivo'}-uniforme`}>            comprobanteData.presentados = comprobanteData.presentados.map(nombre => typeof nombre === 'string' ? nombre : nombre.descripcionDocumentacion);        if (Array.isArray(comprobanteData.faltantes)) {
+
+                                        {estudiante?.activo ? 'Activo' : 'Inactivo'}
+
+                                    </span>        }            comprobanteData.faltantes = comprobanteData.faltantes.map(nombre => typeof nombre === 'string' ? nombre : nombre.descripcionDocumentacion);
+
+                                </div>
+
+                            </div>        if (Array.isArray(comprobanteData.faltantes)) {        }
+
+                        </div>
+
+                                    comprobanteData.faltantes = comprobanteData.faltantes.map(nombre => typeof nombre === 'string' ? nombre : nombre.descripcionDocumentacion);        // Log para depuración
+
+                        {/* Domicilio */}
+
+                        <div className="tarjeta-uniforme">        }        console.log('✅ Documentos presentados:', comprobanteData.presentados);
+
+                            <div className="tarjeta-header-uniforme"><h3>Domicilio</h3></div>
+
+                            <div className="tarjeta-contenido-uniforme">        // Log para depuración        console.log('❌ Documentos faltantes:', comprobanteData.faltantes);
+
+                                {domicilio ? (
+
+                                    <>        console.log('✅ Documentos presentados:', comprobanteData.presentados);        import('../components/ComprobanteGenerator').then(mod => {
+
+                                        <div className="dato-item-uniforme">
+
+                                            <label>Calle:</label>         console.log('❌ Documentos faltantes:', comprobanteData.faltantes);            mod.default.generar(comprobanteData);
+
+                                            <span>{domicilio.calle || 'No especificado'}</span>
+
+                                        </div>        import('../components/ComprobanteGenerator').then(mod => {        });
+
+                                        <div className="dato-item-uniforme">
+
+                                            <label>Número:</label>             mod.default.generar(comprobanteData);    };
+
+                                            <span>{domicilio.numero || 'No especificado'}</span>
+
+                                        </div>        });
+
+                                        <div className="dato-item-uniforme">
+
+                                            <label>Barrio:</label>     };    console.log('DOMICILIO RECIBIDO:', domicilio); // en ConsultaEstd.jsx
+
+                                            <span>{domicilio.barrio || 'No especificado'}</span>
+
+                                        </div>    console.log('ESTUDIANTE RECIBIDO:', estudiante); // en VisorEstudiante.jsx
+
+                                        <div className="dato-item-uniforme">
+
+                                            <label>Localidad:</label>     console.log('DOMICILIO RECIBIDO:', domicilio); // en ConsultaEstd.jsx
+
+                                            <span>{domicilio.localidad || 'No especificado'}</span>
+
+                                        </div>    console.log('ESTUDIANTE RECIBIDO:', estudiante); // en VisorEstudiante.jsx    return (
+
+                                        <div className="dato-item-uniforme">
+
+                                            <label>Provincia:</label>         <div className="modal-overlay-uniforme">
+
+                                            <span>{domicilio.provincia || 'No especificado'}</span>
+
+                                        </div>    return (            <div className="modal-container-uniforme">
+
+                                    </>
+
+                                ) : (        <div className="modal-overlay-uniforme">                <div className="modal-header-buttons-uniforme">
+
+                                    <div className="dato-item-uniforme">
+
+                                        <span>No se encontraron datos de domicilio.</span>            <div className="modal-container-uniforme">                    <CloseButton onClose={onClose} />
+
+                                    </div>
+
+                                )}                <div className="modal-header-buttons-uniforme">                </div>
+
+                            </div>
+
+                        </div>                    <CloseButton onClose={onClose} />                <div className="modal-header-uniforme">
+
+                        
+
+                        {/* Información Académica */}                </div>                    <div>
+
+                        <div className="tarjeta-uniforme">
+
+                            <div className="tarjeta-header-uniforme"><h3>Información Académica</h3></div>                <div className="modal-header-uniforme">                        <h2 className="modal-title-uniforme">Consulta Completa del Estudiante</h2>
+
+                            <div className="tarjeta-contenido-uniforme">
+
+                                {inscripcion ? (                    <div>                        <p className="modal-subtitle-uniforme">Información detallada del registro académico</p>
+
+                                    <>
+
+                                        <div className="dato-item-uniforme">                        <h2 className="modal-title-uniforme">Consulta Completa del Estudiante</h2>                    </div>
+
+                                            <label>Modalidad:</label> 
+
+                                            <span>{inscripcion.modalidad || 'No especificada'}</span>                        <p className="modal-subtitle-uniforme">Información detallada del registro académico</p>                    <button className="btn-uniforme btn-secondary-uniforme" onClick={handleGenerarComprobante}>
+
+                                        </div>
+
+                                        <div className="dato-item-uniforme">                    </div>                       📄 Emitir Comprobante
+
+                                            <label>Curso / Plan:</label> 
+
+                                            <span>{inscripcion.plan || inscripcion.planAnio || 'No especificado'}</span>                    <button className="btn-uniforme btn-secondary-uniforme" onClick={handleGenerarComprobante}>                    </button>
+
+                                        </div>
+
+                                        <div className="dato-item-uniforme">                       📄 Emitir Comprobante                </div>
+
+                                            <label>Módulo:</label> 
+
+                                            <span>{inscripcion.modulo || inscripcion.modulos || 'No especificado'}</span>                    </button>                <div className="modal-content-uniforme">
+
+                                        </div>
+
+                                        <div className="dato-item-uniforme">                </div>                    <div className="consultaEstdRow tarjetas-container">
+
+                                            <label>Estado de Inscripción:</label> 
+
+                                            <span className={`estado-badge-uniforme estado-${inscripcion.estado?.toLowerCase().replace(/\s+/g, '-') || 'sin-estado'}-uniforme`}>                <div className="modal-content-uniforme">                        {/* Datos Personales */}
+
+                                                {inscripcion.estado || 'No especificado'}
+
+                                            </span>                    <div className="consultaEstdRow tarjetas-container">                        <div className="tarjeta-uniforme">
+
+                                        </div>
+
+                                        <div className="dato-item-uniforme">                        {/* Datos Personales */}                            <div className="tarjeta-header-uniforme"><h3>Datos Personales</h3></div>
+
+                                            <label>Fecha de Inscripción:</label> 
+
+                                            <span>{formatDate(inscripcion?.fechaInscripcion)}</span>                        <div className="tarjeta-uniforme">                            <div className="tarjeta-contenido-uniforme">
+
+                                        </div>
+
+                                    </>                            <div className="tarjeta-header-uniforme"><h3>Datos Personales</h3></div>                                <div className="dato-item-uniforme"><label>Nombre:</label> <span>{estudiante?.nombre || 'No especificado'}</span></div>
+
+                                ) : (
+
+                                    <div className="dato-item-uniforme">                            <div className="tarjeta-contenido-uniforme">                                <div className="dato-item-uniforme"><label>Apellido:</label> <span>{estudiante?.apellido || 'No especificado'}</span></div>
+
+                                        <span>No se encontraron datos de inscripción.</span>
+
+                                    </div>                                <div className="dato-item-uniforme"><label>Nombre:</label> <span>{estudiante?.nombre || 'No especificado'}</span></div>                                <div className="dato-item-uniforme"><label>DNI:</label> <span>{estudiante?.dni || 'No especificado'}</span></div>
+
+                                )}
+
+                            </div>                                <div className="dato-item-uniforme"><label>Apellido:</label> <span>{estudiante?.apellido || 'No especificado'}</span></div>                                <div className="dato-item-uniforme"><label>CUIL:</label> <span>{estudiante?.cuil || 'No especificado'}</span></div>
+
+                        </div>
+
+                    </div>                                <div className="dato-item-uniforme"><label>DNI:</label> <span>{estudiante?.dni || 'No especificado'}</span></div>                                <div className="dato-item-uniforme"><label>Email:</label> <span>{estudiante?.email || 'Sin email registrado'}</span></div>
+
+                    
+
+                    {/* Documentación */}                                <div className="dato-item-uniforme"><label>CUIL:</label> <span>{estudiante?.cuil || 'No especificado'}</span></div>                                <div className="dato-item-uniforme"><label>Fecha de Nacimiento:</label> <span>{formatDate(estudiante?.fechaNacimiento)}</span></div>
+
+                    <div className="tarjeta-uniforme documentacion-section">
+
+                        <div className="tarjeta-header-uniforme"><h3>Documentación Presentada</h3></div>                                <div className="dato-item-uniforme"><label>Email:</label> <span>{estudiante?.email || 'Sin email registrado'}</span></div>                                <div className="dato-item-uniforme"><label>Tipo de Documento:</label> <span>{estudiante?.tipoDocumento || 'DNI'}</span></div>
+
+                        <div className="tarjeta-contenido-uniforme">
+
+                            {documentacion && Array.isArray(documentacion) && documentacion.length > 0 ? (                                <div className="dato-item-uniforme"><label>Fecha de Nacimiento:</label> <span>{formatDate(estudiante?.fechaNacimiento)}</span></div>                                <div className="dato-item-uniforme"><label>País de Emisión:</label> <span>{estudiante?.paisEmision || 'Argentina'}</span></div>
+
+                                <div className="documentacion-lista-uniforme">
+
+                                    <div className="documentacion-header-uniforme">                                <div className="dato-item-uniforme"><label>Tipo de Documento:</label> <span>{estudiante?.tipoDocumento || 'DNI'}</span></div>                                <div className="dato-item-uniforme"><label>Estado:</label> <span className={`estado-badge-uniforme estado-${estudiante?.activo ? 'activo' : 'inactivo'}-uniforme`}>{estudiante?.activo ? 'Activo' : 'Inactivo'}</span></div>
+
+                                        <span className="doc-nombre-uniforme">Documento</span>
+
+                                        <span className="doc-estado-uniforme">Estado</span>                                <div className="dato-item-uniforme"><label>País de Emisión:</label> <span>{estudiante?.paisEmision || 'Argentina'}</span></div>                        </div>
+
+                                        <span className="doc-fecha-uniforme">Fecha de Entrega</span>
+
+                                        <span className="doc-archivo-uniforme">Archivo</span>                                <div className="dato-item-uniforme"><label>Estado:</label> <span className={`estado-badge-uniforme estado-${estudiante?.activo ? 'activo' : 'inactivo'}-uniforme`}>{estudiante?.activo ? 'Activo' : 'Inactivo'}</span></div>                    </div>
+
+                                    </div>
+
+                                    {documentacion.map((doc, index) => (                            </div>                        {/* Domicilio */}
+
+                                        <div key={index} className="documentacion-item-uniforme">
+
+                                            <span className="doc-nombre-uniforme">                        </div>                        <div className="tarjeta-uniforme">
+
+                                                {doc.descripcionDocumentacion || 'Documento sin nombre'}
+
+                                            </span>                                                    <div className="tarjeta-header-uniforme"><h3>Domicilio</h3></div>
+
+                                            <span className={`doc-estado-uniforme estado-${doc.estadoDocumentacion?.toLowerCase() || 'faltante'}-uniforme`}>
+
+                                                {doc.estadoDocumentacion || 'Faltante'}                        {/* Domicilio */}                            <div className="tarjeta-contenido-uniforme">
+
+                                            </span>
+
+                                            <span className="doc-fecha-uniforme">                        <div className="tarjeta-uniforme">                            {domicilio ? (
+
+                                                {doc.fechaEntrega ? formatDate(doc.fechaEntrega) : 'No entregado'}
+
+                                            </span>                            <div className="tarjeta-header-uniforme"><h3>Domicilio</h3></div>                                <>
+
+                                            <span className="doc-archivo-uniforme">
+
+                                                {doc.archivoDocumentacion ? (                            <div className="tarjeta-contenido-uniforme">                                    <div className="dato-item-uniforme"><label>Calle:</label> <span>{domicilio.calle || 'No especificado'}</span></div>
+
+                                                    <a href={doc.archivoDocumentacion} target="_blank" rel="noopener noreferrer" className="btn-ver-archivo-uniforme">
+
+                                                        Ver                                {domicilio ? (                                    <div className="dato-item-uniforme"><label>Número:</label> <span>{domicilio.numero || 'No especificado'}</span></div>
+
+                                                    </a>
+
+                                                ) : (                                    <>                                    <div className="dato-item-uniforme"><label>Barrio:</label> <span>{domicilio.barrio || 'No especificado'}</span></div>
+
+                                                    <span className="sin-archivo-uniforme">Sin archivo</span>
+
+                                                )}                                        <div className="dato-item-uniforme"><label>Calle:</label> <span>{domicilio.calle || 'No especificado'}</span></div>                                    <div className="dato-item-uniforme"><label>Localidad:</label> <span>{domicilio.localidad || 'No especificado'}</span></div>
+
+                                            </span>
+
+                                        </div>                                        <div className="dato-item-uniforme"><label>Número:</label> <span>{domicilio.numero || 'No especificado'}</span></div>                                    <div className="dato-item-uniforme"><label>Provincia:</label> <span>{domicilio.provincia || 'No especificado'}</span></div>
+
+                                    ))}
+
+                                </div>                                        <div className="dato-item-uniforme"><label>Barrio:</label> <span>{domicilio.barrio || 'No especificado'}</span></div>                                </>
+
+                            ) : (
+
+                                <p className="no-documentacion-uniforme">                                        <div className="dato-item-uniforme"><label>Localidad:</label> <span>{domicilio.localidad || 'No especificado'}</span></div>                            ) : (
+
+                                    No se encontró documentación registrada para este estudiante.
+
+                                </p>                                        <div className="dato-item-uniforme"><label>Provincia:</label> <span>{domicilio.provincia || 'No especificado'}</span></div>                                <div className="dato-item-uniforme"><span>No se encontraron datos de domicilio.</span></div>
+
+                            )}
+
+                        </div>                                    </>                            )}
+
+                    </div>
+
+                </div>                                ) : (                        </div>
+
+            </div>
+
+        </div>                                    <div className="dato-item-uniforme"><span>No se encontraron datos de domicilio.</span></div>                    </div>
+
+    );
+
+};                                )}                        {/* Información Académica */}
+
+
+
+ConsultaEstd.propTypes = {                            </div>                        <div className="tarjeta-uniforme">
+
+    data: PropTypes.shape({
+
+        success: PropTypes.bool.isRequired,                        </div>                            <div className="tarjeta-header-uniforme"><h3>Información Académica</h3></div>
+
+        estudiante: PropTypes.object.isRequired,
+
+        domicilio: PropTypes.object,                                                    <div className="tarjeta-contenido-uniforme">
+
+        inscripcion: PropTypes.object,
+
+        documentacion: PropTypes.arrayOf(                        {/* Información Académica */}                            {inscripcion ? (
+
+            PropTypes.shape({
+
+                idDocumentaciones: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),                        <div className="tarjeta-uniforme">                                <>
+
+                descripcionDocumentacion: PropTypes.string,
+
+                estadoDocumentacion: PropTypes.string,                            <div className="tarjeta-header-uniforme"><h3>Información Académica</h3></div>                                    <div className="dato-item-uniforme"><label>Modalidad:</label> <span>{inscripcion.modalidad || 'No especificada'}</span></div>
+
+                fechaEntrega: PropTypes.string,
+
+                archivoDocumentacion: PropTypes.string,                            <div className="tarjeta-contenido-uniforme">                                    <div className="dato-item-uniforme"><label>Curso / Plan:</label> <span>{inscripcion.plan || inscripcion.planAnio || 'No especificado'}</span></div>
+
+            })
+
+        ),                                {inscripcion ? (                                    <div className="dato-item-uniforme"><label>Módulo:</label> <span>{inscripcion.modulo || inscripcion.modulos || 'No especificado'}</span></div>
+
+    }).isRequired,
+
+    onClose: PropTypes.func.isRequired,                                    <>                                    <div className="dato-item-uniforme"><label>Estado de Inscripción:</label> <span className={`estado-badge-uniforme estado-${inscripcion.estado?.toLowerCase().replace(/\s+/g, '-') || 'sin-estado'}-uniforme`}>{inscripcion.estado || 'No especificado'}</span></div>
+
+};
+
+                                        <div className="dato-item-uniforme"><label>Modalidad:</label> <span>{inscripcion.modalidad || 'No especificada'}</span></div>                                    <div className="dato-item-uniforme"><label>Fecha de Inscripción:</label> <span>{formatDate(inscripcion?.fechaInscripcion)}</span></div>
+
+export default ConsultaEstd;
+                                        <div className="dato-item-uniforme"><label>Curso / Plan:</label> <span>{inscripcion.plan || inscripcion.planAnio || 'No especificado'}</span></div>                                </>
+
+                                        <div className="dato-item-uniforme"><label>Módulo:</label> <span>{inscripcion.modulo || inscripcion.modulos || 'No especificado'}</span></div>                            ) : (
+
+                                        <div className="dato-item-uniforme"><label>Estado de Inscripción:</label> <span className={`estado-badge-uniforme estado-${inscripcion.estado?.toLowerCase().replace(/\s+/g, '-') || 'sin-estado'}-uniforme`}>{inscripcion.estado || 'No especificado'}</span></div>                                <div className="dato-item-uniforme"><span>No se encontraron datos de inscripción.</span></div>
+
+                                        <div className="dato-item-uniforme"><label>Fecha de Inscripción:</label> <span>{formatDate(inscripcion?.fechaInscripcion)}</span></div>                            )}
+
+                                    </>                        </div>
+
+                                ) : (                    </div>
+
+                                    <div className="dato-item-uniforme"><span>No se encontraron datos de inscripción.</span></div>                </div>
+
+                                )}                    {/* Documentación */}
+
+                            </div>                    <div className="tarjeta-uniforme documentacion-section">
+
+                        </div>                        <div className="tarjeta-header-uniforme"><h3>Documentación Presentada</h3></div>
+
+                    </div>                        <div className="tarjeta-contenido-uniforme">
+
+                                            {documentacion && Array.isArray(documentacion) && documentacion.length > 0 ? (
+
+                    {/* Documentación */}                            <div className="documentacion-lista-uniforme">
+
+                    <div className="tarjeta-uniforme documentacion-section">                                <div className="documentacion-header-uniforme">
+
+                        <div className="tarjeta-header-uniforme"><h3>Documentación Presentada</h3></div>                                    <span className="doc-nombre-uniforme">Documento</span>
+
+                        <div className="tarjeta-contenido-uniforme">                                    <span className="doc-estado-uniforme">Estado</span>
+
+                            {documentacion && Array.isArray(documentacion) && documentacion.length > 0 ? (                                    <span className="doc-fecha-uniforme">Fecha de Entrega</span>
+
+                                <div className="documentacion-lista-uniforme">                                    <span className="doc-archivo-uniforme">Archivo</span>
+
+                                    <div className="documentacion-header-uniforme">                                </div>
+
+                                        <span className="doc-nombre-uniforme">Documento</span>                                {documentacion.map((doc, index) => (
+
+                                        <span className="doc-estado-uniforme">Estado</span>                                    <div key={index} className="documentacion-item-uniforme">
+
+                                        <span className="doc-fecha-uniforme">Fecha de Entrega</span>                                        <span className="doc-nombre-uniforme">{doc.descripcionDocumentacion || 'Documento sin nombre'}</span>
+
+                                        <span className="doc-archivo-uniforme">Archivo</span>                                        <span className={`doc-estado-uniforme estado-${doc.estadoDocumentacion?.toLowerCase() || 'faltante'}-uniforme`}>{doc.estadoDocumentacion || 'Faltante'}</span>
+
+                                    </div>                                        <span className="doc-fecha-uniforme">{doc.fechaEntrega ? formatDate(doc.fechaEntrega) : 'No entregado'}</span>
+
+                                    {documentacion.map((doc, index) => (                                        <span className="doc-archivo-uniforme">
+
+                                        <div key={index} className="documentacion-item-uniforme">                                            {doc.archivoDocumentacion ? (
+
+                                            <span className="doc-nombre-uniforme">{doc.descripcionDocumentacion || 'Documento sin nombre'}</span>                                                <a href={doc.archivoDocumentacion} target="_blank" rel="noopener noreferrer" className="btn-ver-archivo-uniforme">Ver</a>
+
+                                            <span className={`doc-estado-uniforme estado-${doc.estadoDocumentacion?.toLowerCase() || 'faltante'}-uniforme`}>{doc.estadoDocumentacion || 'Faltante'}</span>                                            ) : (
+
+                                            <span className="doc-fecha-uniforme">{doc.fechaEntrega ? formatDate(doc.fechaEntrega) : 'No entregado'}</span>                                                <span className="sin-archivo-uniforme">Sin archivo</span>
+
+                                            <span className="doc-archivo-uniforme">                                            )}
+
+                                                {doc.archivoDocumentacion ? (                                        </span>
+
+                                                    <a href={doc.archivoDocumentacion} target="_blank" rel="noopener noreferrer" className="btn-ver-archivo-uniforme">Ver</a>                                    </div>
+
+                                                ) : (                                ))}
+
+                                                    <span className="sin-archivo-uniforme">Sin archivo</span>                            </div>
+
+                                                )}                        ) : (
+
+                                            </span>                            <p className="no-documentacion-uniforme">No se encontró documentación registrada para este estudiante.</p>
+
+                                        </div>                        )}
+
+                                    ))}                    </div>
+
+                                </div>                </div>
+
+                            ) : (            </div>
+
+                                <p className="no-documentacion-uniforme">No se encontró documentación registrada para este estudiante.</p>        </div>
+
+                            )}    );
+
+                        </div>};
+
+                    </div>
+
+                </div>ConsultaEstd.propTypes = {
+
+            </div>    data: PropTypes.shape({
+
+        </div>        success: PropTypes.bool.isRequired,
+
+    );        estudiante: PropTypes.object.isRequired,
+
+};        domicilio: PropTypes.object,
+
+        inscripcion: PropTypes.object,
+
+ConsultaEstd.propTypes = {        documentacion: PropTypes.arrayOf(
+
+    data: PropTypes.shape({            PropTypes.shape({
+
+        success: PropTypes.bool.isRequired,                idDocumentaciones: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+
+        estudiante: PropTypes.object.isRequired,                descripcionDocumentacion: PropTypes.string,
+
+        domicilio: PropTypes.object,                estadoDocumentacion: PropTypes.string,
+
+        inscripcion: PropTypes.object,                fechaEntrega: PropTypes.string,
+
+        documentacion: PropTypes.arrayOf(                archivoDocumentacion: PropTypes.string,
+
+            PropTypes.shape({            })
+
+                idDocumentaciones: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),        ),
+
+                descripcionDocumentacion: PropTypes.string,    }).isRequired,
+
+                estadoDocumentacion: PropTypes.string,    onClose: PropTypes.func.isRequired,
+
+                fechaEntrega: PropTypes.string,};
+
+                archivoDocumentacion: PropTypes.string,
+
+            })export default ConsultaEstd;
+
+        ),
+    }).isRequired,
+    onClose: PropTypes.func.isRequired,
+};
+
+export default ConsultaEstd;

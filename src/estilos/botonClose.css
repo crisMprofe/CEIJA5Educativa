@@ -1,0 +1,53 @@
+/* Botón cerrar para todos los modales (estilo uniforme con modalM) */
+
+.cerrar-button,
+.cerrar-button.modal-close,
+.volver-button {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  width: 28px;
+  height: 28px;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.13), 0 1.5px 4px 0 rgba(0, 0, 0, 0.1);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 10;
+  position: relative;
+}
+.cerrar-button:hover,
+.cerrar-button:focus,
+.volver-button:hover,
+.volver-button:focus {
+  background: #e0e0e0;
+  color: #222;
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.18), 0 3px 8px 0 rgba(0, 0, 0, 0.13);
+  transform: translateY(-2px) scale(1.06);
+}
+
+@media (max-width: 480px) {
+  .cerrar-button,
+  .cerrar-button.modal-close,
+  .volver-button {
+    width: 26px;
+    height: 26px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cerrar-button,
+  .cerrar-button.modal-close {
+    top: 8px;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    font-size: 1rem;
+  }
+}
