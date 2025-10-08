@@ -49,6 +49,9 @@ const RegistroEstd = ({
             if (window.archivos) window.archivos = {};
             if (window.previews) window.previews = {};
         }
+        // Refuerzo: limpiar previews y archivos en el objeto values si existen
+        if (values && values.previews) values.previews = {};
+        if (values && values.archivos) values.archivos = {};
         setIsModalOpen(false); // Cierra primero por si quedó abierto
         setTimeout(() => setIsModalOpen(true), 0); // Reabre limpio
     };

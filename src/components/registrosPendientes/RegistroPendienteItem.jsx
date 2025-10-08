@@ -27,7 +27,9 @@ const RegistroPendienteItem = ({
         const modalidad = registro.datos?.modalidad || registro.modalidad || '';
         const planAnio = registro.datos?.planAnio || registro.planAnio || '';
         const modulos = registro.datos?.modulos || registro.modulos || '';
-        
+        console.log('[DEBUG] Llamando a obtenerDocumentosRequeridos desde RegistroPendienteItem.jsx con:', {
+            modalidad, planAnio, modulos
+        });
         const requerimientos = obtenerDocumentosRequeridos(modalidad, planAnio, modulos);
         const documentosRequeridosDinamicos = requerimientos.documentos || [];
         const documentosAlternativos = requerimientos.alternativos;
@@ -83,14 +85,16 @@ const RegistroPendienteItem = ({
         };
     }, [registro.datos, registro.modalidad, registro.planAnio, registro.modulos, registro.documentosSubidos, registro.archivos]);
     
-    // Solo mostrar el badge si el registro está aprobado y registrado (no en pendientes)
-    const mostrarBadgeAprobado = !!estaRegistrado;
+
+    // Mostrar cartel de procesado si el estado es PROCESADO
+    const esProcesado = registro.estado === 'PROCESADO' || registro.estado === 'APROBADO_Y_PROCESADO';
+    const mostrarBadgeAprobado = !!estaRegistrado || esProcesado;
 
     return (
         <div 
             key={registro.id || index} 
-            className={`registro-item ${info.vencido ? 'registro-vencido' : 'registro-vigente'}`} 
-            style={{ borderLeftColor: info.color }}
+            className={`registro-item ${esProcesado ? 'registro-procesado' : (info.vencido ? 'registro-vencido' : 'registro-vigente')}`} 
+            style={{ borderLeftColor: esProcesado ? '#28a745' : info.color }}
         >
             <div className="registro-grid">
                 {/* Información principal del registro */}
@@ -98,24 +102,44 @@ const RegistroPendienteItem = ({
                     <div className="registro-info-estudiante">
                         <h4>
                             {registro.datos?.nombre || registro.nombre} {registro.datos?.apellido || registro.apellido}
-                            {mostrarBadgeAprobado && (
+                            {esProcesado && (
                                 <span 
                                     className="badge-estudiante-registrado" 
                                     style={{
-                                        display: 'inline-block !important',
-                                        visibility: 'visible !important',
-                                        opacity: '1 !important',
-                                        backgroundColor: '#28a745 !important',
-                                        color: 'white !important',
-                                        padding: '6px 12px !important',
-                                        borderRadius: '12px !important',
-                                        marginLeft: '10px !important',
-                                        fontSize: '0.8rem !important',
-                                        fontWeight: 'bold !important',
-                                        zIndex: '9999 !important'
+                                        display: 'inline-block',
+                                        visibility: 'visible',
+                                        opacity: 1,
+                                        backgroundColor: '#28a745',
+                                        color: 'white',
+                                        padding: '6px 12px',
+                                        borderRadius: '12px',
+                                        marginLeft: '10px',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 'bold',
+                                        zIndex: 9999
                                     }}
                                 >
-                                    ✅ Estudiante Aprobado y Registrado
+                                    ✅ Registro Procesado y Aprobado
+                                </span>
+                            )}
+                            {!esProcesado && mostrarBadgeAprobado && (
+                                <span 
+                                    className="badge-estudiante-registrado" 
+                                    style={{
+                                        display: 'inline-block',
+                                        visibility: 'visible',
+                                        opacity: 1,
+                                        backgroundColor: '#28a745',
+                                        color: 'white',
+                                        padding: '6px 12px',
+                                        borderRadius: '12px',
+                                        marginLeft: '10px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 'bold',
+                                        zIndex: 9999
+                                    }}
+                                >
+                                    ✅ Registro Procesado y Aprobado
                                 </span>
                             )}
                         </h4>
@@ -133,11 +157,10 @@ const RegistroPendienteItem = ({
                             <strong>📎 Documentos:</strong> {estadoDoc.totalSubidos}/{estadoDoc.totalRequeridos}
                         </p>
                     </div>
-                    
                     {/* Información de la derecha */}
                     <div className="registro-info-derecha">
-                        {/* Mostrar alarma/vencimiento solo si NO está registrado */}
-                        {!mostrarBadgeAprobado && (
+                        {/* Mostrar alarma/vencimiento solo si NO está registrado NI procesado */}
+                        {!mostrarBadgeAprobado && !esProcesado && (
                             <>
                                 <div className="registro-vencimiento" style={{ color: info.color }}>
                                     {info.vencido ? '🔴 VENCIDO' : `🕒 ${info.mensaje}`}
@@ -173,7 +196,7 @@ const RegistroPendienteItem = ({
                 {/* Acciones del registro */}
                 <AccionesRegistro
                     registro={registro}
-                    info={info}
+                    info={{...info, esProcesado}}
                     enviandoEmail={enviandoEmail}
                     onCompletar={onCompletar}
                     onEliminar={onEliminar}

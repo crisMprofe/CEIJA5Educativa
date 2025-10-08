@@ -38,8 +38,22 @@ const ModalidadSelection = memo(({ modalidad, modalidadId, handleChange, setFiel
         <div className="form-eleccion" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
             <h3 style={{ margin: 0, flex: 1 }}>Información Académica</h3>
             <div style={{ flex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <div className="modalidad-info" style={{ marginBottom: 8 }}>
-                    <strong>Modalidad:</strong> <span className="modalidad-elegida">{modalidad || ''}</span>
+                <div className="form-group" style={{ width: '100%', marginBottom: 8 }}>
+                    <label htmlFor="modalidad"><strong>Modalidad:</strong></label>
+                    <select
+                        id="modalidad"
+                        name="modalidad"
+                        value={modalidad || ''}
+                        onChange={e => {
+                            const val = e.target.value;
+                            setFieldValue('modalidad', val);
+                            setFieldValue('modalidadId', val === 'Presencial' ? 1 : val === 'Semipresencial' ? 2 : '');
+                        }}
+                    >
+                        <option value="">Seleccionar Modalidad</option>
+                        <option value="Presencial">Presencial</option>
+                        <option value="Semipresencial">Semipresencial</option>
+                    </select>
                 </div>
                 <div className="form-group" style={{ width: '100%' }}>
                     <PlanAnioSelector

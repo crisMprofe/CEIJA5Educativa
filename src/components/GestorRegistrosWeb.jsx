@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import serviceRegistrosWeb from '../services/serviceRegistrosWeb';
 import { calcularEstadoDocumentacionWeb } from '../utils/calcularEstadoDocumentacionWeb';
 import { useAlerts } from '../hooks/useAlerts';
+import AlertaMens from './AlertaMens';
 import BotonCargando from './BotonCargando';
 import CloseButton from './CloseButton';
 
@@ -11,10 +13,15 @@ import '../estilos/RegistrosPendientes.css';
 
 const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const {
         showSuccess,
         showError,
-        showWarning
+        showWarning,
+        alerts,
+        removeAlert,
+        modal,
+        closeModal
     } = useAlerts();
     const [registros, setRegistros] = useState([]);
     const [stats, setStats] = useState({ total: 0, pendientes: 0, procesados: 0, anulados: 0 });
@@ -29,14 +36,15 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
     const [eliminando, setEliminando] = useState(false);
 
     // Cargar registros web al montar el componente
+    // Cargar registros web y estadísticas al montar y al volver del formulario
     useEffect(() => {
         const inicializar = async () => {
             await cargarRegistrosWeb();
             await cargarEstadisticas();
         };
         inicializar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.key]);
 
     const cargarRegistrosWeb = async () => {
         try {
@@ -188,6 +196,8 @@ function getEstadoVisual(registro) {
     // handleGestionarRegistro eliminado: no se utiliza en el componente
 
     return (
+        <>
+        <AlertaMens alerts={alerts} onCloseAlert={removeAlert} modal={modal} onCloseModal={closeModal} mode="floating" />
         <div className="gestor-registros-web">
             <div className="gestor-modal-container">
                 <div className="gestor-header">
@@ -442,6 +452,7 @@ function getEstadoVisual(registro) {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

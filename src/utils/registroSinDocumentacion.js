@@ -25,6 +25,12 @@ export const inicializarSistemaLimpieza = () => {
 
 // Función para obtener documentos requeridos según modalidad y plan - CON LÓGICA DE DOCUMENTOS ALTERNATIVOS
 export const obtenerDocumentosRequeridos = (modalidad, planAnio, modulos) => {
+    // Protección: no calcular si modalidad o planAnio están vacíos
+    if (!modalidad || !planAnio) {
+        console.warn(`⚠️ [VALIDACIÓN] No se puede obtener documentos requeridos: modalidad o planAnio vacío`, { modalidad, planAnio, modulos });
+        return { documentos: [], alternativos: null, criterio: '' };
+    }
+
     // Documentos base SIEMPRE requeridos (según ModalidadModal.jsx)
     const documentosBase = [
         "foto", // 📷 Foto 4x4  
@@ -33,10 +39,10 @@ export const obtenerDocumentosRequeridos = (modalidad, planAnio, modulos) => {
         "archivo_fichaMedica", // 🏥 Ficha Médica CUS
         "archivo_partidaNacimiento" // 📜 Partida de Nacimiento
     ];
-    
+
     let documentosAdicionales = [];
     let documentosAlternativos = null; // Para casos especiales con opciones
-    
+
     // Documentos adicionales según modalidad y plan
     if (modalidad === 'Presencial') {
         // Para modalidad presencial según año (desde ModalidadModal.jsx)
@@ -118,7 +124,7 @@ export const obtenerDocumentosRequeridos = (modalidad, planAnio, modulos) => {
             };
         }
     }
-    
+
     // Si no se puede determinar o es un caso especial, usar documentos alternativos como fallback
     if (documentosAdicionales.length === 0 && !documentosAlternativos) {
         // Solo mostrar warning para casos realmente no identificados
@@ -127,7 +133,7 @@ export const obtenerDocumentosRequeridos = (modalidad, planAnio, modulos) => {
         } else {
             console.warn(`⚠️ [VALIDACIÓN] Modalidad o plan no especificado correctamente. Modalidad: "${modalidad}", Plan/Año: "${planAnio || modulos}". Usando documentos por defecto.`);
         }
-        
+
         // Para cualquier caso no cubierto, usar la lógica de documentos alternativos
         documentosAdicionales = [];
         documentosAlternativos = {
@@ -185,7 +191,7 @@ export const obtenerEstadoDocumentacion = (files = {}, previews = {}, modalidad 
     const requerimientos = obtenerDocumentosRequeridos(modalidad, planAnio, modulos);
     const documentosRequeridos = requerimientos.documentos;
     const documentosAlternativos = requerimientos.alternativos;
-    
+
     // Mapeo de nombres técnicos a legibles
     const nombresLegibles = {
         "foto": "📷 Foto 4x4",
@@ -197,24 +203,27 @@ export const obtenerEstadoDocumentacion = (files = {}, previews = {}, modalidad 
         "archivo_analiticoParcial": "📊 Analítico Parcial",
         "archivo_certificadoNivelPrimario": "🎓 Certificado Nivel Primario"
     };
-    
+
+    // Documentos base siempre son 5: foto, dni, cuil, ficha médica, partida nacimiento
+    const documentosBaseCantidad = 5;
+
     // Función auxiliar para verificar si un documento está presente
     const documentoPresente = (doc) => files[doc] || previews[doc]?.url;
-    
+
     // Verificar documentos subidos
     let documentosSubidos = [];
     let documentosFaltantes = [];
     let validacionAlternativaOK = true; // Para casos con documentos alternativos
-    
+
     // Validar documentos uno por uno
     for (const doc of documentosRequeridos) {
         // Si este documento es parte de un grupo alternativo
         if (documentosAlternativos && 
             (doc === documentosAlternativos.preferido || doc === documentosAlternativos.alternativa)) {
-            
+
             const tienePreferido = documentoPresente(documentosAlternativos.preferido);
             const tieneAlternativa = documentoPresente(documentosAlternativos.alternativa);
-            
+
             if (tienePreferido) {
                 // Tiene el documento preferido (analítico parcial)
                 documentosSubidos.push(documentosAlternativos.preferido);
@@ -229,11 +238,11 @@ export const obtenerEstadoDocumentacion = (files = {}, previews = {}, modalidad 
                 validacionAlternativaOK = false;
                 console.log(`❌ [ALTERNATIVA] Falta documento: ${documentosAlternativos.descripcion}`);
             }
-            
+
             // Solo procesar una vez el grupo alternativo
             continue;
         }
-        
+
         // Documento regular (no alternativo)
         if (documentoPresente(doc)) {
             documentosSubidos.push(doc);
@@ -241,14 +250,14 @@ export const obtenerEstadoDocumentacion = (files = {}, previews = {}, modalidad 
             documentosFaltantes.push(doc);
         }
     }
-    
+
     // Eliminar duplicados de documentos alternativos procesados
     if (documentosAlternativos) {
         // Filtrar para evitar duplicados en subidos
         documentosSubidos = documentosSubidos.filter((doc, index, array) => 
             array.indexOf(doc) === index
         );
-        
+
         // Si ya procesamos el grupo alternativo, remover el otro documento de faltantes
         if (documentosSubidos.includes(documentosAlternativos.preferido)) {
             documentosFaltantes = documentosFaltantes.filter(doc => 
@@ -260,21 +269,19 @@ export const obtenerEstadoDocumentacion = (files = {}, previews = {}, modalidad 
             );
         }
     }
-    
+
     const cantidadSubidos = documentosSubidos.length;
-    // Documentos base siempre son 5: foto, dni, cuil, ficha médica, partida nacimiento
-    const documentosBaseCantidad = 5;
     // Para documentos alternativos: base + 1 alternativo = 6 total
     // Para documentos obligatorios: base + documentos adicionales
     const totalDocumentos = documentosBaseCantidad + (documentosAlternativos ? 1 : (documentosRequeridos.length - documentosBaseCantidad));
-    
+
     // Para estar COMPLETO necesita todos los documentos REQUERIDOS para su modalidad/plan
     // Y si hay documentos alternativos, debe cumplir esa validación también
     const esCompleto = (cantidadSubidos === totalDocumentos) && validacionAlternativaOK;
-    
+
     // Generar mensaje detallado
     let mensaje, tipo;
-    
+
     if (cantidadSubidos === 0) {
         tipo = 'SIN_DOCUMENTACION';
         mensaje = `⚠️ Sin documentación - Registro quedará PENDIENTE hasta completar archivos requeridos para ${modalidad}.`;
@@ -301,7 +308,7 @@ export const obtenerEstadoDocumentacion = (files = {}, previews = {}, modalidad 
             mensaje = `✅ Documentación completa para ${modalidad} - Registro será marcado como PROCESADO.`;
         }
     }
-    
+
     return {
         completo: esCompleto,
         tipo,

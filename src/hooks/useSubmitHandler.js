@@ -30,7 +30,7 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
     };
 
     const buildFormData = (values, files, detalleDocumentacion, isAdmin) => {
-        const formDataToSend = new FormData();
+    const formDataToSend = new FormData();
 
         // Debug logging para usuarios web antes de construir FormData
         if (!isAdmin) {
@@ -73,6 +73,14 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
                 }
             }
         });
+
+        // Asegurar que el campo 'estado' esté presente y tome el valor del formulario si existe
+        if (values.estado) {
+            formDataToSend.append('estado', values.estado);
+        } else {
+            // Si no existe, poner 'PENDIENTE' por defecto
+            formDataToSend.append('estado', 'PENDIENTE');
+        }
 
         Object.entries(files).forEach(([key, file]) => {
             if (file) {
@@ -124,21 +132,34 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
         const registroPendiente = verificarRegistroPendiente(values.dni);
         const esRegistroPendienteCompletado = registroPendiente && values.dni;
 
-        // Obtener estado completo de la documentación
-        const estadoDocumentacion = obtenerEstadoDocumentacion(files, previews);
+        // Obtener estado completo de la documentación usando los valores actuales
+        const estadoDocumentacion = obtenerEstadoDocumentacion(
+            files,
+            previews,
+            values.modalidad,
+            values.planAnio,
+            values.modulos || ''
+        );
         const hayDocumentosCompletos = estadoDocumentacion.completo;
         
         if (accion === "Registrar" && (!hayDocumentosCompletos || errorBD) && isAdmin) {
             // Caso especial: registro de admin sin documentación o incompleto → enviar a Registros_Pendientes.json
+            // Validar que modalidad, modalidadId y planAnio no estén vacíos
+            const modalidadPend = values.modalidad || '';
+            const modalidadIdPend = values.modalidadId || '';
+            const planAnioPend = values.planAnio || '';
+            if (!modalidadPend || !modalidadIdPend || !planAnioPend) {
+                console.error('❌ [VALIDACIÓN] No se puede guardar registro pendiente: modalidad, modalidadId o planAnio vacío', { modalidadPend, modalidadIdPend, planAnioPend, values });
+                showError('No se puede guardar el registro pendiente: faltan modalidad, modalidadId o plan/año. Por favor, complete todos los datos antes de guardar.');
+                return;
+            }
             try {
                 console.log('📋 [DEBUG] Enviando registro pendiente al backend...');
                 console.log('📋 [DEBUG] Values:', values);
                 console.log('📋 [DEBUG] Files:', files);
                 console.log('📋 [DEBUG] Estado documentación:', estadoDocumentacion);
-                
                 // Crear FormData específico para registros pendientes
                 const formDataPendiente = buildFormData(values, files, estadoDocumentacion, true);
-                
                 // Determinar motivo del registro pendiente
                 let motivoPendiente;
                 if (errorBD) {
@@ -146,37 +167,28 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
                 } else {
                     motivoPendiente = estadoDocumentacion.mensaje;
                 }
-                
                 formDataPendiente.append('motivoPendiente', motivoPendiente);
                 formDataPendiente.append('tipoRegistro', errorBD ? 'ERROR_BD' : (estadoDocumentacion.completo ? 'DOCUMENTACION_INCOMPLETA' : 'SIN_DOCUMENTACION'));
-                
                 console.log('📋 [DEBUG] FormData pendiente construido');
-                
                 // Log del contenido del FormData
                 console.log('📋 [DEBUG] Contenido FormData:');
                 for (let [key, value] of formDataPendiente.entries()) {
                     console.log(`   ${key}: ${value}`);
                 }
-                
                 // Enviar al backend para guardar en Registros_Pendientes.json
                 console.log('📋 [DEBUG] Llamando serviceRegInscripcion.createRegistroPendiente...');
                 const responsePendiente = await serviceRegInscripcion.createRegistroPendiente(formDataPendiente);
-                
                 console.log('✅ [DEBUG] Respuesta del backend:', responsePendiente);
-                
                 const mensajeAlerta = errorBD 
                     ? `📋 Error en BD - Registro guardado como pendiente: ${response.errorOriginal}`
                     : `📋 Registro guardado como pendiente: ${estadoDocumentacion.mensaje}`;
-                    
                 showWarning(mensajeAlerta);
                 console.log('✅ Registro pendiente guardado exitosamente en backend');
-                
             } catch (error) {
                 console.error('❌ [DEBUG] Error completo al guardar registro pendiente:', error);
                 console.error('❌ [DEBUG] error.response:', error.response);
                 console.error('❌ [DEBUG] error.response?.data:', error.response?.data);
                 console.error('❌ [DEBUG] error.message:', error.message);
-                
                 // Fallback: guardar en localStorage como respaldo
                 try {
                     console.log('⚠️ [DEBUG] Intentando fallback a localStorage...');
@@ -185,7 +197,6 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
                         modalidad,
                         mensaje: response?.message || 'Registro pendiente'
                     }, estadoDocumentacion);
-                    
                     showWarning(`⚠️ Error del servidor, guardado localmente: ${estadoDocumentacion.mensaje}`);
                     console.log('✅ [DEBUG] Fallback localStorage exitoso');
                 } catch (localError) {
@@ -281,12 +292,19 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
         try {
             // Detectar si es completar registro web
             const esCompletarRegistroWeb = !!completarRegistroWeb || sessionStorage.getItem('datosRegistroWeb');
-            
             if (esCompletarRegistroWeb) {
                 console.log('🌐 Completando registro web:', completarRegistroWeb);
                 await handleCompletarRegistroWeb(values, resetForm, resetArchivos, files, previews);
                 return;
             }
+
+            // Log de valores críticos antes de validación y submit
+            console.log('[SUBMIT][DEBUG] Estado de values justo antes de validación:', {
+                modalidad: values.modalidad,
+                modalidadId: values.modalidadId,
+                planAnio: values.planAnio,
+                values
+            });
 
             // Validar campos obligatorios
             const camposFaltantes = validateRequiredFields(values);
@@ -297,8 +315,23 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
 
             // Construir FormData
             const detalleDocumentacion = buildDetalleDocumentacion();
-            const estadoDocumentacion = obtenerEstadoDocumentacion(files, previews);
+            const estadoDocumentacion = obtenerEstadoDocumentacion(
+                files,
+                previews,
+                values.modalidad,
+                values.planAnio,
+                values.modulos || ''
+            );
             const hayDocumentosCompletos = estadoDocumentacion.completo;
+
+            // Log de valores críticos antes de construir FormData
+            console.log('[SUBMIT][DEBUG] Estado de values justo antes de buildFormData:', {
+                modalidad: values.modalidad,
+                modalidadId: values.modalidadId,
+                planAnio: values.planAnio,
+                values
+            });
+
             const formDataToSend = buildFormData(values, files, detalleDocumentacion, isAdmin);
 
             let response;
@@ -308,20 +341,16 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
             try {
                 response = await sendRequest(formDataToSend, accion, isAdmin, values, hayDocumentosCompletos);
                 console.log('✅ [DEBUG] Request exitoso, procesando respuesta...');
-                
                 // Debug logging para usuarios web
                 if (!isAdmin) {
                     console.log('🌐 [DEBUG] Respuesta para usuario web recibida correctamente');
                 }
-
             } catch (requestError) {
                 console.error('❌ [DEBUG] Error en sendRequest:', requestError);
-                
                 // Si es admin y hay error de BD, marcamos para enviar a pendientes
                 if (isAdmin && accion === "Registrar") {
                     console.log('⚠️ [DEBUG] Error en BD para admin, enviando a registros pendientes...');
                     errorBD = true;
-                    
                     // Crear respuesta ficticia para que no falle el flujo
                     response = {
                         message: 'Error en BD - enviado a registros pendientes',
@@ -343,15 +372,12 @@ export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDoc
             console.error('❌ [DEBUG] error.response?.data:', error.response?.data);
             console.error('❌ [DEBUG] error.message:', error.message);
             console.error('❌ [DEBUG] error.stack:', error.stack);
-            
             let mensajeError = 'Ocurrió un error al enviar los datos.';
-            
             if (error.response?.data?.message) {
                 mensajeError = error.response.data.message;
             } else if (error.message) {
                 mensajeError = error.message;
             }
-            
             console.error('❌ [DEBUG] Mensaje final de error:', mensajeError);
             showError(`❌ Error: ${mensajeError}`);
         } finally {

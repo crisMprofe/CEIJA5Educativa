@@ -51,7 +51,6 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
         barrio: registro.datos?.barrio || registro.barrio || '',
         localidad: registro.datos?.localidad || registro.localidad || '',
         provincia: registro.datos?.provincia || registro.provincia || '',
-        codigoPostal: registro.datos?.codigoPostal || registro.codigoPostal || '',
         modalidad: registro.datos?.modalidad || registro.modalidad || '',
         modalidadId: (() => {
             const modalidad = registro.datos?.modalidad || registro.modalidad || '';
@@ -73,10 +72,6 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
         modulos: registro.datos?.modulos || registro.modulos || null,
         idEstadoInscripcion: 1 // Estado por defecto para completar
     };
-
-
-
-
 
     // Función para manejar cambios de archivos
     const handleFileChange = (e, field, setFieldValueFunc) => {
@@ -101,13 +96,58 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
             
             console.log('� Completando registro pendiente:', formValues);
 
+            // Validación de seguridad: planAnio no puede estar vacío
+            if (!formValues.planAnio || formValues.planAnio === '' || formValues.planAnio === null) {
+                showError('Debes seleccionar un plan/año antes de continuar.');
+                setGuardando(false);
+                if (setSubmitting) setSubmitting(false);
+                return;
+            }
+
             // Preparar FormData
             const formData = new FormData();
-            
-            // Agregar todos los campos del formulario
-            Object.keys(formValues).forEach(key => {
-                if (formValues[key] !== null && formValues[key] !== undefined) {
-                    formData.append(key, formValues[key]);
+
+            // Forzar modalidadId, planAnio, modulos, idModulo a número y limpiar strings con coma
+            const valoresProcesados = { ...formValues };
+            if (valoresProcesados.modalidadId !== undefined && valoresProcesados.modalidadId !== null) {
+                valoresProcesados.modalidadId = parseInt(valoresProcesados.modalidadId, 10);
+            }
+            if (valoresProcesados.planAnio !== undefined && valoresProcesados.planAnio !== null) {
+                valoresProcesados.planAnio = parseInt(valoresProcesados.planAnio, 10);
+            }
+            if (valoresProcesados.modulos !== undefined && valoresProcesados.modulos !== null) {
+                if (typeof valoresProcesados.modulos === 'string') {
+                    valoresProcesados.modulos = parseInt(valoresProcesados.modulos.replace(/,/g, ''), 10);
+                } else if (Array.isArray(valoresProcesados.modulos)) {
+                    valoresProcesados.modulos = parseInt(valoresProcesados.modulos[0], 10);
+                }
+            }
+            if (valoresProcesados.idModulo !== undefined && valoresProcesados.idModulo !== null) {
+                if (typeof valoresProcesados.idModulo === 'string') {
+                    valoresProcesados.idModulo = parseInt(valoresProcesados.idModulo.replace(/,/g, ''), 10);
+                } else if (Array.isArray(valoresProcesados.idModulo)) {
+                    valoresProcesados.idModulo = parseInt(valoresProcesados.idModulo[0], 10);
+                }
+            }
+
+            // Validación previa de modalidad y planAnio
+            const modalidadValid = valoresProcesados.modalidad && valoresProcesados.modalidad !== '';
+            const planAnioValid = valoresProcesados.planAnio && !isNaN(valoresProcesados.planAnio);
+            if (!modalidadValid || !planAnioValid) {
+                showError('Debes seleccionar modalidad y plan/año antes de continuar.');
+                setGuardando(false);
+                if (setSubmitting) setSubmitting(false);
+                return;
+            }
+
+            // No enviar objetos completos (archivos, previews) en el FormData
+            Object.keys(valoresProcesados).forEach(key => {
+                if (
+                    valoresProcesados[key] !== null &&
+                    valoresProcesados[key] !== undefined &&
+                    typeof valoresProcesados[key] !== 'object'
+                ) {
+                    formData.append(key, valoresProcesados[key]);
                 }
             });
 
@@ -122,9 +162,14 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
             });
 
             // Verificar documentación completa
+            console.log('[DEBUG] Llamando a obtenerDocumentosRequeridos desde ModalEditarRegistro.jsx con:', {
+                modalidad: formValues.modalidad || formValues.modalidadId,
+                planAnio: formValues.planAnio,
+                modulos: formValues.modulos
+            });
             const documentosRequeridos = obtenerDocumentosRequeridos(
-                formValues.modalidad, 
-                formValues.planAnio, 
+                formValues.modalidad || formValues.modalidadId,
+                formValues.planAnio,
                 formValues.modulos
             );
 
@@ -148,27 +193,29 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
             let resultado;
             
             if (documentacionCompleta) {
-                // Completar registro en BD
-                console.log('✅ Documentación completa - Enviando a BD');
+                // 1. Subir archivos nuevos (si hay) usando PUT
+                if (Object.keys(previews).length > 0) {
+                    // Subir archivos nuevos y mantener los existentes
+                    await registrosPendientesService.actualizarRegistroPendiente(registro.dni, formValues, previews);
+                }
+                // 2. Procesar registro (migrar y guardar en BD)
                 resultado = await registrosPendientesService.completarRegistro(formData);
-                
+
                 console.log('✅ Respuesta de completar registro:', resultado);
-                
+
                 // Verificar si la respuesta indica éxito
                 if (resultado && (resultado.success === true || resultado.message?.includes('exitoso') || resultado.id)) {
                     showSuccess('✅ Registro enviado, procesando...');
                     console.log('✅ Registro completado exitosamente');
-                    // Eliminar del archivo de pendientes
+                    // Eliminar del archivo de pendientes SOLO si fue exitoso
                     await registrosPendientesService.eliminarRegistroPendiente(registro.dni);
                     onGuardado && onGuardado(registro, 'completado');
                 } else if (resultado && resultado.success === false) {
+                    showError(resultado.message || 'Error al completar el registro');
                     throw new Error(resultado.message || 'Error al completar el registro');
                 } else {
-                    // Si no hay estructura de respuesta clara pero llegó aquí, considerar como éxito
-                    showSuccess('✅ Registro enviado, procesando...');
-                    console.log('⚠️ Respuesta sin estructura clara para completar, considerando como éxito');
-                    await registrosPendientesService.eliminarRegistroPendiente(registro.dni);
-                    onGuardado && onGuardado(registro, 'completado');
+                    // No eliminar si la respuesta no es clara
+                    showError('❌ Error: No se pudo completar el registro. Verifique la respuesta del servidor.');
                 }
             } else {
                 // Actualizar en pendientes
@@ -232,8 +279,15 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
                 return;
             }
             
+            console.error('🔍 Error capturado en handleSubmit:', error.response?.data || error);
+
             // Si es un error real, mostrarlo como error
-            showError(`Error al procesar el registro: ${errorMessage}`);
+            // Mostrar mensaje real del backend si existe
+            if (error.response && error.response.data && error.response.data.message) {
+                showError(`Error al procesar el registro: ${error.response.data.message}`);
+            } else {
+                showError(`Error al procesar el registro: ${errorMessage}`);
+            }
         } finally {
             setGuardando(false);
             if (setSubmitting) setSubmitting(false);

@@ -161,44 +161,51 @@ const ModalRegistrosPendientes = ({ onClose }) => {
         }
     };
 
-    // Función para verificar si un estudiante ya está registrado en la base de datos
-    const verificarEstudianteRegistrado = useCallback(async (dni) => {
+    // Función para verificar si un estudiante ya está registrado en la base de datos o en pendientes
+    // Ahora recibe la lista de registros como argumento para evitar dependencias cíclicas
+    const verificarEstudianteRegistrado = useCallback(async (dni, registrosList) => {
+        // Verificar en la base de datos principal
+        let registradoEnBD = false;
         try {
             const response = await fetch(`/api/estudiantes/verificar/${dni}`);
             if (response.ok) {
                 const data = await response.json();
-                return data.registrado;
+                registradoEnBD = data.registrado;
             }
-            // Si el servidor responde con error (400, 500, etc), usar mock
-            throw new Error(`Server error: ${response.status}`);
         } catch {
-            // MOCK TEMPORAL: Simular que algunos estudiantes específicos ya están registrados
-            // Estos son los DNIs que mencionaste que ya están en la BD
-            const estudiantesYaRegistrados = ['36256478', '33326321'];
-            const estaRegistrado = estudiantesYaRegistrados.includes(dni);
-            if (estaRegistrado) {
-                console.log('🏷️ Estudiante', dni, 'ya registrado en BD');
-            }
-            return estaRegistrado;
+            registradoEnBD = false;
         }
+
+        // Verificar en registros pendientes (en la lista recibida)
+        const registradoEnPendientes = registrosList.some(r => (r.datos?.dni || r.dni) === dni);
+
+        return { registradoEnBD, registradoEnPendientes };
     }, []);
 
     // Función para verificar todos los estudiantes
     const verificarTodosLosEstudiantes = useCallback(async (registrosList) => {
         console.log('🔄 Verificando', registrosList.length, 'estudiantes');
         const estudiantesSet = new Set();
+        const pendientesSet = new Set();
         for (const registro of registrosList) {
             if (registro.datos?.dni) {
-                const estaRegistrado = await verificarEstudianteRegistrado(registro.datos.dni);
-                if (estaRegistrado) {
+                const { registradoEnBD, registradoEnPendientes } = await verificarEstudianteRegistrado(registro.datos.dni, registrosList);
+                if (registradoEnBD) {
                     estudiantesSet.add(registro.datos.dni);
+                }
+                if (registradoEnPendientes) {
+                    pendientesSet.add(registro.datos.dni);
                 }
             }
         }
         if (estudiantesSet.size > 0) {
-            console.log('✅ Estudiantes ya registrados:', Array.from(estudiantesSet));
+            console.log('✅ Estudiantes ya registrados en BD:', Array.from(estudiantesSet));
+        }
+        if (pendientesSet.size > 0) {
+            console.log('🕒 Estudiantes en Registros_Pendientes:', Array.from(pendientesSet));
         }
         setEstudiantesRegistrados(estudiantesSet);
+        // Puedes guardar pendientesSet en otro estado si lo necesitas en la UI
     }, [verificarEstudianteRegistrado]);
 
     // Cargar registros desde el archivo JSON del backend
@@ -212,18 +219,15 @@ const ModalRegistrosPendientes = ({ onClose }) => {
                 console.log('📋 Registros desde backend:', registrosBackend);
 
                 setRegistros(registrosBackend);
-                
                 // Verificar cuáles estudiantes ya están registrados
                 await verificarTodosLosEstudiantes(registrosBackend);
-                
+
                 if (registrosBackend.length === 0) {
                     setMensajeEmail('ℹ️ No hay registros pendientes en este momento. ¡Excelente trabajo!');
                 } else {
                     setMensajeEmail(`📋 Cargados ${registrosBackend.length} registro(s) pendiente(s) de documentación`);
                 }
                 setTimeout(() => setMensajeEmail(''), 3000);
-
-                // Estado de duplicados se verificará manualmente cuando sea necesario
 
             } catch (error) {
                 console.error('❌ Error al cargar registros:', error);
@@ -243,7 +247,7 @@ const ModalRegistrosPendientes = ({ onClose }) => {
         }, 30000);
 
         return () => clearInterval(intervalo);
-    }, [verificarTodosLosEstudiantes]);
+    }, [verificarTodosLosEstudiantes]); // useEffect depende de verificarTodosLosEstudiantes para cumplir con eslint
 
     // Función para obtener información del vencimiento
     const obtenerInfoVencimiento = (registro) => {
@@ -318,16 +322,13 @@ const ModalRegistrosPendientes = ({ onClose }) => {
     const handleRegistroGuardado = async (registro, tipoOperacion) => {
         console.log(`✅ Registro ${tipoOperacion}:`, registro.dni);
         
+
         if (tipoOperacion === 'completado') {
-            // Si se completó, mostrar mensaje de éxito informando que está registrado y aprobado
             const nombreCompleto = `${registro.datos?.nombre || registro.nombre} ${registro.datos?.apellido || registro.apellido}`;
-            showSuccess(`🎉 ${nombreCompleto} - Estudiante registrado y aprobado. Puede eliminarlo del listado con el botón Eliminar.`);
-            
-            // No eliminar automáticamente de la lista - dejar que el admin lo haga manualmente
-            // para que pueda ver el mensaje y confirmar antes de eliminar
-            await recargarRegistros(false);
+            showSuccess(`🎉 ${nombreCompleto} - Estudiante registrado y aprobado.`);
+            // Eliminar automáticamente de la lista local
+            setRegistros(prevRegistros => prevRegistros.filter(r => r.dni !== registro.dni));
         } else {
-            // Si se actualizó, recargar la lista
             await recargarRegistros(false);
         }
         
@@ -565,7 +566,9 @@ const ModalRegistrosPendientes = ({ onClose }) => {
         const modalidad = registro.datos?.modalidad || registro.modalidad || '';
         const planAnio = registro.datos?.planAnio || registro.planAnio || '';
         const modulos = registro.datos?.modulos || registro.modulos || '';
-        
+        console.log('[DEBUG] Llamando a obtenerDocumentosRequeridos desde ModalRegistrosPendientes.jsx con:', {
+            modalidad, planAnio, modulos
+        });
         const requerimientos = obtenerDocumentosRequeridos(modalidad, planAnio, modulos);
         const documentosRequeridosDinamicos = requerimientos.documentos || [];
         const documentosAlternativos = requerimientos.alternativos;

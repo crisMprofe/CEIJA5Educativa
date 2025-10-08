@@ -16,6 +16,7 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
 
     const handleSelection = (event) => {
         const newValue = event.target.value;
+        console.log('[DEBUG] Seleccionado en PlanAnioSelector:', newValue);
         setFieldValue('planAnio', newValue || ''); // Siempre string
         if (typeof handleChange === 'function') {
             handleChange(event);
@@ -74,7 +75,6 @@ const PlanAnioSelector = ({ modalidad, handleChange, value, modalidadId, setFiel
         
         // Buscar si hay un idModulo desde sessionStorage (registro pendiente)
         const datosRegistroPendiente = sessionStorage.getItem('datosRegistroPendiente');
-        console.log('🔍 Verificando datos para módulo - Modulos length:', modulos.length, 'idModulo actual:', idModulo);
         
         if (datosRegistroPendiente) {
             try {
