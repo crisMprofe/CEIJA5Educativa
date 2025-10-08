@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const API_BASE_URL = 'http://localhost:5000/api';
 
 const registrosPendientesService = {
@@ -5,18 +7,9 @@ const registrosPendientesService = {
     obtenerRegistrosPendientes: async () => {
         try {
             console.log('📋 Obteniendo registros pendientes...');
-            const response = await fetch(`${API_BASE_URL}/registros-pendientes`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-
-            const registros = await response.json();
+            const response = await axios.get(`${API_BASE_URL}/registros-pendientes`);
+            
+            const registros = response.data;
             console.log(`✅ ${registros.length} registros pendientes obtenidos`);
             return registros;
         } catch (error) {
@@ -29,25 +22,14 @@ const registrosPendientesService = {
     crearRegistroPendiente: async (datosRegistro) => {
         try {
             console.log('💾 Creando registro pendiente:', datosRegistro.dni);
-            const response = await fetch(`${API_BASE_URL}/registros-pendientes`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(datosRegistro),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const response = await axios.post(`${API_BASE_URL}/registros-pendientes`, datosRegistro);
+            
+            const resultado = response.data;
             console.log('✅ Registro pendiente creado exitosamente');
             return resultado;
         } catch (error) {
             console.error('Error al crear registro pendiente:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -55,45 +37,44 @@ const registrosPendientesService = {
     actualizarRegistroPendiente: async (dni, datos, archivos = null) => {
         try {
             console.log(`🔄 Actualizando registro pendiente: ${dni}`);
-            let response;
+            
             // Si hay archivos, usar FormData
             if (archivos && Object.keys(archivos).length > 0) {
                 const formData = new FormData();
+                
                 Object.keys(datos).forEach(key => {
                     if (datos[key] !== null && datos[key] !== undefined) {
                         formData.append(key, datos[key]);
                     }
                 });
+                
                 Object.keys(archivos).forEach(fieldName => {
                     const archivo = archivos[fieldName];
                     if (archivo && archivo.file) {
                         formData.append(fieldName, archivo.file);
                     }
                 });
-                response = await fetch(`${API_BASE_URL}/registros-pendientes/${dni}`, {
-                    method: 'PUT',
-                    body: formData
+                
+                const response = await axios.put(`${API_BASE_URL}/registros-pendientes/${dni}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
                 });
+                
+                const resultado = response.data;
+                console.log('✅ Registro pendiente actualizado exitosamente');
+                return resultado;
             } else {
                 // Si no hay archivos, usar JSON
-                response = await fetch(`${API_BASE_URL}/registros-pendientes/${dni}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(datos),
-                });
+                const response = await axios.put(`${API_BASE_URL}/registros-pendientes/${dni}`, datos);
+                
+                const resultado = response.data;
+                console.log('✅ Registro pendiente actualizado exitosamente');
+                return resultado;
             }
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-            const resultado = await response.json();
-            console.log('✅ Registro pendiente actualizado exitosamente');
-            return resultado;
         } catch (error) {
             console.error('Error al actualizar registro pendiente:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -101,25 +82,14 @@ const registrosPendientesService = {
     eliminarRegistroPendiente: async (dni) => {
         try {
             console.log(`🗑️ Eliminando registro pendiente: ${dni}`);
-
-            const response = await fetch(`${API_BASE_URL}/registros-pendientes/${dni}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const response = await axios.delete(`${API_BASE_URL}/registros-pendientes/${dni}`);
+            
+            const resultado = response.data;
             console.log('✅ Registro pendiente eliminado exitosamente');
             return resultado;
         } catch (error) {
             console.error('Error al eliminar registro pendiente:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -127,18 +97,9 @@ const registrosPendientesService = {
     obtenerEstadisticas: async () => {
         try {
             console.log('📊 Obteniendo estadísticas de registros pendientes...');
-            const response = await fetch(`${API_BASE_URL}/registros-pendientes/stats`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-
-            const stats = await response.json();
+            const response = await axios.get(`${API_BASE_URL}/registros-pendientes/stats`);
+            
+            const stats = response.data;
             console.log('✅ Estadísticas obtenidas:', stats);
             return stats;
         } catch (error) {
@@ -170,23 +131,20 @@ const registrosPendientesService = {
             // Obtener el dni del FormData
             const dni = formData.get('dni') || formData.get('registroPendienteId');
             if (!dni) throw new Error('No se encontró el DNI en el FormData');
+            
             console.log('✅ Enviando registro completo a la base de datos...');
-            const response = await fetch(`${API_BASE_URL}/completar-documentacion/${dni}`, {
-                method: 'POST',
-                body: formData, // FormData se envía sin Content-Type header
+            const response = await axios.post(`${API_BASE_URL}/completar-documentacion/${dni}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const resultado = response.data;
             console.log('✅ Registro completado y guardado en BD exitosamente');
             return resultado;
         } catch (error) {
             console.error('Error al completar registro:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -194,25 +152,14 @@ const registrosPendientesService = {
     enviarNotificacion: async (dni) => {
         try {
             console.log(`📧 Enviando notificación por email para DNI: ${dni}`);
-            const response = await fetch(`${API_BASE_URL}/notificaciones/enviar-individual`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ dni }),
-            });
+            const response = await axios.post(`${API_BASE_URL}/notificaciones/enviar-individual`, { dni });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const resultado = response.data;
             console.log('✅ Notificación enviada exitosamente');
             return resultado;
         } catch (error) {
             console.error('Error al enviar notificación:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     }
 };

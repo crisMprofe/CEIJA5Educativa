@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const API_BASE_URL = 'http://localhost:5000/api';
 
 const registrosWebService = {
@@ -5,18 +7,9 @@ const registrosWebService = {
     obtenerRegistrosWeb: async () => {
         try {
             console.log('📋 Obteniendo registros web...');
-            const response = await fetch(`${API_BASE_URL}/registros-web`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-
-            const registros = await response.json();
+            const response = await axios.get(`${API_BASE_URL}/registros-web`);
+            
+            const registros = response.data;
             console.log(`✅ ${registros.length} registros web obtenidos`);
             return registros;
         } catch (error) {
@@ -29,25 +22,14 @@ const registrosWebService = {
     crearRegistroWeb: async (datosRegistro) => {
         try {
             console.log('💾 Creando registro web:', datosRegistro.dni);
-            const response = await fetch(`${API_BASE_URL}/registros-web`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(datosRegistro),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const response = await axios.post(`${API_BASE_URL}/registros-web`, datosRegistro);
+            
+            const resultado = response.data;
             console.log('✅ Registro web creado exitosamente');
             return resultado;
         } catch (error) {
             console.error('Error al crear registro web:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -55,25 +37,14 @@ const registrosWebService = {
     actualizarRegistroWeb: async (id, datos) => {
         try {
             console.log(`🔄 Actualizando registro web: ${id}`);
-            const response = await fetch(`${API_BASE_URL}/registros-web/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(datos),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const response = await axios.put(`${API_BASE_URL}/registros-web/${id}`, datos);
+            
+            const resultado = response.data;
             console.log('✅ Registro web actualizado exitosamente');
             return resultado;
         } catch (error) {
             console.error('Error al actualizar registro web:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -81,24 +52,14 @@ const registrosWebService = {
     eliminarRegistroWeb: async (id) => {
         try {
             console.log(`🗑️ Eliminando registro web: ${id}`);
-            const response = await fetch(`${API_BASE_URL}/registros-web/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const response = await axios.delete(`${API_BASE_URL}/registros-web/${id}`);
+            
+            const resultado = response.data;
             console.log('✅ Registro web eliminado exitosamente');
             return resultado;
         } catch (error) {
             console.error('Error al eliminar registro web:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -106,18 +67,9 @@ const registrosWebService = {
     obtenerEstadisticas: async () => {
         try {
             console.log('📊 Obteniendo estadísticas de registros web...');
-            const response = await fetch(`${API_BASE_URL}/registros-web/stats`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-
-            const stats = await response.json();
+            const response = await axios.get(`${API_BASE_URL}/registros-web/stats`);
+            
+            const stats = response.data;
             console.log('✅ Estadísticas obtenidas:', stats);
             return stats;
         } catch (error) {
@@ -145,7 +97,7 @@ const registrosWebService = {
         }
     },
 
-    // Procesar un registro web (convertir a registro completo en BD)
+    // Procesar un registro web (convertir a registro completo en BD o guardar en registros_web/pendientes)
     /**
      * Procesar un registro web (convertir a registro completo en BD o guardar en registros_web/pendientes)
      * Si destinoBD es true, usa FormData (para la BD). Si es false, usa JSON (para registros_web o registros_pendientes).
@@ -154,6 +106,7 @@ const registrosWebService = {
         try {
             console.log(`🔄 Procesando registro web ID: ${id} (destinoBD=${destinoBD})`);
             let response;
+            
             if (destinoBD) {
                 // Enviar a la BD: usar FormData para archivos
                 const formData = new FormData();
@@ -166,36 +119,26 @@ const registrosWebService = {
                         formData.append(key + '_ruta', value); // backend debe aceptar *_ruta para rutas existentes
                     }
                 });
-                response = await fetch(`${API_BASE_URL}/registros-web/${id}/procesar`, {
-                    method: 'POST',
-                    body: formData
+                
+                response = await axios.post(`${API_BASE_URL}/registros-web/${id}/procesar`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
                 });
             } else {
                 // Guardar como JSON (registros_web o registros_pendientes)
-                response = await fetch(`${API_BASE_URL}/registros-web/${id}/procesar`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        datosFormulario,
-                        documentos
-                    })
+                response = await axios.post(`${API_BASE_URL}/registros-web/${id}/procesar`, {
+                    datosFormulario,
+                    documentos
                 });
             }
 
-            if (!response.ok) {
-                let errorData;
-                try { errorData = await response.json(); } catch { errorData = {}; }
-                throw new Error(errorData?.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const resultado = response.data;
             console.log(`✅ Registro web procesado y guardado:`, resultado);
             return resultado;
         } catch (error) {
             console.error('❌ Error al procesar registro web:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -204,27 +147,16 @@ const registrosWebService = {
         try {
             console.log(`📋 Moviendo registro web ${id} a pendientes`);
             
-            const response = await fetch(`${API_BASE_URL}/registros-web/${id}/mover-pendiente`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    motivoPendiente
-                })
+            const response = await axios.post(`${API_BASE_URL}/registros-web/${id}/mover-pendiente`, {
+                motivoPendiente
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
-            const resultado = await response.json();
+            const resultado = response.data;
             console.log(`✅ Registro web movido a pendientes:`, resultado);
             return resultado;
         } catch (error) {
             console.error('❌ Error al mover registro web a pendientes:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     }
 };

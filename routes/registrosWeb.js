@@ -64,6 +64,32 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET: Obtener estadísticas de registros web
+router.get('/stats', async (req, res) => {
+    try {
+        await ensureFileExists();
+        const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
+        const registros = JSON.parse(data);
+        
+        const stats = {
+            total: registros.length,
+            pendientes: registros.filter(r => r.estado === 'PENDIENTE').length,
+            procesados: registros.filter(r => r.estado === 'PROCESADO' || r.estado === 'MOVIDO_A_PENDIENTES').length,
+            anulados: registros.filter(r => r.estado === 'ANULADO').length,
+            movidosAPendientes: registros.filter(r => r.estado === 'MOVIDO_A_PENDIENTES').length,
+            ultimoRegistro: registros.length > 0 ? registros[registros.length - 1].timestamp : null
+        };
+        
+        res.json(stats);
+    } catch (error) {
+        console.error('Error al obtener estadísticas:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener estadísticas',
+            message: error.message 
+        });
+    }
+});
+
 // POST: Crear un nuevo registro web
 // ⚠️ SOLO guarda en Registro_Web.json y archivosDocWeb. NO mueve a pendientes ni a la base de datos.
 // El registro web queda en estado 'PENDIENTE' hasta que un admin lo procese desde el dashboard.
@@ -528,30 +554,5 @@ router.post('/:id/mover-pendiente', async (req, res) => {
     }
 });
 
-// GET: Obtener estadísticas de registros web
-router.get('/stats', async (req, res) => {
-    try {
-        await ensureFileExists();
-        const data = await fs.readFile(REGISTROS_WEB_PATH, 'utf8');
-        const registros = JSON.parse(data);
-        
-        const stats = {
-            total: registros.length,
-            pendientes: registros.filter(r => r.estado === 'PENDIENTE').length,
-            procesados: registros.filter(r => r.estado === 'PROCESADO' || r.estado === 'MOVIDO_A_PENDIENTES').length,
-            anulados: registros.filter(r => r.estado === 'ANULADO').length,
-            movidosAPendientes: registros.filter(r => r.estado === 'MOVIDO_A_PENDIENTES').length,
-            ultimoRegistro: registros.length > 0 ? registros[registros.length - 1].timestamp : null
-        };
-        
-        res.json(stats);
-    } catch (error) {
-        console.error('Error al obtener estadísticas:', error);
-        res.status(500).json({ 
-            error: 'Error al obtener estadísticas',
-            message: error.message 
-        });
-    }
-});
 
 module.exports = router;

@@ -64,6 +64,36 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET: Obtener estadísticas de registros pendientes
+router.get('/stats', async (req, res) => {
+    try {
+        await ensureFileExists();
+        const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
+        const registros = JSON.parse(data);
+        
+        const stats = {
+            total: registros.length,
+            pendientes: registros.filter(r => r.estado === 'PENDIENTE').length,
+            procesados: registros.filter(r => r.estado === 'PROCESADO').length,
+            vencidos: registros.filter(r => {
+                const fechaRegistro = new Date(r.timestamp);
+                const ahora = new Date();
+                const diasTranscurridos = Math.floor((ahora - fechaRegistro) / (1000 * 60 * 60 * 24));
+                return diasTranscurridos > 7;
+            }).length,
+            ultimoRegistro: registros.length > 0 ? registros[registros.length - 1].timestamp : null
+        };
+        
+        res.json(stats);
+    } catch (error) {
+        console.error('Error al obtener estadísticas:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener estadísticas',
+            message: error.message 
+        });
+    }
+});
+
 // GET: Obtener un registro pendiente específico por DNI
 router.get('/:dni', async (req, res) => {
     try {
@@ -194,32 +224,71 @@ router.post('/', upload.any(), async (req, res) => {
     }
 });
 
-// PUT: Actualizar estado de un registro pendiente
-router.put('/:dni', async (req, res) => {
+// PUT: Actualizar un registro pendiente (con o sin archivos)
+router.put('/:dni', upload.any(), async (req, res) => {
     try {
         await ensureFileExists();
         const { dni } = req.params;
-        const { estado, observaciones } = req.body;
+        const datosActualizados = req.body;
+        
+        console.log(`🔄 Actualizando registro pendiente para DNI: ${dni}`);
         
         const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
-        const registros = JSON.parse(data);
+        let registros = JSON.parse(data);
         
         const indiceRegistro = registros.findIndex(r => r.dni === dni);
         
         if (indiceRegistro === -1) {
-            return res.status(404).json({ error: 'Registro no encontrado' });
+            return res.status(404).json({ 
+                error: 'Registro no encontrado',
+                success: false,
+                message: `Registro pendiente con DNI ${dni} no encontrado`
+            });
         }
         
-        // Actualizar registro
-        registros[indiceRegistro].estado = estado || registros[indiceRegistro].estado;
-        registros[indiceRegistro].observaciones = observaciones || registros[indiceRegistro].observaciones;
-        registros[indiceRegistro].fechaActualizacion = new Date().toISOString();
+        // Procesar archivos si hay
+        const archivosActualizados = {};
+        if (req.files && req.files.length > 0) {
+            console.log(`📎 Procesando ${req.files.length} archivos actualizados`);
+            req.files.forEach(file => {
+                archivosActualizados[file.fieldname] = `/archivosPendientes/${file.filename}`;
+            });
+        }
+        
+        const registroExistente = registros[indiceRegistro];
+        
+        // Actualizar el registro
+        registros[indiceRegistro] = {
+            ...registroExistente,
+            estado: datosActualizados.estado || registroExistente.estado,
+            datos: {
+                ...registroExistente.datos,
+                ...(datosActualizados.datos || {}),
+                // Permitir actualizar campos individuales
+                ...(datosActualizados.nombre && { nombre: datosActualizados.nombre }),
+                ...(datosActualizados.apellido && { apellido: datosActualizados.apellido }),
+                ...(datosActualizados.email && { email: datosActualizados.email }),
+                ...(datosActualizados.telefono && { telefono: datosActualizados.telefono }),
+                ...(datosActualizados.calle && { calle: datosActualizados.calle }),
+                ...(datosActualizados.numero && { numero: datosActualizados.numero }),
+                ...(datosActualizados.barrio && { barrio: datosActualizados.barrio }),
+                ...(datosActualizados.localidad && { localidad: datosActualizados.localidad }),
+                ...(datosActualizados.provincia && { provincia: datosActualizados.provincia }),
+            },
+            archivos: {
+                ...registroExistente.archivos,
+                ...archivosActualizados
+            },
+            observaciones: datosActualizados.observaciones || registroExistente.observaciones,
+            fechaActualizacion: new Date().toISOString()
+        };
         
         await fs.writeFile(REGISTROS_PENDIENTES_PATH, JSON.stringify(registros, null, 2));
         
-        console.log(`🔄 Registro pendiente actualizado - DNI: ${dni}, Estado: ${estado}`);
+        console.log(`✅ Registro pendiente ${dni} actualizado exitosamente`);
         
         res.json({
+            success: true,
             message: 'Registro actualizado exitosamente',
             registro: registros[indiceRegistro]
         });
@@ -227,6 +296,7 @@ router.put('/:dni', async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar registro pendiente:', error);
         res.status(500).json({ 
+            success: false,
             error: 'Error al actualizar el registro pendiente',
             message: error.message 
         });
@@ -268,109 +338,6 @@ router.delete('/:dni', async (req, res) => {
         });
     }
 });
-
-// GET: Obtener estadísticas de registros pendientes
-router.get('/stats', async (req, res) => {
-    try {
-        await ensureFileExists();
-        const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
-        const registros = JSON.parse(data);
-        
-        const stats = {
-            total: registros.length,
-            pendientes: registros.filter(r => r.estado === 'PENDIENTE').length,
-            procesados: registros.filter(r => r.estado === 'PROCESADO').length,
-            vencidos: registros.filter(r => {
-                const fechaRegistro = new Date(r.timestamp);
-                const ahora = new Date();
-                const diasTranscurridos = Math.floor((ahora - fechaRegistro) / (1000 * 60 * 60 * 24));
-                return diasTranscurridos > 7;
-            }).length,
-            ultimoRegistro: registros.length > 0 ? registros[registros.length - 1].timestamp : null
-        };
-        
-        res.json(stats);
-    } catch (error) {
-        console.error('Error al obtener estadísticas:', error);
-        res.status(500).json({ 
-            error: 'Error al obtener estadísticas',
-            message: error.message 
-        });
-    }
-});
-
-// PUT: Actualizar un registro pendiente específico
-router.put('/:dni', upload.any(), async (req, res) => {
-    try {
-        const { dni } = req.params;
-        const datosActualizados = req.body;
-        
-        console.log(`🔄 Actualizando registro pendiente para DNI: ${dni}`);
-        
-        await ensureFileExists();
-        
-        // Leer registros existentes
-        const data = await fs.readFile(REGISTROS_PENDIENTES_PATH, 'utf8');
-        let registros = JSON.parse(data);
-        
-        // Buscar el registro a actualizar
-        const indiceRegistro = registros.findIndex(r => r.dni === dni);
-        
-        if (indiceRegistro === -1) {
-            return res.status(404).json({
-                success: false,
-                message: `Registro pendiente con DNI ${dni} no encontrado`
-            });
-        }
-        
-        // Procesar archivos si hay
-        const archivosActualizados = {};
-        if (req.files && req.files.length > 0) {
-            console.log(`📎 Procesando ${req.files.length} archivos actualizados`);
-            req.files.forEach(file => {
-                archivosActualizados[file.fieldname] = `/archivosPendientes/${file.filename}`;
-            });
-        }
-        
-        // Actualizar el registro
-        const registroExistente = registros[indiceRegistro];
-        registros[indiceRegistro] = {
-            ...registroExistente,
-            datos: {
-                ...registroExistente.datos,
-                ...datosActualizados.datos || datosActualizados
-            },
-            archivos: {
-                ...registroExistente.archivos,
-                ...archivosActualizados
-            },
-            timestamp: new Date().toISOString(),
-            fechaActualizacion: new Date().toLocaleDateString('es-AR'),
-            horaActualizacion: new Date().toLocaleTimeString('es-AR'),
-            observaciones: `Registro actualizado el ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR')}`
-        };
-        
-        // Guardar cambios
-        await fs.writeFile(REGISTROS_PENDIENTES_PATH, JSON.stringify(registros, null, 2));
-        
-        console.log(`✅ Registro pendiente ${dni} actualizado exitosamente`);
-        
-        res.json({
-            success: true,
-            message: 'Registro pendiente actualizado exitosamente',
-            registro: registros[indiceRegistro]
-        });
-        
-    } catch (error) {
-        console.error('Error al actualizar registro pendiente:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor',
-            error: error.message
-        });
-    }
-});
-
 
 
 module.exports = router;

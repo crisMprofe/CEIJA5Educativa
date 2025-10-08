@@ -1,16 +1,12 @@
+import axios from 'axios';
+
 // Servicio para manejar registros pendientes
 export const registrosPendientesService = {
     // Obtener todos los registros pendientes
     obtenerRegistrosPendientes: async () => {
         try {
-            const response = await fetch('/api/registros-pendientes');
-            
-            if (!response.ok) {
-                throw new Error('Error al obtener registros pendientes');
-            }
-            
-            const registros = await response.json();
-            return registros || [];
+            const response = await axios.get('/api/registros-pendientes');
+            return response.data || [];
         } catch (error) {
             console.error('Error al obtener registros pendientes:', error);
             throw error;
@@ -104,42 +100,25 @@ export const registrosPendientesService = {
     // Eliminar registro pendiente
     eliminarRegistro: async (dni) => {
         try {
-            const response = await fetch(`/api/registros-pendientes/${dni}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Error al eliminar registro');
-            }
-
-            return await response.json();
+            const response = await axios.delete(`/api/registros-pendientes/${dni}`);
+            return response.data;
         } catch (error) {
             console.error('Error al eliminar registro:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
     // Actualizar estado de registro
     actualizarEstado: async (dni, estado, observaciones = null) => {
         try {
-            const response = await fetch(`/api/registros-pendientes/${dni}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ estado, observaciones })
+            const response = await axios.put(`/api/registros-pendientes/${dni}`, {
+                estado,
+                observaciones
             });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Error al actualizar registro');
-            }
-
-            return await response.json();
+            return response.data;
         } catch (error) {
             console.error('Error al actualizar registro:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     },
 
@@ -165,20 +144,16 @@ export const registrosPendientesService = {
                 });
             }
             
-            const response = await fetch(`/api/completar-documentacion/${dni}`, {
-                method: 'POST',
-                body: formData
+            const response = await axios.post(`/api/completar-documentacion/${dni}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
             });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Error al completar documentación');
-            }
-
-            return await response.json();
+            return response.data;
         } catch (error) {
             console.error('Error al completar documentación:', error);
-            throw error;
+            throw error.response?.data || error;
         }
     }
 };
