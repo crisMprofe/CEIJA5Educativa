@@ -1,0 +1,86 @@
+[
+  {
+    "id": "1759856731150",
+    "timestamp": "2025-10-07T17:05:31.150Z",
+    "fechaRegistro": "7/10/2025",
+    "horaRegistro": "02:05:31",
+    "tipo": "WEB_REGISTRATION",
+    "estado": "MOVIDO_A_PENDIENTES",
+    "datos": {
+      "nombre": "Maria",
+      "apellido": "Nieve",
+      "dni": "46258521",
+      "cuil": "20-46258521-8",
+      "email": "crisbmaia50@gmail.com",
+      "telefono": "03517845685",
+      "fechaNacimiento": "2004-12-03",
+      "tipoDocumento": "DNI",
+      "paisEmision": "Argentina",
+      "calle": "San Martin",
+      "numero": "25",
+      "barrio": "25",
+      "localidad": "108",
+      "provincia": "5",
+      "modalidad": "Semipresencial",
+      "modalidadId": "2",
+      "planAnio": "6",
+      "modulos": "",
+      "idModulo": [
+        "6",
+        ","
+      ],
+      "usuario": "usuario_web",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+    },
+    "archivos": {
+      "foto": "/archivosDocWeb/Maria_Nieve_46258521_foto.png",
+      "archivo_dni": "/archivosDocWeb/Maria_Nieve_46258521_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocWeb/Maria_Nieve_46258521_archivo_cuil.pdf"
+    },
+    "observaciones": "Movido a registros pendientes el 7/10/2025 - Faltan: archivo_fichaMedica, archivo_partidaNacimiento, archivo_analiticoParcial",
+    "fechaMovimiento": "2025-10-07T17:45:23.606Z",
+    "motivoPendiente": "Faltan: archivo_fichaMedica, archivo_partidaNacimiento, archivo_analiticoParcial"
+  },
+  {
+    "id": "1759873325473",
+    "timestamp": "2025-10-07T21:42:05.473Z",
+    "fechaRegistro": "7/10/2025",
+    "horaRegistro": "06:42:05",
+    "tipo": "WEB_REGISTRATION",
+    "estado": "PENDIENTE",
+    "datos": {
+      "nombre": "Gabriela",
+      "apellido": "Lopez",
+      "dni": "45147745",
+      "cuil": "20-45147745-6",
+      "email": "crisbmaia50@gmail.com",
+      "telefono": "0351784569125",
+      "fechaNacimiento": "2002-12-05",
+      "tipoDocumento": "DNI",
+      "paisEmision": "Argentina",
+      "calle": "San Martin ",
+      "numero": "48",
+      "barrio": "25",
+      "localidad": "108",
+      "provincia": "5",
+      "modalidad": "Semipresencial",
+      "modalidadId": "2",
+      "planAnio": "5",
+      "modulos": "",
+      "idModulo": [
+        "4",
+        ""
+      ],
+      "usuario": "usuario_web",
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+    },
+    "archivos": {
+      "foto": "/archivosDocWeb/Gabriela_Lopez_45147745_foto.png",
+      "archivo_dni": "/archivosDocWeb/Gabriela_Lopez_45147745_archivo_dni.pdf",
+      "archivo_cuil": "/archivosDocWeb/Gabriela_Lopez_45147745_archivo_cuil.pdf"
+    },
+    "observaciones": "Registro web realizado el 7/10/2025 a las 06:42:05"
+  }
+]
