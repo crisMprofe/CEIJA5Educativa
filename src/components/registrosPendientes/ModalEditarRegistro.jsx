@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import registrosPendientesService from '../../services/serviceRegistrosPendientes';
 import { obtenerDocumentosRequeridos } from '../../utils/registroSinDocumentacion';
-import { useAlerts } from '../../hooks/useAlerts';
+import { useAlertContext } from '../../context/AlertContext';
 import useGestionDocumentacion from '../../hooks/useGestionDocumentacion';
 
 // Importar componentes y estilos del formulario de registro
@@ -24,10 +24,13 @@ import '../../estilos/FormularioMejorado.css';
 import '../../estilos/ModalEditarRegistroCompleto.css';
 
 const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => {
-    const { showSuccess, showError } = useAlerts();
+    const { showSuccess, showError } = useAlertContext();
     const [guardando, setGuardando] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
+   
+    const [archivos, setArchivos] = useState([]);
+    const [cargandoArchivos, setCargandoArchivos] = useState(false);
+
     // Usar el hook de gestión de documentación
     const {
         previews,
@@ -73,6 +76,26 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
         idEstadoInscripcion: 1 // Estado por defecto para completar
     };
 
+    // ✅ CORRECCIÓN: Función para cargar archivos con useCallback
+    const cargarArchivos = useCallback(async () => {
+        setCargandoArchivos(true);
+        try {
+            const dni = registro.dni || registro.datos?.dni;
+            const resultado = await registrosPendientesService.obtenerArchivosEstudiante(dni);
+            setArchivos(resultado.archivos || []);
+        } catch (error) {
+            console.error('Error cargando archivos:', error);
+            setArchivos([]);
+        } finally {
+            setCargandoArchivos(false);
+        }
+    }, [registro]); // Solo se recrea cuando cambia 'registro'
+
+    // Cargar archivos al abrir el modal
+    useEffect(() => {
+        cargarArchivos();
+    }, [cargarArchivos]); // ✅ Ahora incluye la dependencia
+
     // Función para manejar cambios de archivos
     const handleFileChange = (e, field, setFieldValueFunc) => {
         // Usar la gestión de documentación del hook
@@ -94,7 +117,7 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
         try {
             setGuardando(true);
             
-            console.log('� Completando registro pendiente:', formValues);
+            console.log('📝 Completando registro pendiente:', formValues);
 
             // Validación de seguridad: planAnio no puede estar vacío
             if (!formValues.planAnio || formValues.planAnio === '' || formValues.planAnio === null) {
@@ -284,7 +307,8 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
             // Si es un error real, mostrarlo como error
             // Mostrar mensaje real del backend si existe
             if (error.response && error.response.data && error.response.data.message) {
-                showError(`Error al procesar el registro: ${error.response.data.message}`);
+                // ✅ Mensaje más específico
+                showError(error.response?.data?.message || 'Error al modificar el registro');
             } else {
                 showError(`Error al procesar el registro: ${errorMessage}`);
             }
@@ -318,8 +342,6 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
             setGuardando(false);
         }
     };
-
-
 
     // Cargar archivos existentes en sessionStorage para que el hook los procese
     useEffect(() => {
@@ -426,6 +448,30 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
                                 </p>
                             </div>
 
+                            {/* ✅ SECCIÓN DE ARCHIVOS MOVIDA AQUÍ (dentro del return) */}
+                            <div className="archivos-pendientes">
+                                <h4>📁 Archivos Actuales:</h4>
+                                {cargandoArchivos ? (
+                                    <p>🔄 Cargando archivos...</p>
+                                ) : archivos.length > 0 ? (
+                                    <ul className="lista-archivos">
+                                        {archivos.map((archivo, index) => (
+                                            <li key={index}>📄 {archivo}</li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p>⚠️ No hay archivos cargados</p>
+                                )}
+                                <button 
+                                    type="button"
+                                    onClick={cargarArchivos} 
+                                    disabled={cargandoArchivos}
+                                    className="boton-secundario"
+                                >
+                                    {cargandoArchivos ? '🔄 Cargando...' : '🔄 Refrescar archivos'}
+                                </button>
+                            </div>
+
                             {/* Estructura de formulario igual que RegistroEstd */}
                             <div className="formd">
                                 <div className="form-datos">
@@ -461,7 +507,7 @@ const ModalEditarRegistro = ({ registro, onClose, onGuardado, onEliminado }) => 
                                         className="boton-principal" 
                                         onClick={() => setIsModalOpen(true)}
                                     >
-                                        Adjuntar Documentación
+                                        📎 Adjuntar Documentación
                                     </button>
                                     
                                     {guardando || isSubmitting ? (

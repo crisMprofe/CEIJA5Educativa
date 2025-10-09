@@ -30,7 +30,7 @@ const MiComponente = () => {
     showConfirmModal,
     removeAlert,
     closeModal,
-  } = useAlerts();
+  } = useAlertContext();
 
   const handleGuardar = () => {
     showSuccess("¡Datos guardados correctamente!");
@@ -119,7 +119,7 @@ const {
   hideLoading, // () => void
   removeAlert, // (index) => void
   clearAlerts, // () => void
-} = useAlerts();
+} = useAlertContext();
 ```
 
 ### Funciones para Modales
@@ -129,7 +129,7 @@ const {
   showConfirmModal, // (message, onConfirm, onCancel) => Promise<boolean>
   closeModal, // () => void
   confirmAction, // (message) => Promise<boolean>
-} = useAlerts();
+} = useAlertContext();
 ```
 
 ### Funciones Utilitarias
@@ -138,7 +138,7 @@ const {
 const {
   handleApiResponse, // (response, successMessage?) => boolean
   handleValidationErrors, // (errors) => void
-} = useAlerts();
+} = useAlertContext();
 
 // Ejemplo de uso con API
 const resultado = await fetch("/api/datos");

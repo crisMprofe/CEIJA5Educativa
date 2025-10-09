@@ -3,7 +3,7 @@ import { Formik } from 'formik';
 import PropTypes from 'prop-types';
 import axios from 'axios';
 import useGestionDocumentacion from '../hooks/useGestionDocumentacion';
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 import FormularioModificar from '../components/FormularioModificar';
 import { DocumentacionDescripcionToName, DocumentacionNameToId } from '../utils/DocumentacionMap'; // Aseg
 import serviceInscripcion from '../services/serviceInscripcion';
@@ -26,7 +26,7 @@ const ModificarEstd = ({
         resetArchivos,
     } = useGestionDocumentacion();
     
-    const { showSuccess, showError } = useAlerts();
+    const { showSuccess, showError } = useAlertContext();
     const [documentacion, setDocumentacion] = useState([]);
     
     // Función para manejar previews

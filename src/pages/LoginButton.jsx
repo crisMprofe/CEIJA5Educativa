@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import '../estilos/Modal.css';
 import { useUserContext } from "../context/useUserContext";
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 import BotonCargando from '../components/BotonCargando';
 import AlertaMens from '../components/AlertaMens';
 import { useForm } from "react-hook-form";
@@ -22,7 +22,7 @@ const LoginButton = ({ onClose, onRegisterClick }) => {
         showError,
         removeAlert,
         closeModal 
-    } = useAlerts();
+    } = useAlertContext();;
     const { setUser } = useUserContext();
     const navigate = useNavigate();
 

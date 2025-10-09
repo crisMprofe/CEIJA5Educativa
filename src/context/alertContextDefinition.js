@@ -1,3 +1,4 @@
 import { createContext } from 'react';
 
-export const AlertContext = createContext();
+// Definición del contexto
+export const AlertContext = createContext(null);

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import serviceRegistrosWeb from '../services/serviceRegistrosWeb';
 import { calcularEstadoDocumentacionWeb } from '../utils/calcularEstadoDocumentacionWeb';
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 import AlertaMens from './AlertaMens';
 import BotonCargando from './BotonCargando';
 import CloseButton from './CloseButton';
@@ -22,7 +22,7 @@ const GestorRegistrosWeb = ({ onClose, onRegistroSeleccionado, isAdmin = false }
         removeAlert,
         modal,
         closeModal
-    } = useAlerts();
+    } = useAlertContext();;
     const [registros, setRegistros] = useState([]);
     const [stats, setStats] = useState({ total: 0, pendientes: 0, procesados: 0, anulados: 0 });
 

@@ -9,8 +9,7 @@ import VistaVisor from './VistaVisor';
 import VistaEliminar from './VistaEliminar';
 import serviceInscripcion from '../services/serviceInscripcion';
 import { construirEstudianteCompleto } from '../utils/utilsEstudiante';
-import { useContext } from 'react';
-import { AlertContext } from '../context/AlertContext';
+import { useAlertContext } from '../context/AlertContext';
 import {
     handleEstudianteEncontrado,
     handleAccionEstudiante,
@@ -47,7 +46,7 @@ const GestionCRUDContenido = ({
     setRefreshKey
 }) => {
     // Usar el sistema unificado de alertas
-    const { showSuccess, showError } = useContext(AlertContext);
+    const { showSuccess, showError } = useAlertContext();
     // Usar modalidadId recibido por props si existe, si no, derivar de modalidad
     const modalidadIdFinal = typeof modalidadId !== 'undefined' && modalidadId !== null ? modalidadId : (modalidad !== undefined && modalidad !== null && modalidad !== '' && !isNaN(Number(modalidad)) ? Number(modalidad) : undefined);
 

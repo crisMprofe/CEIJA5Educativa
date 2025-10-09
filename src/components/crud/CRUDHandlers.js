@@ -1,5 +1,4 @@
-import { useContext } from 'react';
-import { AlertContext } from '../../context/AlertContext';
+import { useAlertContext } from '../../context/AlertContext';
 import serviceInscripcion from '../../services/serviceInscripcion';
 import { construirEstudianteCompleto } from '../../utils/utilsEstudiante';
 import {
@@ -27,7 +26,9 @@ export const useCRUDHandlers = ({
     modoEliminacion,
     setModoModificacion
 }) => {
-    const { showSuccess, showError } = useContext(AlertContext);
+    // ✅ Usar el hook personalizado
+    const { showSuccess, showError } = useAlertContext();
+
 
     // Handler para estudiante encontrado en búsqueda DNI
     const onEstudianteEncontrado = (resultado) => {

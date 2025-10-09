@@ -7,7 +7,7 @@ import BotonCargando from '../components/BotonCargando';
 import Input from '../components/Input';
 import CloseButton from '../components/CloseButton';
 import VolverButton from '../components/VolverButton';
-import { AlertContext } from '../context/AlertContext'; // Sistema unificado de alertas
+import { useAlertContext } from '../context/AlertContext'; // Sistema unificado de alertas
 
 
 const BusquedaDNI = ({

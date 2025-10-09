@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { obtenerRegistrosSinDocumentacion, obtenerDocumentosRequeridos } from '../utils/registroSinDocumentacion';
 import registrosPendientesService from '../services/serviceRegistrosPendientes';
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 import jsPDF from 'jspdf';
 import AlertaMens from './AlertaMens';
 import HeaderModal from './registrosPendientes/HeaderModal';
@@ -17,7 +17,7 @@ import '../estilos/botones.css';
 import '../estilos/ModalRegistrosPendientes.css';
 
 const ModalRegistrosPendientes = ({ onClose }) => {
-    const { showSuccess, showError, showWarning, showInfo } = useAlerts();
+    const { showSuccess, showError, showWarning, showInfo } = useAlertContext();;
     const [alerta, setAlerta] = useState(null);
     const [registros, setRegistros] = useState([]);
     const [mensajeEmail, setMensajeEmail] = useState('');

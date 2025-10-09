@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { DocumentacionNameToId } from '../utils/DocumentacionMap';
-import { useAlerts } from './useAlerts';
+
+import { useAlertContext } from '../context/AlertContext';
 
 const maxFileSize = 600 * 1024; // 600 KB
 
 export default function useGestionDocumentacion() {
     const [files, setFiles] = useState({});
     const [previews, setPreviews] = useState({});
-    const { showError } = useAlerts();
+    const { showError } = useAlertContext();;
 
     // Cargar archivos existentes desde sessionStorage al montar el componente
     useEffect(() => {

@@ -105,7 +105,7 @@ const {
   showConfirmModal, // ❓ Confirmaciones
   alerts, // 🏗️ Estado de alertas
   modal, // 🏗️ Estado de modal
-} = useAlerts();
+} = useAlertContext();
 
 // 🎯 Uso directo
 showSuccess("¡Operación exitosa!");
@@ -162,7 +162,7 @@ const [pdfError, setPdfError] = useState("");
 
 ```jsx
 // 1 sistema único y potente
-const { showSuccess, showError, showInfo, alerts, modal } = useAlerts();
+const { showSuccess, showError, showInfo, alerts, modal } = useAlertContext();
 
 // Uso consistente en toda la app
 showSuccess("✅ Operación completada");

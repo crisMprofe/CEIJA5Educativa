@@ -1,34 +1,48 @@
+import { useContext } from 'react';
 import PropTypes from 'prop-types';
 import { useAlerts } from '../hooks/useAlerts';
 import AlertaMens from '../components/AlertaMens';
-import { AlertContext } from './alertContextDefinition.js';
+import { AlertContext } from './alertContextDefinition';
 
 /**
  * Provider global de alertas para toda la aplicación
  */
-export const AlertProvider = ({ children }) => {
+export function AlertProvider({ children }) {
     const alertMethods = useAlerts();
-    
-
 
     return (
         <AlertContext.Provider value={alertMethods}>
             {children}
-            {/* AlertaMens global flotante */}
+            
+            {/* AlertaMens global flotante - esquina superior derecha */}
             <AlertaMens 
+                mode="floating"
                 alerts={alertMethods.alerts} 
                 modal={alertMethods.modal}
                 onCloseAlert={alertMethods.removeAlert}
                 onCloseModal={alertMethods.closeModal}
-                mode="floating"
             />
         </AlertContext.Provider>
     );
-};
+}
 
 AlertProvider.propTypes = {
     children: PropTypes.node.isRequired
 };
 
-// Re-exportar AlertContext para que otros componentes puedan importarlo
+/**
+ * Hook personalizado para usar el contexto de alertas
+ * Usar ESTO en tus componentes
+ */
+export function useAlertContext() {
+    const context = useContext(AlertContext);
+    
+    if (!context) {
+        throw new Error('useAlertContext debe usarse dentro de AlertProvider');
+    }
+    
+    return context;
+}
+
+// Re-exportar para compatibilidad
 export { AlertContext };

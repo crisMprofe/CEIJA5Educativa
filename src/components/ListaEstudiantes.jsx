@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback} from 'react';
 import PropTypes from 'prop-types';
 import serviceInscripcion from '../services/serviceInscripcion';
 import BotonCargando from './BotonCargando';
@@ -7,7 +7,7 @@ import VolverButton from './VolverButton';
 import '../estilos/listaEstudiantes.css';
 import '../estilos/estilosInscripcion.css';
 import '../estilos/modalUniforme.css';
-import { AlertContext } from '../context/AlertContext'; // Sistema unificado de alertas
+import { useAlertContext } from "../context/AlertContext"; // Sistema unificado de alertas
 
 const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = false, refreshKey = 0, modalidadId }) => {
     const [estudiantes, setEstudiantes] = useState([]);
@@ -20,7 +20,7 @@ const ListaEstudiantes = ({ onAccion, onClose, onVolver, soloParaEliminacion = f
     const [showConfirmDeleteDefinitivo, setShowConfirmDeleteDefinitivo] = useState(false);
     
     // Sistema unificado de alertas
-    const { showError, showSuccess } = useContext(AlertContext);
+    const { showError, showSuccess } = useAlertContext();;
     // Filtrar por modalidadId (número) si está definido
     const cargarEstudiantes = useCallback(async (currentPage = 1) => {
         setLoading(true);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AlertaMens from './AlertaMens';
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 
 /**
  * Componente de ejemplo que muestra cómo usar AlertaMens unificado
@@ -20,7 +20,7 @@ const AlertaMensExample = () => {
         showConfirmModal,
         closeModal,
         removeAlert
-    } = useAlerts();
+    } = useAlertContext();;
 
     const [simpleAlert, setSimpleAlert] = useState(null);
 
@@ -128,14 +128,14 @@ const AlertaMensExample = () => {
                 <h4>📚 Cómo usar el sistema unificado:</h4>
                 <pre style={{ fontSize: '14px', overflow: 'auto' }}>
 {`// 1. Usando el hook useAlerts (Recomendado)
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 
 const MiComponente = () => {
     const { 
         alerts, modal, 
         showSuccess, showError, showWarning, showInfo,
         showConfirmModal, removeAlert, closeModal
-    } = useAlerts();
+    } = useAlertContext();;
 
     const handleOperation = () => {
         showSuccess('🎉 Operación completada');

@@ -1,14 +1,14 @@
 import { useState, useContext } from 'react';
 import PropTypes from 'prop-types';
-import '../estilos/modalUniforme.css'; // Estilos uniformes
-import '../estilos/botones.css'; // Estilos de botones
+
 import serviceDatos from '../services/serviceDatos';
 import BotonCargando from '../components/BotonCargando';
 import Input from '../components/Input';
 import CloseButton from '../components/CloseButton';
 import VolverButton from '../components/VolverButton';
 import { AlertContext } from '../context/AlertContext'; // Sistema unificado de alertas
-
+import '../estilos/modalUniforme.css'; // Estilos uniformes
+import '../estilos/botones.css'; // Estilos de botones
 
 const BusquedaDNI = ({
     onEstudianteEncontrado,

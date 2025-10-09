@@ -9,8 +9,7 @@ import '../estilos/estilosInscripcion.css';
 import CloseButton from '../components/CloseButton';
 import VolverButton from '../components/VolverButton';
 import PropTypes from 'prop-types';
-import { useContext } from 'react';
-import { AlertContext } from '../context/AlertContext';
+import { useAlertContext } from "../context/AlertContext";
 import DashboardVisual from '../components/DashboardVisual';
 import '../estilos/dashboardVisual.css';
 
@@ -34,7 +33,7 @@ const ListaEstudiantes = ({ onClose, onVolver, refreshKey = 0, modalidad }) => {
   const [estadoFiltro, setEstadoFiltro] = useState('');
   
   // Usar el contexto de alertas y crear función showAlerta unificada
-  const alertContext = useContext(AlertContext);
+  const alertContext = useAlertContext();
   const showAlerta = (message, type = 'info') => {
     switch(type) {
       case 'success':

@@ -1,6 +1,5 @@
 import { Form } from 'formik';
 import { useState, useMemo } from 'react';
-// (Eliminado import duplicado de useEffect)
 import CloseButton from '../components/CloseButton';
 import VolverButton from '../components/VolverButton';
 import ModalidadSelection from '../components/ModalidadSelection';
@@ -9,14 +8,14 @@ import VerificadorRegistroPendiente from '../components/VerificadorRegistroPendi
 import { DatosPersonales } from '../components/DatosPersonales';
 import { Domicilio } from '../components/Domicilio';
 import PropTypes from 'prop-types';
+import EstadoInscripcion from '../components/EstadoInscripcion';
+import BotonCargando from '../components/BotonCargando';
+import { useAlertContext } from '../context/AlertContext';
+
 import '../estilos/estilosInscripcion.css';
 import '../estilos/botones.css';
 import '../estilos/RegistroEstd.css';
 import '../estilos/FormularioMejorado.css';
-import EstadoInscripcion from '../components/EstadoInscripcion';
-import BotonCargando from '../components/BotonCargando';
-import { useContext } from 'react';
-import { AlertContext } from '../context/alertContextDefinition';
 
 const RegistroEstd = ({
     previews,
@@ -33,8 +32,14 @@ const RegistroEstd = ({
     onVolver,
     completarRegistro // Nuevo prop para detectar si se está completando un registro
 }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { showError, showSuccess, showWarning } = useAlertContext();
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    // Estado requerido por ModalidadSelection (solo formData)
+    
+    // Estados para manejo de registros pendientes - No mostrar si se está completando un registro desde URL
+    const [formData, setFormData] = useState({});
+    const [showVerificador, setShowVerificador] = useState(!completarRegistro);
     // Limpiar archivos/documentos y sessionStorage justo ANTES de abrir el modal de documentación para un registro nuevo
     const handleAbrirModalDocumentacion = () => {
         if ((isWebUser || isAdmin) && accion === 'Registrar') {
@@ -54,12 +59,7 @@ const RegistroEstd = ({
         if (values && values.archivos) values.archivos = {};
         setIsModalOpen(false); // Cierra primero por si quedó abierto
         setTimeout(() => setIsModalOpen(true), 0); // Reabre limpio
-    };
-    // Estado requerido por ModalidadSelection (solo formData)
-    const [formData, setFormData] = useState({});
-    // Estados para manejo de registros pendientes - No mostrar si se está completando un registro desde URL
-    const [showVerificador, setShowVerificador] = useState(!completarRegistro);
-    const { showError } = useContext(AlertContext);
+    };    
 
     const closeModal = () => {
         setIsModalOpen(false);
@@ -109,44 +109,38 @@ const RegistroEstd = ({
     };
 
     const customHandleSubmit = async (e) => {
-        e.preventDefault();
-        if (!values.idEstadoInscripcion) {
-            showError('Debe seleccionar un estado de inscripción.');
-            return;
-        }
+    e.preventDefault();
+    
+    // Validación básica
+    if (!values.idEstadoInscripcion) {
+        showError('Debe seleccionar un estado de inscripción.');
+        return;
+    }
 
-        // Usar el handleSubmit del hook que maneja todo el flujo correctamente
-        const result = await handleSubmit(values, { 
-            setSubmitting: () => {}, 
-            resetForm: () => {} 
-        }, accion, isAdmin, isWebUser, completarRegistro, values.modalidad, null);
+    // ✅ Llamar a handleSubmit (que internamente usa useSubmitHandler)
+    // useSubmitHandler YA maneja:
+    // - showSuccess() cuando es exitoso
+    // - showError() cuando falla
+    // - showWarning() para casos especiales
+    const result = await handleSubmit(
+                values, 
+                { setSubmitting: () => {}, resetForm: () => {} }, 
+                accion, 
+                isAdmin, 
+                isWebUser, 
+                completarRegistro, 
+                values.modalidad, 
+                null
+            );
 
-        // Mostrar feedback según resultado
-        if (result && result.success) {
-            if (result.migradoABaseDatos) {
-                // Registro completo y guardado en BD
-                if (window?.showSuccess) window.showSuccess('✅ Registro completado y guardado en la base de datos');
-                else alert('✅ Registro completado y guardado en la base de datos');
-            } else if (result.migradoAPendientes) {
-                // Documentación incompleta, movido a pendientes
-                if (window?.showWarning) window.showWarning('⚠️ Documentación incompleta. El registro se movió a pendientes');
-                else alert('⚠️ Documentación incompleta. El registro se movió a pendientes');
-            } else {
-                // Registro exitoso pero sin detalle
-                if (window?.showSuccess) window.showSuccess('✅ Registro procesado correctamente');
-                else alert('✅ Registro procesado correctamente');
-            }
-        } else {
-            // Error
-            if (window?.showError) window.showError(result?.message || '❌ Error al procesar el registro');
-            else alert(result?.message || '❌ Error al procesar el registro');
-        }
-
-        // Si es usuario web y el registro fue exitoso, redirigir al home
-        if (isWebUser && result && result.success) {
-            window.location.href = '/';
-        }
-    };
+            // ✅ Solo redirigir si es usuario web y fue exitoso
+            if (result?.success && isWebUser) {
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 3000); // Esperar 3 segundos para que vea el mensaje
+    }
+        
+};
 
     return (
         <Form encType="multipart/form-data" onSubmit={customHandleSubmit}>

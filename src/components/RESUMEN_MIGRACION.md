@@ -100,7 +100,7 @@ const {
   showInfo,
   removeAlert,
   closeModal,
-} = useAlerts();
+} = useAlertContext();
 
 // Un solo componente
 <AlertaMens

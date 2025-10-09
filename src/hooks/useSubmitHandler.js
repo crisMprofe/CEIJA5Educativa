@@ -7,8 +7,8 @@ import {
 import serviceRegInscripcion from '../services/serviceRegInscripcion';
 import serviceInscripcion from '../services/serviceInscripcion';
 import serviceRegistrosWeb from '../services/serviceRegistrosWeb';
-import { useContext } from 'react';
-import { AlertContext } from '../context/alertContextDefinition';
+import { useAlertContext } from '../context/AlertContext';
+
 
 /**
  * Hook personalizado para manejar el envío del formulario de registro
@@ -18,7 +18,7 @@ import { AlertContext } from '../context/alertContextDefinition';
  * @param {Function} buildDetalleDocumentacion - Función para construir detalle de documentación
  */
 export const useSubmitHandler = (files, previews, resetArchivos, buildDetalleDocumentacion) => {
-    const { showSuccess, showError, showWarning } = useContext(AlertContext);
+    const { showSuccess, showError, showWarning } = useAlertContext();;
     
     const validateRequiredFields = (values) => {
         const camposObligatorios = [

@@ -8,7 +8,7 @@ import serviceUsuario from '../services/serviceUsuario';
 import { useNavigate } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup'; 
 import { userValidationSchema } from '../validaciones/ValidacionSchemaYup';
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 import AlertaMens from '../components/AlertaMens';
 
 const RegisterButton = ({ onClose }) => {
@@ -20,7 +20,7 @@ const RegisterButton = ({ onClose }) => {
         showError,
         removeAlert,
         closeModal 
-    } = useAlerts();
+    } = useAlertContext();;
     const [loading,setLoading] = useState(false)
     const navigate = useNavigate(); // Para redirigir
 

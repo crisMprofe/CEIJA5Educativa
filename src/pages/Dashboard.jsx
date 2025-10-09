@@ -4,7 +4,7 @@ import { useUserContext } from '../context/useUserContext';
 /*import { NavLink } from 'react-router-dom';*/
 import Modalidad from '../components/Modalidad';
 import BotonCargando from '../components/BotonCargando';
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 import AlertaMens from '../components/AlertaMens';
 import ModalRegistrosPendientes from '../components/ModalRegistrosPendientes';
 import GestorRegistrosWeb from '../components/GestorRegistrosWeb';
@@ -26,7 +26,7 @@ const Dashboard = () => {
       showInfo,
       removeAlert,
       closeModal 
-  } = useAlerts();
+  } = useAlertContext();;
   const [showModalRegistros, setShowModalRegistros] = useState(false); // Estado para modal de registros
   const [registrosPendientes, setRegistrosPendientes] = useState([]); // Estado para los registros
   const [showGestorRegistrosWeb, setShowGestorRegistrosWeb] = useState(false); // Estado para gestor de registros web

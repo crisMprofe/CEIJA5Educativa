@@ -1,7 +1,10 @@
 import PropTypes from 'prop-types';
 import { useState, useEffect, useContext, useMemo } from 'react';
 import useGestionDocumentacion from '../../hooks/useGestionDocumentacion';
-import { AlertContext } from '../../context/AlertContext';
+import { useAlertContext } from '../../context/AlertContext';
+import '../../estilos/estilosInscripcion.css';
+import '../../estilos/tarjetas.css';
+
 
 const TarjetaDocumentacion = ({ estudiante, editMode, setEditMode, isConsulta, isEliminacion, onGuardar, onCancelar }) => {
     const [archivosSubidos, setArchivosSubidos] = useState({});
@@ -12,7 +15,7 @@ const TarjetaDocumentacion = ({ estudiante, editMode, setEditMode, isConsulta, i
     }, [estudiante?.documentacion]);
     
     // Usar el sistema unificado de alertas
-    const { showSuccess, showWarning } = useContext(AlertContext);
+    const { showSuccess, showWarning } = useContext(useAlertContext);
 
     const {
         files,

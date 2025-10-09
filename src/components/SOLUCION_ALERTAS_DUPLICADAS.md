@@ -79,7 +79,7 @@ const { showSuccess, showError } = useGlobalAlerts();
 
 // ✅ DESPUÉS
 import { useAlerts } from "../../hooks/useAlerts";
-const { showSuccess, showError } = useAlerts();
+const { showSuccess, showError } = useAlertContext();
 ```
 
 ---

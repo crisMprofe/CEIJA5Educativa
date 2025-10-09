@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useUserContext } from '../context/useUserContext';
 // import PropTypes from 'prop-types';
-import { useAlerts } from '../hooks/useAlerts';
+import { useAlertContext } from '../context/AlertContext';
 import AlertaMens from './AlertaMens';
 import GestionCRUDContenido from './GestionCRUDContenido';
 // import BusquedaDNI from './BusquedaDNI';
@@ -36,7 +36,7 @@ const GestionCRUD = ({ isAdmin, onClose, vistaInicial = 'opciones', esModificaci
         showInfo,
         removeAlert,
         closeModal 
-    } = useAlerts();
+    } = useAlertContext();;
     const [vistaActual, setVistaActual] = useState(vistaInicial); // Usar vistaInicial como estado inicial
     const [estudiante, setEstudiante] = useState(null);
     

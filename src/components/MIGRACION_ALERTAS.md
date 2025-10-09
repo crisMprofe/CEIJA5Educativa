@@ -17,7 +17,7 @@ const [alerta, setAlerta] = useState({ text: "", variant: "" });
 <AlertaMens text={alerta.text} variant={alerta.variant} />;
 
 // Recomendado para migrar
-const { showSuccess, showError, alerts, removeAlert } = useAlerts();
+const { showSuccess, showError, alerts, removeAlert } = useAlertContext();
 showError("Mensaje de error");
 <AlertaMens mode="floating" alerts={alerts} onCloseAlert={removeAlert} />;
 ```
@@ -35,7 +35,7 @@ showError("Mensaje de error");
 <AlertaMens text={alerta.text} variant={alerta.variant} />;
 
 // Recomendado
-const { alerts, showSuccess, showError } = useAlerts();
+const { alerts, showSuccess, showError } = useAlertContext();
 <AlertaMens mode="floating" alerts={alerts} />;
 ```
 
@@ -57,7 +57,7 @@ const { alerts, showSuccess, showError } = useAlerts();
 <AlertaMens text={error} variant="error" />
 
 // 🚀 Migración recomendada
-const { showError } = useAlerts();
+const { showError } = useAlertContext();;
 showError(error);
 ```
 
@@ -86,7 +86,7 @@ import { useAlerts } from "../hooks/useAlerts";
 
 ```jsx
 const { alerts, modal, showSuccess, showError, removeAlert, closeModal } =
-  useAlerts();
+  useAlertContext();
 ```
 
 ### Paso 3: Reemplazar setState por funciones del hook
@@ -158,12 +158,12 @@ Para migrar un componente específico, seguir este patrón:
 ```bash
 # 1. Corregir imports
 - import AlertaMens from './AlertaMens';
-+ import { useAlerts } from '../hooks/useAlerts';
++ import { useAlertContext } from '../context/AlertContext';
 + import AlertaMens from './AlertaMens';
 
 # 2. Reemplazar estado local
 - const [alerta, setAlerta] = useState({ text: '', variant: '' });
-+ const { alerts, showSuccess, showError, removeAlert } = useAlerts();
++ const { alerts, showSuccess, showError, removeAlert } = useAlertContext();;
 
 # 3. Cambiar calls de setState
 - setAlerta({ text: 'Error', variant: 'error' });
